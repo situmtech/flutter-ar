@@ -27,21 +27,30 @@ Checkout the [example app](./example) of this repository to get started with the
 
 ### Android and iOS setup:
 
-The steps below have already been completed in the example app of this repository.
-However, they are outlined here as a guide in case of a clean installation.
+#### Set up your Situm credentials:
 
-1. Install situm_flutter_ar and situm_flutter_unity:
+First, go to `example/lib` and copy the file `config.dart.example` to a new file
+called `config.dart`.
+Then populate the new file with your Situm credentials.
+Follow the [Wayfinding guide](https://situm.com/docs/first-steps-for-wayfinding/) if you haven't set
+up a Situm account.
+
+#### Install the plugin:
+
+For the example app of this repository:
+
+1. Run `flutter pub get` under the `exemple/` directory.
+
+In case of a clean installation:
+
+1. Install [situm_flutter_ar](TODO link)
+   and [situm_flutter_unity](https://pub.dev/packages/situm_flutter_unity):
     ```shell
     flutter pub add situm_flutter_ar
     flutter pub add situm_flutter_unity
     ```
 2. Follow configuration steps for tye integration with Unity (for both iOS and Android)
    at https://pub.dev/packages/situm_flutter_unity#configuring-your-flutter-project.
-
-
-**Before you run the example app**:
-Go to `example/lib` and copy the file `config.dart.example` to a new file called `config.dart`.
-Then populate the new file with your Situm credentials.
 
 ### iOS specific steps:
 
@@ -60,7 +69,7 @@ The steps bellow are **required** even for the example app of this repository:
 
 ### Android specific steps:
 
-Steps already been completed in the sample app of this repository:
+Steps already completed in the sample app of this repository:
 
 1. You may need to add the following line to your `settings.gradle` file:
    ```groovy
