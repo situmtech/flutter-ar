@@ -27,9 +27,16 @@ class ARWidget extends StatefulWidget {
 
 class _ARWidgetState extends State<ARWidget> {
   UnityViewController? unityViewController;
+  bool mapViewLoaded = false;
   bool isArVisible = false;
   bool isArAvailable = false;
   ARDebugUI debugUI = ARDebugUI();
+
+  @override
+  void initState() {
+    super.initState();
+    ARController()._onARWidgetState(this);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,21 +72,26 @@ class _ARWidgetState extends State<ARWidget> {
     //   children: [
     return Stack(
       children: [
-        Align(
-          alignment: Alignment.topCenter,
-          child: SizedBox(
-            height: arHeight,
-            child: Stack(
-              children: [
-                unityView,
-                // TODO: fix this:
-                //...debugUI.createAlertVisibilityParamsDebugWidgets(),
-                //...debugUI.createUnityParamsDebugWidgets(),
-                _ARPosQuality(onCreate: onARPosQuality),
-              ],
+        // AR view:
+        Visibility(
+          visible: mapViewLoaded,
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: SizedBox(
+              height: arHeight,
+              child: Stack(
+                children: [
+                  unityView,
+                  // TODO: fix this:
+                  //...debugUI.createAlertVisibilityParamsDebugWidgets(),
+                  //...debugUI.createUnityParamsDebugWidgets(),
+                  _ARPosQuality(onCreate: onARPosQuality),
+                ],
+              ),
             ),
           ),
         ),
+        // MapView:
         Align(
           alignment: Alignment.bottomCenter,
           child: AnimatedSize(
@@ -133,7 +145,7 @@ class _ARWidgetState extends State<ARWidget> {
       widget.onPopulated.call();
     });
     var arController = ARController(); // Initialize/update (singleton).
-    arController._update(controller, this);
+    arController._onUnityViewController(controller);
     debugUI.controller = controller;
     arController.updateUnityModeParams(ARMode.relaxed);
     // Resume Unity Player if there is a MapView. Otherwise the AR Widget will
@@ -167,7 +179,8 @@ class _ARWidgetState extends State<ARWidget> {
     debugPrint("Situm> AR> dispose()");
     unityViewController?.pause();
     var arController = ARController();
-    arController._update(null, null);
+    arController._onUnityViewController(null);
+    arController._onARWidgetState(null);
   }
 
   void updateStatusArRequested() {
@@ -185,6 +198,12 @@ class _ARWidgetState extends State<ARWidget> {
   onARPosQuality(_ARPosQualityState state) {
     var arController = ARController();
     arController._onARPosQualityState(state);
+  }
+
+  _onMapViewLoaded() {
+    setState(() {
+      mapViewLoaded = true;
+    });
   }
 }
 
@@ -212,10 +231,9 @@ class ARController {
     return _instance!;
   }
 
-  /// Let this ARController be up to date with the latest notified states.
-  void _update(UnityViewController? controller, _ARWidgetState? widgetState) {
+  /// Let this ARController be up to date with the latest UnityViewController.
+  void _onUnityViewController(UnityViewController? controller) {
     _unityViewController = controller;
-    _widgetState = widgetState;
     if (_unityViewController != null && _navigationPendingAction != null) {
       _navigationPendingAction?.call();
       _navigationPendingAction = null;
@@ -228,6 +246,11 @@ class ARController {
     _arPosQualityState = state;
   }
 
+  /// Let this ARController be up to date with the AR Widget State.
+  void _onARWidgetState(_ARWidgetState? state) {
+    _widgetState = state;
+  }
+
   // === Internal MapViewer messages:
 
   /// Notifies the AR module that the MapView has been loaded, ensuring seamless
@@ -235,6 +258,7 @@ class ARController {
   void onMapViewLoad(MapViewController controller) {
     _mapViewController = controller;
     controller.internalARMessageDelegate(_onMapViewMessage);
+    _widgetState?._onMapViewLoaded();
     debugPrint("Situm> AR> onMapViewLoad");
   }
 

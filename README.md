@@ -38,6 +38,11 @@ However, they are outlined here as a guide in case of a clean installation.
 2. Follow configuration steps for tye integration with Unity (for both iOS and Android)
    at https://pub.dev/packages/situm_flutter_unity#configuring-your-flutter-project.
 
+
+**Before you run the example app**:
+Go to `example/lib` and copy the file `config.dart.example` to a new file called `config.dart`.
+Then populate the new file with your Situm credentials.
+
 ### iOS specific steps:
 
 The steps bellow are **required** even for the example app of this repository:
