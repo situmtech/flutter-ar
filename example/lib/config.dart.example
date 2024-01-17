@@ -1,0 +1,4 @@
+const situmUser = "***";
+const situmApiKey = "***";
+const buildingIdentifier = "***";
+const remoteIdentifier = null;
