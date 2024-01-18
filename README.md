@@ -39,7 +39,7 @@ up a Situm account.
 
 For the example app of this repository:
 
-1. Run `flutter pub get` under the `exemple/` directory.
+1. Run `flutter pub get` under the `example/` directory.
 
 In case of a clean installation:
 
