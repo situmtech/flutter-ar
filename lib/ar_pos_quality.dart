@@ -1,4 +1,4 @@
-part of situm_flutter_ar;
+part of 'ar.dart';
 
 const LOCATION_BUFFER_SIZE = 10;
 

@@ -1,4 +1,4 @@
-part of situm_flutter_ar;
+part of 'ar.dart';
 
 // TODO: temporal AR screen for Android (WIP).
 

@@ -1,4 +1,4 @@
-part of situm_flutter_ar;
+part of 'ar.dart';
 
 class ARWidget extends StatefulWidget {
   final String buildingIdentifier;

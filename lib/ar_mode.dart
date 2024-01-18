@@ -1,4 +1,4 @@
-part of situm_flutter_ar;
+part of 'ar.dart';
 
 // TODO: this file has been temporarily imported from a testing project. It needs review as it is a mess...
 
