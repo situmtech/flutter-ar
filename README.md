@@ -86,7 +86,6 @@ The steps bellow are **required** even for the example app of this repository:
 2. Populate the following directories (TODO: automatize):
     - example/android/unityExport/libs/
     - example/android/unityExport/src/
-    - example/android/unityExport/symbols/
 3. Run your app.
 
 Only for plugin development:
