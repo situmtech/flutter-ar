@@ -96,9 +96,9 @@ Widget _createTempBackButton(VoidCallback onPressed) {
 }
 
 class _AmbienceSelector extends StatefulWidget {
-  Function(int ambience) onAmbienceSelected;
+  final Function(int ambience) onAmbienceSelected;
 
-  _AmbienceSelector({
+  const _AmbienceSelector({
     super.key,
     required this.onAmbienceSelected,
   });
@@ -140,6 +140,20 @@ class _AmbienceSelectorState extends State<_AmbienceSelector> {
           ],
           child: ElevatedButton(
             onPressed: null,
+            style: ButtonStyle(
+              foregroundColor: MaterialStateProperty.all<Color>(
+                Colors.white,
+              ),
+              backgroundColor: MaterialStateProperty.all<Color>(
+                Colors.grey.withOpacity(0.8),
+              ),
+              side: MaterialStateProperty.all<BorderSide>(
+                BorderSide(
+                  color: Colors.white.withOpacity(0.6),
+                  width: 3.0,
+                ),
+              ),
+            ),
             child: Text("Ambience: ${ambiences[_selectedOption]!}"),
           ),
         ),
