@@ -42,7 +42,7 @@ class _ARPosQualityState extends State<_ARPosQuality> {
         child: IntrinsicHeight(
           child: Card(
             elevation: 4.0,
-            margin: EdgeInsets.all(16.0),
+            margin: EdgeInsets.fromLTRB(16, 16, 16, 80),
             child: Padding(
               padding: EdgeInsets.all(12.0),
               child: Column(

@@ -86,6 +86,16 @@ class _ARWidgetState extends State<ARWidget> {
                   //...debugUI.createAlertVisibilityParamsDebugWidgets(),
                   //...debugUI.createUnityParamsDebugWidgets(),
                   _ARPosQuality(onCreate: onARPosQuality),
+                  // TODO: fix at Unity (message not being received):
+                  _createTempBackButton(() {
+                    ARController arController = ARController();
+                    arController.onArGone();
+                  }),
+                  // TODO: select ambience by zone? To decide.
+                  _AmbienceSelector(onAmbienceSelected: (int ambience) {
+                    ARController arController = ARController();
+                    arController._selectAmbience(ambience);
+                  }),
                 ],
               ),
             ),
@@ -372,5 +382,11 @@ class ARController {
         arModeUnityParams.accuracyLimit.toString());
     _unityViewController?.send("MessageManager", "SendCameraLimit",
         arModeUnityParams.cameraLimit.toString());
+  }
+
+  /// Change the AR ambience (private by now).
+  void _selectAmbience(int ambience) {
+    _unityViewController?.send(
+        "MessageManager", "SendOnAmbienceZoneEnter", "$ambience");
   }
 }
