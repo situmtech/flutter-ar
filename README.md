@@ -1,5 +1,8 @@
 # Situm Flutter AR
 
+> [!NOTE]  
+> This plugin is a work in progress.
+
 <p align="center"> <img width="233" src="https://situm.com/wp-content/themes/situm/img/logo-situm.svg" style="margin-bottom:1rem" />
 <h1 align="center">@situm/flutter-ar</h1>
 </p>
@@ -20,84 +23,192 @@ Bring AR to [Situm Wayfinding](https://situm.com/wayfinding).
 
 ## Getting Started
 
-Checkout the [example app](./example) of this repository to get started with the AR module.
+By following this guide, you'll be able to integrate Situm AR plugin into your own application. Situm AR plugin is composed by:
 
-> [!NOTE]  
-> This plugin is a work in progress.
+1. Flutter Code: available in this repo.
+2. AR binaries: available upon request through support@situm.com. You'll need them to compile. We have 2 AR binaries:
+   1. Android. We'll deliver a folder called **unityExport**
+   2. iOS. We'll deliver a **UnityFramework.xcframework**.
 
-### Android and iOS setup:
+Additionally, we've created an [example app](./example) in case you want to take a look at a full application using both Situm SDK and Situm AR app.
 
-#### Set up your Situm credentials:
+### Common setup:
 
-First, go to `example/lib` and copy the file `config.dart.example` to a new file
-called `config.dart`.
-Then populate the new file with your Situm credentials.
-Follow the [Wayfinding guide](https://situm.com/docs/first-steps-for-wayfinding/) if you haven't set
-up a Situm account.
+#### Setup Situm SDK Flutter plugin:
 
-#### Install the plugin:
+First of all, you'll need a Situm account and a venue configured with Situm positioning & maps. To do this, follow [this guide](https://situm.com/docs/first-steps-for-wayfinding/).
 
-For the example app of this repository:
+First, you'll need to setup Situm SDK Flutter plugin following the instructions contained on the following [link](https://github.com/situmtech/flutter?tab=readme-ov-file#set-up-your-situm-credentials).
 
-1. Run `flutter pub get` under the `example/` directory.
+#### Install Situm AR Flutter plugin
 
-In case of a clean installation:
+Then, you may install [situm_flutter_ar](https://pub.dev/packages/situm_flutter_ar) plugin:
 
-1. Install [situm_flutter_ar](TODO link)
-   and [situm_flutter_unity](https://pub.dev/packages/situm_flutter_unity):
-    ```shell
-    flutter pub add situm_flutter_ar
-    flutter pub add situm_flutter_unity
-    ```
-2. Follow configuration steps for tye integration with Unity (for both iOS and Android)
-   at https://pub.dev/packages/situm_flutter_unity#configuring-your-flutter-project.
+```shell
+flutter pub add situm_flutter_ar
+```
 
 ### iOS specific steps:
 
-The steps bellow are **required** even for the example app of this repository:
+1. Import the **UnityFramework.xcframework** into your **Runner** project in **XCode**.
 
-1. Download and extract the AR binaries (UnityFramework.xcframework) from Situm (TODO: link).
-2. Open xcode and drag the UnityFramework to your project, make sure you have selected the following
-   options:
-    - Check copy items if needed.
-    - Select "Create groups" for "Added folders".
-    - Add to target "Runner".
+   <img src="./images/ios-import-1.png"  width="50%">
+
+2. During the impoort, make sure you select the following options:
+
+- Check "Copy items if needed".
+- Select "Create groups" for "Added folders".
+- Add to target "Runner".
+
+  <img src="./images/ios-import-2.png"  width="50%">
+
 3. In the main Target of your app, under General > "Frameworks, Libraries and Embedded Content",
-   select "Embed & Sign" for the UnityFramework.xcframework.
-4. Under `example/ios/`, run `pod install`.
-5. Run your app.
+   select "Embed & Sign" for the **UnityFramework.xcframework**.
 
-### Android specific steps:
+   <img src="./images/ios-import-3.png"  width="80%">
 
-Steps already completed in the sample app of this repository:
-
-1. You may need to add the following line to your `settings.gradle` file:
-   ```groovy
-    include ':unityExport:xrmanifest.androidlib'
+4. Under `<your_flutter_project>/ios`, run:
+   ```shell
+   pod install
    ```
-2. Add this line to your `gradle.properties` file:
+
+After this, you may compile & run your application:
+
+```shell
+flutter run
+```
+
+#### Android setup:
+
+1. Copy the AR binaries (**unityExport** folder in Android) into the **android** folder of your Flutter project.
+2. Add the following snippet to the end of the `<your_flutter_project>/android/settings.gradle` file (surely you have similar includes in there!):
+   ```shell
+   include ':unityExport'
+   include ':unityExport:xrmanifest.androidlib'
+   ```
+3. Add the following permission to the `<your_flutter_project>/android/app/src/main/AndroidManifest.xml` file:
+   ```shell
+   <uses-permission android:name="android.permission.WAKE_LOCK"/>
+   ```
+4. Add this line to your `gradle.properties` file:
    ```properties
     unityStreamingAssets=.unity3d, google-services-desktop.json, google-services.json, GoogleService-Info.plist
    ```
 
-The steps bellow are **required** even for the example app of this repository:
+After this, you may compile your application:
 
-1. Download and extract the AR binaries from Situm (TODO: link).
-2. Populate the following directories (TODO: automatize):
-    - example/android/unityExport/libs/
-    - example/android/unityExport/src/
-3. Run your app.
+```shell
+flutter run
+```
 
-Only for plugin development:
+> [!NOTE]  
+> We have disabled the AR functionality in Android due to bad performance in low end devices. You'll still need to compile for Android, but you'll not be able to see it working. We'll fix this in a latter version.
 
-1. Install Android NDK version `23.1.7779620` and CMAKE (if necessary).
-2. You probably will need to install
-   the [IL2CPP command tool](https://unity.com/releases/editor/qa/lts-releases?major_version=&minor_version=&version=&page=0)
-   adapted to your development environment.
+### Integrate the ARWidget in your app:
+
+We assume that you already have an application that uses Situm SDK. You may build one by following our [Quickstart Guide for Flutter](https://situm.com/docs/05-a-basic-flutter-app/).
+
+In your application, you'll need to wrap your **MapView** widget inside the **ARWidget**. This way, the user will be presented with the **MapView**, and upon clicking on an "AR button" (only visible on dynamic navigation), the **ARWidget** will appear on the screen.
+
+Here's an example of how to do it:
+
+```dart
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: ARWidget(
+        buildingIdentifier: buildingIdentifier,
+        onCreated: onUnityViewCreated,
+        onPopulated: onUnityViewPopulated,
+        onDisposed: onUnityViewDisposed,
+        arHeightRatio: 0.999,
+        mapView: MapView(
+          key: const Key("situm_map"),
+          configuration: MapViewConfiguration(
+            // Your Situm credentials.
+            // Copy config.dart.example if you haven't already.
+            situmApiKey: situmApiKey,
+            // Set your building identifier:
+            buildingIdentifier: buildingIdentifier,
+            viewerDomain: "https://map-viewer.situm.com",
+            apiDomain: "https://dashboard.situm.com",
+            remoteIdentifier: remoteIdentifier,
+            persistUnderlyingWidget: true,
+          ),
+          onLoad: onMapViewLoad,
+        ),
+      ),
+    );
+  }
+```
+
+Then, you'll also need to forward certain events from the Situm SDK to the AR Plugin:
+
+```dart
+@override
+  void initState() {
+    super.initState();
+    //Init Situm SDK
+    var sdk = SitumSdk();
+    sdk.init(null, situmApiKey);
+
+    // Location:
+    sdk.onLocationUpdate((location) {
+      //...
+      arController.setLocation(location);
+    });
+
+    // Navigation:
+    sdk.onNavigationCancellation(() {
+      //...
+      arController.setNavigationCancelled();
+    });
+
+    sdk.onNavigationDestinationReached(() {
+      //...
+      arController.setNavigationDestinationReached();
+    });
+
+    sdk.onNavigationOutOfRoute(() {
+      //...
+      arController.setNavigationOutOfRoute();
+    });
+
+    sdk.onNavigationProgress((progress) {
+      //...
+      arController.setNavigationProgress(progress);
+    });
+
+    sdk.onNavigationStart((route) {
+      //...
+      arController.setNavigationStart(route);
+    });
+
+    //...
+
+    startPositioning();
+  }
+```
+
+Also, you'll need to make sure that the AR Plugin can interact with the **MapView**:
+
+```dart
+ void onMapViewLoad(MapViewController controller) {
+
+    //...
+
+    arController.onMapViewLoad(controller);
+    controller.onPoiSelected((poiSelectedResult) {
+      arController.setSelectedPoi(poiSelectedResult.poi);
+    });
+  }
+```
+
+Finally, you'll need to ask for the Camera permissions (additionally to the [ones needed by Situm Flutter SDK](https://situm.com/docs/05-a-basic-flutter-app/)). Here's an [example](https://github.com/situmtech/flutter-ar/blob/3e28e0e3968547ef5a63175c1255e0ca7ca86a09/example/lib/main.dart#L148) on how we do it.
 
 ## Versioning
 
-Please refer to [CHANGELOG.md](TODO link) for a list of notable changes for each version of the
+Please refer to [CHANGELOG.md](./CHANGELOG.md) for a list of notable changes for each version of the
 plugin.
 
 You can also see the [tags on this repository](./tags).

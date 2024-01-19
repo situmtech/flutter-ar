@@ -1,3 +1,3 @@
-## 0.0.1
+## 0.0.1 - January 19, 2024
 
-* TODO: Describe initial release.
+- Initial version of the Flutter AR plugin.
