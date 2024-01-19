@@ -86,11 +86,26 @@ flutter run
    include ':unityExport'
    include ':unityExport:xrmanifest.androidlib'
    ```
-3. Add the following permission to the `<your_flutter_project>/android/app/src/main/AndroidManifest.xml` file:
+3. Complete your `<your_flutter_project>/android/build.gradle` using the following indications:
+   ```groovy
+   //...
+   allprojects {
+     repositories {
+       // You may already have these three ones:
+       google()
+       mavenCentral()
+       maven { url "https://repo.situm.es/artifactory/libs-release-local" }
+       // Add this:
+       flatDir {
+         dirs "${project(':unityExport').projectDir}/libs"
+       }
+     }
+   ```
+4. Add the following permission to the `<your_flutter_project>/android/app/src/main/AndroidManifest.xml` file:
    ```shell
    <uses-permission android:name="android.permission.WAKE_LOCK"/>
    ```
-4. Add this line to your `gradle.properties` file:
+5. Add this line to your `gradle.properties` file:
    ```properties
     unityStreamingAssets=.unity3d, google-services-desktop.json, google-services.json, GoogleService-Info.plist
    ```
@@ -108,9 +123,9 @@ flutter run
 
 We assume that you already have an application that uses Situm SDK. You may build one by following our [Quickstart Guide for Flutter](https://situm.com/docs/05-a-basic-flutter-app/).
 
-In your application, you'll need to wrap your **MapView** widget inside the **ARWidget**. This way, the user will be presented with the **MapView**, and upon clicking on an "AR button" (only visible on dynamic navigation), the **ARWidget** will appear on the screen.
+The [example app of this repository](./example/lib/main.dart) contains a complete example on how to integrate the AR plugin. Nonetheless the main steps are described below.
 
-Here's an example of how to do it:
+First of all, you'll need to wrap your **MapView** widget inside the **ARWidget**. This way, the user will be presented with the **MapView**, and upon clicking on an "AR button" (only visible on dynamic navigation), the **ARWidget** will appear on the screen.
 
 ```dart
   @override
