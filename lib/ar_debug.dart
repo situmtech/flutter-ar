@@ -7,6 +7,8 @@ const JUMP_TH = 4.0;
 const WALKED_TH = 7.0;
 const NO_HAS_BEARING_TH = 3;
 
+const ENJOY_REFRESS_DATA = 1000;
+
 const EXPLORATION_REFRESS_DATA = 5;
 const EXPLORATION_DISTANCE_LIMIT_DATA = 5.0;
 const EXPLORATION_ANGLE_LIMIT_DATA = 30;
@@ -46,6 +48,9 @@ class ARModeDebugValues {
 
   // Value Notifiers to listen changes in unity params
 
+  static ValueNotifier<int> enjoyRefreshData =
+  ValueNotifier<int>(ENJOY_REFRESS_DATA);
+
   static ValueNotifier<int> explorationRefreshData =
       ValueNotifier<int>(EXPLORATION_REFRESS_DATA);
   static ValueNotifier<double> explorationDistanceLimitData =
@@ -74,6 +79,13 @@ class ARModeDebugValues {
 
   static ARModeUnityParams getUnityParamsForMode(ARMode arMode) {
     switch (arMode) {
+      case ARMode.enjoy:
+        return ARModeUnityParams(
+            enjoyRefreshData.value,
+            explorationDistanceLimitData.value,
+            explorationAngleLimitData.value,
+            explorationAccuracyLimitDada.value,
+            explorationCameraLimit.value);
       case ARMode.relaxed:
         return ARModeUnityParams(
             explorationRefreshData.value,

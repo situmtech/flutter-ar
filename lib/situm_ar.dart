@@ -67,6 +67,7 @@ class _ARWidgetState extends State<ARWidget> {
         MediaQuery.of(context).size.height * (1 - widget.arHeightRatio);
     var mapHeightFullMode = MediaQuery.of(context).size.height;
 
+    ARController arController = ARController();
     // Use this stack to show a debug FAB button:
     // return Stack(
     //   children: [
@@ -92,10 +93,14 @@ class _ARWidgetState extends State<ARWidget> {
                     arController.onArGone();
                   }),
                   // TODO: select ambience by zone? To decide.
-                  _AmbienceSelector(onAmbienceSelected: (int ambience) {
-                    ARController arController = ARController();
-                    arController._selectAmbience(ambience);
-                  }),
+                  _AmbienceSelector(
+                    onAmbienceSelected: (int ambience) {
+                      arController._selectAmbience(ambience);
+                    },
+                    onEnjoyToggle: (enjoySelected) {
+                      arController._setEnjoyMode(enjoySelected);
+                    },
+                  ),
                 ],
               ),
             ),
@@ -316,7 +321,7 @@ class ARController {
   void setNavigationCancelled() {
     if (_unityViewController != null) {
       _unityViewController?.send("MessageManager", "CancelRoute", "null");
-      _arModeManager?.updateARMode(NavigationStatus.finished);
+      _arModeManager?.updateWithNavigationStatus(NavigationStatus.finished);
     } else {
       _navigationPendingAction = () => setNavigationCancelled();
     }
@@ -325,7 +330,7 @@ class ARController {
   void setNavigationDestinationReached() {
     if (_unityViewController != null) {
       _unityViewController?.send("MessageManager", "SendRouteEnd", "null");
-      _arModeManager?.updateARMode(NavigationStatus.finished);
+      _arModeManager?.updateWithNavigationStatus(NavigationStatus.finished);
     } else {
       _navigationPendingAction = () => setNavigationDestinationReached();
     }
@@ -348,7 +353,7 @@ class ARController {
     if (_unityViewController != null) {
       _unityViewController?.send(
           "MessageManager", "SendRoute", jsonEncode(route.rawContent));
-      _arModeManager?.updateARMode(NavigationStatus.started);
+      _arModeManager?.updateWithNavigationStatus(NavigationStatus.started);
     } else {
       _navigationPendingAction = () => setNavigationStart(route);
     }
@@ -388,5 +393,17 @@ class ARController {
   void _selectAmbience(int ambience) {
     _unityViewController?.send(
         "MessageManager", "SendOnAmbienceZoneEnter", "$ambience");
+  }
+
+  void _setEnjoyMode(bool enjoySelected) {
+    if (enjoySelected) {
+      _unityViewController?.send(
+          "MessageManager", "SendHideRouteElements", "null");
+      _arModeManager?.setARMode(ARMode.enjoy);
+    } else {
+      _unityViewController?.send(
+          "MessageManager", "SendShowRouteElements", "null");
+      _arModeManager?.switchToPreviousMode();
+    }
   }
 }

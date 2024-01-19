@@ -97,10 +97,12 @@ Widget _createTempBackButton(VoidCallback onPressed) {
 
 class _AmbienceSelector extends StatefulWidget {
   final Function(int ambience) onAmbienceSelected;
+  final Function(bool enjoyEnabled) onEnjoyToggle;
 
   const _AmbienceSelector({
     super.key,
     required this.onAmbienceSelected,
+    required this.onEnjoyToggle,
   });
 
   @override
@@ -109,8 +111,10 @@ class _AmbienceSelector extends StatefulWidget {
 
 class _AmbienceSelectorState extends State<_AmbienceSelector> {
   int _selectedOption = 0;
+  final List<bool> _enjoySelected = [false];
+
   static const ambiences = {
-    0: 'Disabled',
+    0: 'No ambience',
     1: 'Desert',
     2: 'Oasis',
     3: 'City',
@@ -123,39 +127,92 @@ class _AmbienceSelectorState extends State<_AmbienceSelector> {
       alignment: Alignment.bottomRight,
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: PopupMenuButton<int>(
-          onSelected: (int value) {
-            setState(() {
-              _selectedOption = value;
-              widget.onAmbienceSelected.call(value);
-            });
-          },
-          itemBuilder: (BuildContext context) => [
-            ...ambiences.entries.map(
-              (e) => PopupMenuItem<int>(
-                value: e.key,
-                child: Text(e.value),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            PopupMenuButton<int>(
+              onSelected: (int value) {
+                setState(() {
+                  _selectedOption = value;
+                  widget.onAmbienceSelected.call(value);
+                  if (value == 0) {
+                    _enjoySelected[0] = false;
+                    widget.onEnjoyToggle(false);
+                  }
+                });
+              },
+              itemBuilder: (BuildContext context) => [
+                ...ambiences.entries.map(
+                  (e) => PopupMenuItem<int>(
+                    value: e.key,
+                    child: Text(e.value.toUpperCase()),
+                  ),
+                ),
+              ],
+              child: ElevatedButton(
+                onPressed: null,
+                style: ButtonStyle(
+                  fixedSize: MaterialStateProperty.all<Size>(
+                    const Size.fromHeight(55.0),
+                  ),
+                  foregroundColor: MaterialStateProperty.all<Color>(
+                    Colors.white,
+                  ),
+                  backgroundColor: MaterialStateProperty.all<Color>(
+                    Colors.grey.withOpacity(0.80),
+                  ),
+                  shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+                    RoundedRectangleBorder(
+                      borderRadius: BorderRadius.only(
+                          topLeft: const Radius.circular(10.0),
+                          topRight: const Radius.circular(10.0),
+                          bottomLeft: const Radius.circular(10.0),
+                          bottomRight:
+                              Radius.circular(_selectedOption != 0 ? 0 : 10)),
+                    ),
+                  ),
+                  side: MaterialStateProperty.all<BorderSide>(
+                    const BorderSide(
+                      color: Colors.white,
+                      width: 2,
+                    ),
+                  ),
+                ),
+                child: Text(ambiences[_selectedOption]!.toUpperCase()),
               ),
             ),
-          ],
-          child: ElevatedButton(
-            onPressed: null,
-            style: ButtonStyle(
-              foregroundColor: MaterialStateProperty.all<Color>(
-                Colors.white,
-              ),
-              backgroundColor: MaterialStateProperty.all<Color>(
-                Colors.grey.withOpacity(0.8),
-              ),
-              side: MaterialStateProperty.all<BorderSide>(
-                BorderSide(
-                  color: Colors.white.withOpacity(0.6),
-                  width: 3.0,
+            Visibility(
+              visible: _selectedOption != 0,
+              child: SizedBox(
+                height: 34,
+                child: ToggleButtons(
+                  onPressed: (int index) {
+                    setState(() {
+                      if (_selectedOption != 0) {
+                        _enjoySelected[index] = !_enjoySelected[index];
+                        widget.onEnjoyToggle(_enjoySelected[index]);
+                      }
+                    });
+                  },
+                  borderWidth: 2,
+                  color: Colors.white,
+                  fillColor: Colors.green[400],
+                  selectedColor: Colors.white,
+                  borderColor: Colors.white,
+                  selectedBorderColor: Colors.white,
+                  borderRadius: const BorderRadius.only(
+                    topRight: Radius.circular(8.0),
+                    bottomRight: Radius.circular(8.0),
+                  ),
+                  isSelected: _enjoySelected,
+                  children: [
+                    Text("Enjoy".toUpperCase()),
+                  ],
                 ),
               ),
             ),
-            child: Text("Ambience: ${ambiences[_selectedOption]!}"),
-          ),
+          ],
         ),
       ),
     );
