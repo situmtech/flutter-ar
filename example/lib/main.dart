@@ -2,10 +2,10 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:situm_flutter_ar/ar.dart';
 import 'package:situm_ar_example/config.dart';
 import 'package:situm_flutter/sdk.dart';
 import 'package:situm_flutter/wayfinding.dart';
+import 'package:situm_flutter_ar/ar.dart';
 
 void main() => runApp(const NavigationBarApp());
 
@@ -97,26 +97,27 @@ class _NavigationBaseState extends State<NavigationBase> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: ARWidget(
-        buildingIdentifier: buildingIdentifier,
-        onCreated: onUnityViewCreated,
-        onPopulated: onUnityViewPopulated,
-        onDisposed: onUnityViewDisposed,
-        arHeightRatio: 0.999,
-        mapView: MapView(
-          key: const Key("situm_map"),
-          configuration: MapViewConfiguration(
-            // Your Situm credentials.
-            // Copy config.dart.example if you haven't already.
-            situmApiKey: situmApiKey,
-            // Set your building identifier:
-            buildingIdentifier: buildingIdentifier,
-            viewerDomain: "https://map-viewer.situm.com",
-            apiDomain: "https://dashboard.situm.com",
-            remoteIdentifier: remoteIdentifier,
-            persistUnderlyingWidget: true,
+      body: SafeArea(
+        child: ARWidget(
+          buildingIdentifier: buildingIdentifier,
+          onCreated: onUnityViewCreated,
+          onPopulated: onUnityViewPopulated,
+          onDisposed: onUnityViewDisposed,
+          mapView: MapView(
+            key: const Key("situm_map"),
+            configuration: MapViewConfiguration(
+              // Your Situm credentials.
+              // Copy config.dart.example if you haven't already.
+              situmApiKey: situmApiKey,
+              // Set your building identifier:
+              buildingIdentifier: buildingIdentifier,
+              viewerDomain: "https://map-viewer.situm.com",
+              apiDomain: "https://dashboard.situm.com",
+              remoteIdentifier: remoteIdentifier,
+              persistUnderlyingWidget: true,
+            ),
+            onLoad: onMapViewLoad,
           ),
-          onLoad: onMapViewLoad,
         ),
       ),
     );
