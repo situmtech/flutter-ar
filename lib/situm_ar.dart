@@ -26,11 +26,15 @@ class ARWidget extends StatefulWidget {
 }
 
 class _ARWidgetState extends State<ARWidget> {
+  ARController arController = ARController();
   UnityViewController? unityViewController;
   bool mapViewLoaded = false;
   bool isArVisible = false;
   bool isArAvailable = false;
+  bool isMapCollapsed = false;
   ARDebugUI debugUI = ARDebugUI();
+  ScrollController scrollController = ScrollController();
+  static const Duration animationDuration = Duration(milliseconds: 200);
 
   @override
   void initState() {
@@ -41,7 +45,8 @@ class _ARWidgetState extends State<ARWidget> {
   @override
   Widget build(BuildContext context) {
     // Create the AR widget:
-    var unityView = Platform.isIOS
+    // TODO: uncomment! ########################################################
+    var unityView = true //Platform.isIOS
         ? UnityView(
             onCreated: (controller) => onUnityViewCreated(context, controller),
             onReattached: onUnityViewReattached,
@@ -61,87 +66,98 @@ class _ARWidgetState extends State<ARWidget> {
     // Else integrate AR and MapView:
     assert(widget.arHeightRatio >= 0 && widget.arHeightRatio <= 1,
         'arHeightRatio must be a value between 0 and 1');
-    var mapView = widget.mapView!;
-    var arHeight = MediaQuery.of(context).size.height * widget.arHeightRatio;
-    var mapHeightARMode =
-        MediaQuery.of(context).size.height * (1 - widget.arHeightRatio);
-    var mapHeightFullMode = MediaQuery.of(context).size.height;
-
-    ARController arController = ARController();
-    // Use this stack to show a debug FAB button:
-    // return Stack(
-    //   children: [
     return Stack(
       children: [
-        // AR view:
+        // ============== AR view ==============================================
         Visibility(
           visible: mapViewLoaded,
-          child: Align(
-            alignment: Alignment.topCenter,
-            child: SizedBox(
-              height: arHeight,
-              child: Stack(
-                children: [
-                  unityView,
-                  // TODO: fix this:
-                  //...debugUI.createAlertVisibilityParamsDebugWidgets(),
-                  //...debugUI.createUnityParamsDebugWidgets(),
-                  _ARPosQuality(onCreate: onARPosQuality),
-                  // TODO: fix at Unity (message not being received):
-                  _createTempBackButton(() {
-                    ARController arController = ARController();
-                    arController.onArGone();
-                  }),
-                  // TODO: select ambience by zone? To decide.
-                  _AmbienceSelector(
-                    onAmbienceSelected: (int ambience) {
-                      arController._selectAmbience(ambience);
-                    },
-                    onEnjoyToggle: (enjoySelected) {
-                      arController._setEnjoyMode(enjoySelected);
-                    },
-                  ),
-                ],
+          child: Stack(
+            children: [
+              unityView,
+              // TODO: fix this:
+              //...debugUI.createAlertVisibilityParamsDebugWidgets(),
+              //...debugUI.createUnityParamsDebugWidgets(),
+              _ARPosQuality(onCreate: onARPosQuality),
+              // TODO: fix at Unity (message not being received):
+              _createTempBackButton(() {
+                arController.onArGone();
+              }),
+              // TODO: select ambience by zone? To decide.
+              _AmbienceSelector(
+                onAmbienceSelected: (int ambience) {
+                  arController._selectAmbience(ambience);
+                },
+                onEnjoyToggle: (enjoySelected) {
+                  arController._setEnjoyMode(enjoySelected);
+                },
               ),
-            ),
+            ],
           ),
         ),
-        // MapView:
+        // ============== MapView ==============================================
         Align(
           alignment: Alignment.bottomCenter,
           child: AnimatedSize(
-            duration: const Duration(milliseconds: 50),
+            duration: animationDuration,
+            child: LayoutBuilder(
+              // Let us know about the container's height.
+              builder: (BuildContext context, BoxConstraints constraints) {
+                double visibleMapHeight = isArVisible
+                    // If the AR is visible, make the MapView height depend on the
+                    // state collapsed/expanded:
+                    ? (isMapCollapsed
+                        ? 0
+                        : constraints.maxHeight * (1 - widget.arHeightRatio))
+                    // If the AR is not visible, make the MapView full height:
+                    : constraints.maxHeight;
+
+                return AbsorbPointer(
+                  absorbing: isArVisible,
+                  child: SizedBox(
+                    // Add SizedBox to set the "visible map" height.
+                    height: visibleMapHeight,
+                    child: SingleChildScrollView(
+                      // Add ScrollView to center the map: TODO fix MapView resizing on iOS.
+                      controller: scrollController,
+                      physics: const NeverScrollableScrollPhysics(),
+                      child: SizedBox(
+                        // Set the map height equals to the container.
+                        height: constraints.maxHeight,
+                        child: widget.mapView!,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+        // ============== Expand/collapse AR ===================================
+        Align(
+          alignment: Alignment.bottomCenter,
+          child: AnimatedOpacity(
+            opacity: isArVisible ? 1 : 0,
+            duration: animationDuration,
             child: SizedBox(
-              height: isArVisible ? mapHeightARMode : mapHeightFullMode,
-              child: mapView,
+              height: 32,
+              width: 32,
+              child: FloatingActionButton(
+                onPressed: () {
+                  setState(() {
+                    isMapCollapsed = !isMapCollapsed;
+                  });
+                },
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black54,
+                child: isMapCollapsed
+                    ? const Icon(Icons.add)
+                    : const Icon(Icons.remove),
+              ),
             ),
           ),
         ),
       ],
     );
-    //     Visibility(
-    //       visible: true,
-    //       child: Align(
-    //         alignment: Alignment.bottomRight,
-    //         child: FloatingActionButton(
-    //           onPressed: () {
-    //             setState(() {
-    //               isArVisible = !isArVisible;
-    //               var arController = ARController();
-    //               if (isArVisible) {
-    //                 arController.onArRequested();
-    //               } else {
-    //                 arController.onArGone();
-    //               }
-    //             });
-    //           },
-    //           child: Icon(
-    //               isArVisible ? Icons.map_outlined : Icons.camera_outlined),
-    //         ),
-    //       ),
-    //     ),
-    //   ],
-    // );
   }
 
   void onUnityViewCreated(
@@ -159,7 +175,6 @@ class _ARWidgetState extends State<ARWidget> {
       debugPrint("Situm> AR> indoorPOIs array has been sent.");
       widget.onPopulated.call();
     });
-    var arController = ARController(); // Initialize/update (singleton).
     arController._onUnityViewController(controller);
     debugUI.controller = controller;
     arController.updateUnityModeParams(ARMode.relaxed);
@@ -183,7 +198,6 @@ class _ARWidgetState extends State<ARWidget> {
   void onUnityViewMessage(UnityViewController? controller, String? message) {
     debugPrint("Situm> AR> MESSAGE! $message");
     if (message == "BackButtonTouched") {
-      ARController arController = ARController();
       arController.onArGone();
     }
   }
@@ -193,7 +207,6 @@ class _ARWidgetState extends State<ARWidget> {
     super.dispose();
     debugPrint("Situm> AR> dispose()");
     unityViewController?.pause();
-    var arController = ARController();
     arController._onUnityViewController(null);
     arController._onARWidgetState(null);
   }
@@ -201,6 +214,12 @@ class _ARWidgetState extends State<ARWidget> {
   void updateStatusArRequested() {
     setState(() {
       isArVisible = true;
+      isMapCollapsed = false;
+    });
+    Future.delayed(animationDuration, () {
+      // "Center" the MapView into the ScrollView:
+      scrollController
+          .jumpTo(scrollController.position.maxScrollExtent * 2 / 5);
     });
   }
 
@@ -211,7 +230,6 @@ class _ARWidgetState extends State<ARWidget> {
   }
 
   onARPosQuality(_ARPosQualityState state) {
-    var arController = ARController();
     arController._onARPosQualityState(state);
   }
 
@@ -292,6 +310,7 @@ class ARController {
     _widgetState?.updateStatusArRequested();
     wakeup();
     _mapViewController?.updateAugmentedRealityStatus(ARStatus.success);
+    _mapViewController?.followUser();
   }
 
   void onArGone() {
@@ -322,6 +341,7 @@ class ARController {
     if (_unityViewController != null) {
       _unityViewController?.send("MessageManager", "CancelRoute", "null");
       _arModeManager?.updateWithNavigationStatus(NavigationStatus.finished);
+      onArGone();
     } else {
       _navigationPendingAction = () => setNavigationCancelled();
     }
@@ -331,6 +351,7 @@ class ARController {
     if (_unityViewController != null) {
       _unityViewController?.send("MessageManager", "SendRouteEnd", "null");
       _arModeManager?.updateWithNavigationStatus(NavigationStatus.finished);
+      onArGone();
     } else {
       _navigationPendingAction = () => setNavigationDestinationReached();
     }

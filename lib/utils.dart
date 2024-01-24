@@ -207,7 +207,10 @@ class _AmbienceSelectorState extends State<_AmbienceSelector> {
                   ),
                   isSelected: _enjoySelected,
                   children: [
-                    Text("Enjoy".toUpperCase()),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(6, 0, 6, 0),
+                      child: Text("Enjoy".toUpperCase()),
+                    ),
                   ],
                 ),
               ),
