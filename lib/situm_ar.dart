@@ -255,6 +255,10 @@ class ARController {
   // the UnityView#onCreated callback is invoked.
   Function? _navigationPendingAction;
 
+  // Keep resumed state to avoid consecutive calls to "pause" on the UnityView
+  // as it seems to be freezing the AR module on iOS.
+  bool? _resumed;
+
   ARController._() {
     _arModeManager = ARModeManager(arModeChanged);
   }
@@ -307,24 +311,30 @@ class ARController {
   // === Sleep/Wake actions:
 
   void onArRequested() {
-    _widgetState?.updateStatusArRequested();
     wakeup();
+    _widgetState?.updateStatusArRequested();
     _mapViewController?.updateAugmentedRealityStatus(ARStatus.success);
     _mapViewController?.followUser();
   }
 
   void onArGone() {
     _widgetState?.updateStatusArGone();
-    sleep();
     _mapViewController?.updateAugmentedRealityStatus(ARStatus.finished);
+    sleep();
   }
 
   void sleep() {
-    _unityViewController?.pause();
+    if (_resumed == null || _resumed == true) {
+      _unityViewController?.pause();
+      _resumed = false;
+    }
   }
 
   void wakeup() {
-    _unityViewController?.resume();
+    if (_resumed == null || _resumed == false) {
+      _unityViewController?.resume();
+      _resumed = true;
+    }
   }
 
   // === Set of methods to keep the AR module updated regarding position and navigation.
