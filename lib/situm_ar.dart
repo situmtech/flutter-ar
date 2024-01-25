@@ -115,7 +115,6 @@ class _ARWidgetState extends State<ARWidget> {
                   // as it will not animate changes on a child.
                   duration: animationDuration,
                   curve: Curves.decelerate,
-                  // Add SizedBox to set the "visible map" height.
                   height: visibleMapHeight,
                   child: SingleChildScrollView(
                     // Add ScrollView to center the map: TODO fix MapView resizing on iOS.
