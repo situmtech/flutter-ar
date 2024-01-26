@@ -103,6 +103,7 @@ class _NavigationBaseState extends State<NavigationBase> {
           onCreated: onUnityViewCreated,
           onPopulated: onUnityViewPopulated,
           onDisposed: onUnityViewDisposed,
+          debugMode: true,
           mapView: MapView(
             key: const Key("situm_map"),
             configuration: MapViewConfiguration(

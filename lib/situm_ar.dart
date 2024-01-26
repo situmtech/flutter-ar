@@ -7,6 +7,7 @@ class ARWidget extends StatefulWidget {
   final Function onDisposed;
   final MapView? mapView;
   final double arHeightRatio;
+  final bool debugMode;
 
   /// Widget for augmented reality compatible with Situm MapView.
   /// - mapView: Optional MapView, to be integrated with the augmented reality module.
@@ -19,6 +20,7 @@ class ARWidget extends StatefulWidget {
     required this.onDisposed,
     this.mapView,
     this.arHeightRatio = 2 / 3,
+    this.debugMode = false,
   });
 
   @override
@@ -77,7 +79,7 @@ class _ARWidgetState extends State<ARWidget> {
               // TODO: fix this:
               //...debugUI.createAlertVisibilityParamsDebugWidgets(),
               //...debugUI.createUnityParamsDebugWidgets(),
-              _ARPosQuality(onCreate: onARPosQuality),
+              _ARPosQuality(onCreate: _onARPosQuality),
               // TODO: fix at Unity (message not being received):
               _createTempBackButton(() {
                 arController.onArGone();
@@ -155,6 +157,13 @@ class _ARWidgetState extends State<ARWidget> {
             ),
           ),
         ),
+        widget.debugMode
+            ? _createDebugModeSwitchButton(() {
+                isArVisible
+                    ? arController.onArGone()
+                    : arController.onArRequested();
+              })
+            : const SizedBox(),
       ],
     );
   }
@@ -228,7 +237,7 @@ class _ARWidgetState extends State<ARWidget> {
     });
   }
 
-  onARPosQuality(_ARPosQualityState state) {
+  _onARPosQuality(_ARPosQualityState state) {
     arController._onARPosQualityState(state);
   }
 
@@ -314,6 +323,11 @@ class ARController {
     _widgetState?.updateStatusArRequested();
     _mapViewController?.updateAugmentedRealityStatus(ARStatus.success);
     _mapViewController?.followUser();
+    Future.delayed(_ARWidgetState.animationDuration, () {
+      // Repeat the call to followUser after the animation, as it seems possible
+      // to move the map during that time interval.
+      _mapViewController?.followUser();
+    });
   }
 
   void onArGone() {

@@ -95,6 +95,21 @@ Widget _createTempBackButton(VoidCallback onPressed) {
       ));
 }
 
+Widget _createDebugModeSwitchButton(VoidCallback onPressed) {
+  return Align(
+    alignment: Alignment.bottomLeft,
+    child: SizedBox(
+      height: 32,
+      width: 32,
+      child: FloatingActionButton(
+          onPressed: onPressed,
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black54,
+          child: const Icon(Icons.camera_outlined)),
+    ),
+  );
+}
+
 class _AmbienceSelector extends StatefulWidget {
   final Function(int ambience) onAmbienceSelected;
   final Function(bool enjoyEnabled) onEnjoyToggle;
