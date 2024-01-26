@@ -2,6 +2,7 @@ part of 'ar.dart';
 
 class ARWidget extends StatefulWidget {
   final String buildingIdentifier;
+  final String apiDomain;
   final Function() onCreated;
   final Function() onPopulated;
   final Function onDisposed;
@@ -10,8 +11,11 @@ class ARWidget extends StatefulWidget {
   final bool debugMode;
 
   /// Widget for augmented reality compatible with Situm MapView.
+  /// - buildingIdentifier: The building that will be loaded.
   /// - mapView: Optional MapView, to be integrated with the augmented reality module.
   /// - arHeightRatio: Screen ratio (from 0 to 1) that the augmented reality view will occupy.
+  /// - apiDomain: A String parameter that allows you to choose the API you will be retrieving
+  /// our cartography from. Default is https://dashboard.situm.com.
   const ARWidget({
     super.key,
     required this.buildingIdentifier,
@@ -21,6 +25,7 @@ class ARWidget extends StatefulWidget {
     this.mapView,
     this.arHeightRatio = 2 / 3,
     this.debugMode = false,
+    this.apiDomain = "https://dashboard.situm.com",
   });
 
   @override
@@ -37,18 +42,19 @@ class _ARWidgetState extends State<ARWidget> {
   ARDebugUI debugUI = ARDebugUI();
   ScrollController scrollController = ScrollController();
   static const Duration animationDuration = Duration(milliseconds: 200);
+  late String apiDomain;
 
   @override
   void initState() {
     super.initState();
+    apiDomain = _validateApiDomain(widget.apiDomain);
     ARController()._onARWidgetState(this);
   }
 
   @override
   Widget build(BuildContext context) {
     // Create the AR widget:
-    // TODO: uncomment! ########################################################
-    var unityView = true //Platform.isIOS
+    var unityView = Platform.isIOS
         ? UnityView(
             onCreated: (controller) => onUnityViewCreated(context, controller),
             onReattached: onUnityViewReattached,
@@ -174,13 +180,15 @@ class _ARWidgetState extends State<ARWidget> {
     unityViewController = controller;
     var sdk = SitumSdk();
     sdk.fetchBuildingInfo(widget.buildingIdentifier).then((buildingInfo) {
+      controller?.send("MessageManager", "SendContentUrl", apiDomain);
       var buildingInfoMap = buildingInfo.toMap();
       controller?.send(
           "MessageManager", "SendBuildingInfo", jsonEncode(buildingInfoMap));
       debugPrint("Situm> AR> BuildingInfo has been sent.");
       var poisMap = buildingInfoMap["indoorPOIs"];
       controller?.send("MessageManager", "SendPOIs", jsonEncode(poisMap));
-      debugPrint("Situm> AR> indoorPOIs array has been sent.");
+      debugPrint(
+          "Situm> AR> indoorPOIs array has been sent. API DOMAIN IS $apiDomain");
       widget.onPopulated.call();
     });
     arController._onUnityViewController(controller);

@@ -100,6 +100,7 @@ class _NavigationBaseState extends State<NavigationBase> {
       body: SafeArea(
         child: ARWidget(
           buildingIdentifier: buildingIdentifier,
+          apiDomain: apiDomain,
           onCreated: onUnityViewCreated,
           onPopulated: onUnityViewPopulated,
           onDisposed: onUnityViewDisposed,
@@ -112,8 +113,8 @@ class _NavigationBaseState extends State<NavigationBase> {
               situmApiKey: situmApiKey,
               // Set your building identifier:
               buildingIdentifier: buildingIdentifier,
-              viewerDomain: "https://map-viewer.situm.com",
-              apiDomain: "https://dashboard.situm.com",
+              viewerDomain: viewerDomain,
+              apiDomain: apiDomain,
               remoteIdentifier: remoteIdentifier,
               persistUnderlyingWidget: true,
             ),

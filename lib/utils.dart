@@ -236,3 +236,18 @@ class _AmbienceSelectorState extends State<_AmbienceSelector> {
     );
   }
 }
+
+String _validateApiDomain(String apiDomain) {
+  if (!apiDomain.startsWith('http://') && !apiDomain.startsWith('https://')) {
+    apiDomain = 'https://$apiDomain';
+  }
+  Uri? uri = Uri.tryParse(apiDomain);
+  if (uri == null || !uri.isAbsolute) {
+    throw ArgumentError(
+        'Incorrect configuration: apiDomain ($apiDomain) must be a valid URL.');
+  }
+  if (apiDomain.endsWith("/")) {
+    apiDomain = apiDomain.substring(0, apiDomain.length - 1);
+  }
+  return apiDomain;
+}
