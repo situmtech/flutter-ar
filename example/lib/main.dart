@@ -35,7 +35,9 @@ class _NavigationBaseState extends State<NavigationBase> {
   void initState() {
     super.initState();
     var sdk = SitumSdk();
-    sdk.init(null, situmApiKey);
+    sdk.init();
+    sdk.setDashboardURL(apiDomain);
+    sdk.setApiKey(situmApiKey);
 
     // Location:
     sdk.onLocationUpdate((location) {
