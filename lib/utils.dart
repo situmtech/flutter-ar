@@ -95,6 +95,21 @@ Widget _createTempBackButton(VoidCallback onPressed) {
       ));
 }
 
+Widget _createDebugModeSwitchButton(VoidCallback onPressed) {
+  return Align(
+    alignment: Alignment.bottomLeft,
+    child: SizedBox(
+      height: 32,
+      width: 32,
+      child: FloatingActionButton(
+          onPressed: onPressed,
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black54,
+          child: const Icon(Icons.camera_outlined)),
+    ),
+  );
+}
+
 class _AmbienceSelector extends StatefulWidget {
   final Function(int ambience) onAmbienceSelected;
   final Function(bool enjoyEnabled) onEnjoyToggle;
@@ -207,7 +222,10 @@ class _AmbienceSelectorState extends State<_AmbienceSelector> {
                   ),
                   isSelected: _enjoySelected,
                   children: [
-                    Text("Enjoy".toUpperCase()),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(6, 0, 6, 0),
+                      child: Text("Enjoy".toUpperCase()),
+                    ),
                   ],
                 ),
               ),
@@ -217,4 +235,19 @@ class _AmbienceSelectorState extends State<_AmbienceSelector> {
       ),
     );
   }
+}
+
+String _validateApiDomain(String apiDomain) {
+  if (!apiDomain.startsWith('http://') && !apiDomain.startsWith('https://')) {
+    apiDomain = 'https://$apiDomain';
+  }
+  Uri? uri = Uri.tryParse(apiDomain);
+  if (uri == null || !uri.isAbsolute) {
+    throw ArgumentError(
+        'Incorrect configuration: apiDomain ($apiDomain) must be a valid URL.');
+  }
+  if (apiDomain.endsWith("/")) {
+    apiDomain = apiDomain.substring(0, apiDomain.length - 1);
+  }
+  return apiDomain;
 }
