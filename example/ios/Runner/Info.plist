@@ -53,6 +53,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-    
+    <key>WKAppBoundDomains</key>
+    <array>
+      <string>map-viewer.situm.com</string>
+    </array>
 </dict>
 </plist>
