@@ -58,7 +58,7 @@ class _ARWIPScreenState extends State<_ARWIPScreen> {
             ),
             SizedBox(height: 20.0),
             Text(
-              'AR for Android coming soon',
+              'AR for Android coming soon!!',
               style: TextStyle(fontSize: 18.0),
             ),
           ],

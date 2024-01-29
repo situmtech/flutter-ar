@@ -54,18 +54,19 @@ class _ARWidgetState extends State<ARWidget> {
   @override
   Widget build(BuildContext context) {
     // Create the AR widget:
-    var unityView = Platform.isIOS
-        ? UnityView(
-            onCreated: (controller) => onUnityViewCreated(context, controller),
-            onReattached: onUnityViewReattached,
-            onMessage: onUnityViewMessage,
-          )
-        // TODO: temp, remove when we are happy with Android.
-        : _ARWIPScreen(
-            onBackButtonPressed: () =>
-                {onUnityViewMessage(null, "BackButtonTouched")},
-            onWidgetCreated: () => {onUnityViewCreated(context, null)},
-          );
+    var unityView = //true //Platform.isIOS
+        //?
+        UnityView(
+      onCreated: (controller) => onUnityViewCreated(context, controller),
+      onReattached: onUnityViewReattached,
+      onMessage: onUnityViewMessage,
+    );
+    // TODO: temp, remove when we are happy with Android.
+    // : _ARWIPScreen(
+    //     onBackButtonPressed: () =>
+    //         {onUnityViewMessage(null, "BackButtonTouched")},
+    //     onWidgetCreated: () => {onUnityViewCreated(context, null)},
+    //   );
 
     // If there is not a MapView, return it immediately:
     if (widget.mapView == null) {
@@ -84,7 +85,8 @@ class _ARWidgetState extends State<ARWidget> {
               unityView,
               // TODO: fix this:
               //...debugUI.createAlertVisibilityParamsDebugWidgets(),
-              //...debugUI.createUnityParamsDebugWidgets(),
+              ...debugUI.createUnityParamsDebugWidgets(),
+              ...debugUI.createDynamicUnityParamsWidgets(),
               _ARPosQuality(onCreate: _onARPosQuality),
               // TODO: fix at Unity (message not being received):
               _createTempBackButton(() {
@@ -366,6 +368,12 @@ class ARController {
     _unityViewController?.send(
         "MessageManager", "SendLocation", jsonEncode(locationMap));
     _arPosQualityState?.updateLocation(location);
+    if (_arModeManager?.arMode == ARMode.dynamic &&
+        _arPosQualityState != null) {
+      ARModeUnityParams dynamicParams =
+          _arPosQualityState!.getDynamicARParams();
+      _setARModeParams(dynamicParams);
+    }
   }
 
   void setNavigationCancelled() {

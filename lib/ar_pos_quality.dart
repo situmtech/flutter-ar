@@ -27,6 +27,16 @@ class _ARPosQualityState extends State<_ARPosQuality> {
 
   bool showARAlertWidget = true;
 
+  int refreshData = 1;
+  double distanceLimitData = 3;
+  int angleLimitData = 30; //TODO: Degrees or radians?
+  int accuracyLimitData = 10;
+  double cameraLimit = 10.0;
+  bool hasToRefresh = true;
+  int waitToRefreshTimer = 0;
+  int keepRefreshingTimer = 0;
+  double yawDiffStd = 0;
+
   @override
   void initState() {
     super.initState();
@@ -92,6 +102,9 @@ class _ARPosQualityState extends State<_ARPosQuality> {
       converged = _enoughARQuality(sdkLocations);
       hasWalked = _enoughARMovement(sdkLocations);
     }
+
+    updateDynamicARParams(sdkLocations);
+
     if (!converged) {
       userNeedsToWalk = true;
     }
@@ -115,18 +128,110 @@ class _ARPosQualityState extends State<_ARPosQuality> {
 
     ARModeDebugValues.debugVariables.value = """
         Locations Number: ${sdkLocations.length} 
-        ----
-        AvgLocAccuracy: ${avgLocAccuracy.toStringAsFixed(1)} Th: ${ARModeDebugValues.accuracyThreshold.value.toStringAsFixed(1)}
-        NoHasBearings: $countNoHasBearings Th: ${ARModeDebugValues.noHasBearingThreshold.value}
         Walked: ${distanceWalked.toStringAsFixed(1)} Th: ${ARModeDebugValues.walkedThreshold.value.toStringAsFixed(1)}
-        MaxJump: ${biggestJump.toStringAsFixed(1)} Th: ${ARModeDebugValues.jumpThreshold.value.toStringAsFixed(1)}
+        ----
+        yawDiffStd: $yawDiffStd,
+        Dynamic params:
+         refreshData: $refreshData, 
+         distanceLimitData: $distanceLimitData, 
+         hasToRefresh: $hasToRefresh,
+         waitToRefreshTimer: $waitToRefreshTimer,
+         keepRefreshingTimer: $keepRefreshingTimer,
         ---
-        Converged (good loc acc & hasBearing): $converged
-        HasWalked (walked & no jumps): $hasWalked
-        UserNeedsToWalk (hasWalked & still converged): $userNeedsToWalk
-        ---
-        GoodARQuality (converged & !userNeedsToWalk): $goodARQuality
+        accuracyLimitData: $accuracyLimitData
         """;
+    // ARModeDebugValues.debugVariables.value = """
+    //     Locations Number: ${sdkLocations.length}
+    //     ----
+    //     AvgLocAccuracy: ${avgLocAccuracy.toStringAsFixed(1)} Th: ${ARModeDebugValues.accuracyThreshold.value.toStringAsFixed(1)}
+    //     NoHasBearings: $countNoHasBearings Th: ${ARModeDebugValues.noHasBearingThreshold.value}
+    //     Walked: ${distanceWalked.toStringAsFixed(1)} Th: ${ARModeDebugValues.walkedThreshold.value.toStringAsFixed(1)}
+    //     MaxJump: ${biggestJump.toStringAsFixed(1)} Th: ${ARModeDebugValues.jumpThreshold.value.toStringAsFixed(1)}
+    //     ---
+    //     Converged (good loc acc & hasBearing): $converged
+    //     HasWalked (walked & no jumps): $hasWalked
+    //     UserNeedsToWalk (hasWalked & still converged): $userNeedsToWalk
+    //     ---
+    //     GoodARQuality (converged & !userNeedsToWalk): $goodARQuality
+    //     """;
+  }
+
+  void updateDynamicARParams(List<Location> locations) {
+    if (locations.length < ARModeDebugValues.locationBufferSize.value ||
+        !this.allLocationsInSameFloor(locations)) {
+      this.refreshData = 1;
+      distanceWalked = 0; // debug info only
+      //hasToRefresh = true;
+      return;
+    }
+
+    bool hasWalked = _enoughARMovement(locations);
+    bool isYawStable = _isYawStable(locations);
+    debugPrint(
+        "haswalked: $hasWalked , yawStable: $isYawStable, timeToResfresh: $waitToRefreshTimer , hasToRefresh: $hasToRefresh ");
+
+    if (!isYawStable) {
+      hasToRefresh = true;
+    }
+    updateKeepRefreshingTimer(isYawStable && hasWalked);
+    updateWaitToRefreshTimer();
+    updateRefreshRate(isYawStable && hasWalked);
+    // update from debug values
+    accuracyLimitData = ARModeDebugValues.navigationAccuracyLimitDada.value;
+    distanceLimitData = ARModeDebugValues.navigationDistanceLimitData.value;
+  }
+
+  bool _isYawStable(sdkLocations) {
+    // Check yaw std
+    yawDiffStd = calculateAngleDifferencesStandardDeviation(sdkLocations);
+    double yawDiffStdDeg = yawDiffStd * 180 / pi;
+    debugPrint("yawDiffStd: $yawDiffStd   deg :$yawDiffStdDeg ");
+    yawDiffStd = yawDiffStd * 180 / pi;
+    if (yawDiffStd < (ARModeDebugValues.dynamicYawDiffStdThreshold.value)) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  bool isRefreshing() {
+    return this.refreshData == 1;
+  }
+
+  void updateWaitToRefreshTimer() {
+    if (hasToRefresh &&
+        waitToRefreshTimer < ARModeDebugValues.dynamicTimeToRefresh.value &&
+        !isRefreshing()) {
+      waitToRefreshTimer++;
+    } else {
+      //waitToRefreshTimer =
+    }
+  }
+
+  void updateKeepRefreshingTimer(bool isStable) {
+    if (!isStable) {
+      keepRefreshingTimer = 0;
+    } else if (isRefreshing() &&
+        keepRefreshingTimer <
+            ARModeDebugValues.dynamicTimeToKeepRefreshing.value) {
+      keepRefreshingTimer++;
+    }
+  }
+
+  updateRefreshRate(bool isStable) {
+    if (isStable &&
+        isRefreshing() &&
+        keepRefreshingTimer ==
+            ARModeDebugValues.dynamicTimeToKeepRefreshing.value) {
+      this.refreshData = ARModeDebugValues.dynamicStableRefreshTime.value;
+      keepRefreshingTimer = 0;
+      hasToRefresh = false;
+    } else if (hasToRefresh &&
+        waitToRefreshTimer == ARModeDebugValues.dynamicTimeToRefresh.value) {
+      this.refreshData = 1;
+      waitToRefreshTimer = 0;
+      hasToRefresh = false;
+    }
   }
 
   bool _enoughARQuality(List<Location> locations) {
@@ -170,5 +275,69 @@ class _ARPosQualityState extends State<_ARPosQuality> {
     var dy = pow(
         destination.cartesianCoordinate.y - origin.cartesianCoordinate.y, 2);
     return sqrt(dx + dy);
+  }
+
+  double angleDifference(double angle1, double angle2) {
+    double difference = angle1 - angle2;
+    if (difference > pi) {
+      difference -= 2 * pi;
+    } else if (difference < -pi) {
+      difference += 2 * pi;
+    }
+
+    return difference;
+  }
+
+  double calculateAngleDifferencesStandardDeviation(List<Location> locations) {
+    List<double> differences = [];
+
+    for (int i = 1; i < locations.length; i++) {
+      double angle1 = locations[i - 1].bearing?.radians ?? 0.0;
+      double angle2 = locations[i].bearing?.radians ?? 0.0;
+      differences.add(angleDifference(angle1, angle2));
+    }
+    debugPrint("differences: $differences");
+    // Ajuste para manejar diferencias alrededor de los límites de 0 y 2π
+    differences = differences
+        .map((diff) => diff.abs() > pi ? diff - (2 * pi * diff.sign) : diff)
+        .toList();
+
+    return calculateStandardDeviation(differences);
+  }
+
+  double calculateStandardDeviation(List<double> data) {
+    if (data.isEmpty) {
+      throw ArgumentError("Data list cannot be empty");
+    }
+
+    double mean =
+        data.reduce((value, element) => value + element) / data.length;
+    double variance = data
+            .map((x) => pow(x - mean, 2))
+            .reduce((value, element) => value + element) /
+        data.length;
+
+    return sqrt(variance);
+  }
+
+  bool allLocationsInSameFloor(List<Location> locations) {
+    if (locations.isEmpty) {
+      return false;
+    }
+
+    String firstFloor = locations[0].floorIdentifier;
+
+    for (int i = 1; i < locations.length; i++) {
+      if (locations[i].floorIdentifier != firstFloor) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  ARModeUnityParams getDynamicARParams() {
+    return ARModeUnityParams(refreshData, distanceLimitData, angleLimitData,
+        accuracyLimitData, cameraLimit);
   }
 }

@@ -2,11 +2,9 @@ part of 'ar.dart';
 
 // TODO: this file has been temporarily imported from a testing project. It needs review as it is a mess...
 
-enum ARMode {
-  enjoy,
-  relaxed,
-  strict,
-}
+enum ARMode { enjoy, relaxed, strict, dynamic }
+
+ARMode DEFAULT_AR_MODE = ARMode.dynamic;
 
 enum NavigationStatus { started, finished }
 
@@ -14,7 +12,7 @@ enum NavigationStatus { started, finished }
 typedef OnARModeChanged = void Function(ARMode arMode);
 
 class ARModeManager {
-  ARMode arMode = ARMode.relaxed;
+  ARMode arMode = DEFAULT_AR_MODE;
   ARMode? previousARMode;
   OnARModeChanged? onARModeChanged;
 
@@ -22,6 +20,9 @@ class ARModeManager {
 
   // Very simple algorithm to calculate the AR Mode using only the NavigationStatus
   void updateWithNavigationStatus(NavigationStatus navigationStatus) {
+    if (arMode == ARMode.dynamic) {
+      return;
+    }
     previousARMode = arMode;
     switch (navigationStatus) {
       case NavigationStatus.started:
