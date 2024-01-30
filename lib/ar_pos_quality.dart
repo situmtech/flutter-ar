@@ -29,7 +29,7 @@ class _ARPosQualityState extends State<_ARPosQuality> {
 
   int refreshData = 1;
   double distanceLimitData = 3;
-  int angleLimitData = 30; //TODO: Degrees or radians?
+  int angleLimitData = 30;
   int accuracyLimitData = 10;
   double cameraLimit = 10.0;
   bool hasToRefresh = true;
@@ -160,8 +160,7 @@ class _ARPosQualityState extends State<_ARPosQuality> {
     if (locations.length < ARModeDebugValues.locationBufferSize.value ||
         !this.allLocationsInSameFloor(locations)) {
       this.refreshData = 1;
-      distanceWalked = 0; // debug info only
-      //hasToRefresh = true;
+      distanceWalked = 0;
       return;
     }
 
@@ -179,13 +178,13 @@ class _ARPosQualityState extends State<_ARPosQuality> {
     // update from debug values
     accuracyLimitData = ARModeDebugValues.navigationAccuracyLimitDada.value;
     distanceLimitData = ARModeDebugValues.navigationDistanceLimitData.value;
+    angleLimitData = ARModeDebugValues.navigationAngleLimitData.value;
   }
 
   bool _isYawStable(sdkLocations) {
     // Check yaw std
     yawDiffStd = calculateAngleDifferencesStandardDeviation(sdkLocations);
     double yawDiffStdDeg = yawDiffStd * 180 / pi;
-    debugPrint("yawDiffStd: $yawDiffStd   deg :$yawDiffStdDeg ");
     yawDiffStd = yawDiffStd * 180 / pi;
     if (yawDiffStd < (ARModeDebugValues.dynamicYawDiffStdThreshold.value)) {
       return true;

@@ -54,19 +54,18 @@ class _ARWidgetState extends State<ARWidget> {
   @override
   Widget build(BuildContext context) {
     // Create the AR widget:
-    var unityView = //true //Platform.isIOS
-        //?
-        UnityView(
-      onCreated: (controller) => onUnityViewCreated(context, controller),
-      onReattached: onUnityViewReattached,
-      onMessage: onUnityViewMessage,
-    );
-    // TODO: temp, remove when we are happy with Android.
-    // : _ARWIPScreen(
-    //     onBackButtonPressed: () =>
-    //         {onUnityViewMessage(null, "BackButtonTouched")},
-    //     onWidgetCreated: () => {onUnityViewCreated(context, null)},
-    //   );
+    var unityView = true //Platform.isIOS
+        ? UnityView(
+            onCreated: (controller) => onUnityViewCreated(context, controller),
+            onReattached: onUnityViewReattached,
+            onMessage: onUnityViewMessage,
+          )
+        // TODO: temp, remove when we are happy with Android.
+        : _ARWIPScreen(
+            onBackButtonPressed: () =>
+                {onUnityViewMessage(null, "BackButtonTouched")},
+            onWidgetCreated: () => {onUnityViewCreated(context, null)},
+          );
 
     // If there is not a MapView, return it immediately:
     if (widget.mapView == null) {
