@@ -135,6 +135,10 @@ class _ARPosQualityState extends State<_ARPosQuality> {
          keepRefreshingTimer: $keepRefreshingTimer,
         ---
         accuracyLimitData: ${ARModeDebugValues.navigationAccuracyLimitDada.value}
+        ---
+        converged: $converged
+        hasWalked: $hasWalked
+        goodARQuality: $goodARQuality
         """;
   }
 
