@@ -2,9 +2,9 @@ part of 'ar.dart';
 
 // TODO: this file has been temporarily imported from a testing project. It needs review as it is a mess...
 
-enum ARMode { enjoy, relaxed, strict, dynamic }
+enum ARMode { enjoy, relaxed, strict, dynamicRefreshRate }
 
-ARMode DEFAULT_AR_MODE = ARMode.dynamic;
+ARMode DEFAULT_AR_MODE = ARMode.dynamicRefreshRate;
 
 enum NavigationStatus { started, finished }
 
@@ -20,7 +20,7 @@ class ARModeManager {
 
   // Very simple algorithm to calculate the AR Mode using only the NavigationStatus
   void updateWithNavigationStatus(NavigationStatus navigationStatus) {
-    if (arMode == ARMode.dynamic) {
+    if (arMode == ARMode.dynamicRefreshRate) {
       return;
     }
     previousARMode = arMode;

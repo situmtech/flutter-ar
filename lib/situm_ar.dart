@@ -194,7 +194,7 @@ class _ARWidgetState extends State<ARWidget> {
     });
     arController._onUnityViewController(controller);
     debugUI.controller = controller;
-    arController.updateUnityModeParams(ARMode.dynamic);
+    arController.updateUnityModeParams(ARMode.dynamicRefreshRate);
     // Resume Unity Player if there is a MapView. Otherwise the AR Widget will
     // be hidden.
     if (widget.mapView == null) {
@@ -367,7 +367,7 @@ class ARController {
     _unityViewController?.send(
         "MessageManager", "SendLocation", jsonEncode(locationMap));
     _arPosQualityState?.updateLocation(location);
-    if (_arModeManager?.arMode == ARMode.dynamic &&
+    if (_arModeManager?.arMode == ARMode.dynamicRefreshRate &&
         _arPosQualityState != null) {
       ARModeUnityParams dynamicParams =
           _arPosQualityState!.getDynamicARParams();

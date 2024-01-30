@@ -120,7 +120,7 @@ class ARModeDebugValues {
             navigationAngleLimitData.value,
             navigationAccuracyLimitDada.value,
             navigationCameraLimit.value);
-      case ARMode.dynamic:
+      case ARMode.dynamicRefreshRate:
         return ARModeUnityParams(
             navigationRefreshData.value,
             navigationDistanceLimitData.value,

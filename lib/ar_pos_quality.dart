@@ -140,20 +140,6 @@ class _ARPosQualityState extends State<_ARPosQuality> {
         ---
         accuracyLimitData: $accuracyLimitData
         """;
-    // ARModeDebugValues.debugVariables.value = """
-    //     Locations Number: ${sdkLocations.length}
-    //     ----
-    //     AvgLocAccuracy: ${avgLocAccuracy.toStringAsFixed(1)} Th: ${ARModeDebugValues.accuracyThreshold.value.toStringAsFixed(1)}
-    //     NoHasBearings: $countNoHasBearings Th: ${ARModeDebugValues.noHasBearingThreshold.value}
-    //     Walked: ${distanceWalked.toStringAsFixed(1)} Th: ${ARModeDebugValues.walkedThreshold.value.toStringAsFixed(1)}
-    //     MaxJump: ${biggestJump.toStringAsFixed(1)} Th: ${ARModeDebugValues.jumpThreshold.value.toStringAsFixed(1)}
-    //     ---
-    //     Converged (good loc acc & hasBearing): $converged
-    //     HasWalked (walked & no jumps): $hasWalked
-    //     UserNeedsToWalk (hasWalked & still converged): $userNeedsToWalk
-    //     ---
-    //     GoodARQuality (converged & !userNeedsToWalk): $goodARQuality
-    //     """;
   }
 
   void updateDynamicARParams(List<Location> locations) {
