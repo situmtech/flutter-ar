@@ -309,7 +309,7 @@ class ARDebugUI {
           150,
           5),
       createDebugButton(ARModeDebugValues.locationBufferSize,
-          DebugMode.alertVisibilityParams, 'locations buffer size ', 1, 100, 5),
+          DebugMode.alertVisibilityParams, 'locations buffer size ', 1, 500, 5),
       ValueListenableBuilder<DebugMode>(
           valueListenable: ARModeDebugValues.debugMode,
           builder: (context, value, child) {
