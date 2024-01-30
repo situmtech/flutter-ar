@@ -194,7 +194,7 @@ class _ARWidgetState extends State<ARWidget> {
     });
     arController._onUnityViewController(controller);
     debugUI.controller = controller;
-    arController.updateUnityModeParams(ARMode.relaxed);
+    arController.updateUnityModeParams(ARMode.dynamic);
     // Resume Unity Player if there is a MapView. Otherwise the AR Widget will
     // be hidden.
     if (widget.mapView == null) {

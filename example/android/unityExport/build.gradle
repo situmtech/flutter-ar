@@ -18,8 +18,6 @@ android {
         release {}
       }
     
-
-
     compileSdkVersion 34
     buildToolsVersion '34.0.0'
 

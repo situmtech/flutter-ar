@@ -166,8 +166,6 @@ class _ARPosQualityState extends State<_ARPosQuality> {
 
     bool hasWalked = _enoughARMovement(locations);
     bool isYawStable = _isYawStable(locations);
-    debugPrint(
-        "haswalked: $hasWalked , yawStable: $isYawStable, timeToResfresh: $waitToRefreshTimer , hasToRefresh: $hasToRefresh ");
 
     if (!isYawStable) {
       hasToRefresh = true;
@@ -202,8 +200,6 @@ class _ARPosQualityState extends State<_ARPosQuality> {
         waitToRefreshTimer < ARModeDebugValues.dynamicTimeToRefresh.value &&
         !isRefreshing()) {
       waitToRefreshTimer++;
-    } else {
-      //waitToRefreshTimer =
     }
   }
 
@@ -295,7 +291,6 @@ class _ARPosQualityState extends State<_ARPosQuality> {
       double angle2 = locations[i].bearing?.radians ?? 0.0;
       differences.add(angleDifference(angle1, angle2));
     }
-    debugPrint("differences: $differences");
     // Ajuste para manejar diferencias alrededor de los límites de 0 y 2π
     differences = differences
         .map((diff) => diff.abs() > pi ? diff - (2 * pi * diff.sign) : diff)
