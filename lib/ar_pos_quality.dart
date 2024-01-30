@@ -28,10 +28,6 @@ class _ARPosQualityState extends State<_ARPosQuality> {
   bool showARAlertWidget = true;
 
   int refreshData = 1;
-  double distanceLimitData = 3;
-  int angleLimitData = 30;
-  int accuracyLimitData = 10;
-  double cameraLimit = 10.0;
   bool hasToRefresh = true;
   int waitToRefreshTimer = 0;
   int keepRefreshingTimer = 0;
@@ -133,12 +129,12 @@ class _ARPosQualityState extends State<_ARPosQuality> {
         yawDiffStd: $yawDiffStd,
         Dynamic params:
          refreshData: $refreshData, 
-         distanceLimitData: $distanceLimitData, 
+         distanceLimitData: ${ARModeDebugValues.navigationDistanceLimitData.value}, 
          hasToRefresh: $hasToRefresh,
          waitToRefreshTimer: $waitToRefreshTimer,
          keepRefreshingTimer: $keepRefreshingTimer,
         ---
-        accuracyLimitData: $accuracyLimitData
+        accuracyLimitData: ${ARModeDebugValues.navigationAccuracyLimitDada.value}
         """;
   }
 
@@ -159,16 +155,11 @@ class _ARPosQualityState extends State<_ARPosQuality> {
     updateKeepRefreshingTimer(isYawStable && hasWalked);
     updateWaitToRefreshTimer();
     updateRefreshRate(isYawStable && hasWalked);
-    // update from debug values
-    accuracyLimitData = ARModeDebugValues.navigationAccuracyLimitDada.value;
-    distanceLimitData = ARModeDebugValues.navigationDistanceLimitData.value;
-    angleLimitData = ARModeDebugValues.navigationAngleLimitData.value;
   }
 
   bool _isYawStable(sdkLocations) {
     // Check yaw std
     yawDiffStd = calculateAngleDifferencesStandardDeviation(sdkLocations);
-    double yawDiffStdDeg = yawDiffStd * 180 / pi;
     yawDiffStd = yawDiffStd * 180 / pi;
     if (yawDiffStd < (ARModeDebugValues.dynamicYawDiffStdThreshold.value)) {
       return true;
@@ -317,7 +308,11 @@ class _ARPosQualityState extends State<_ARPosQuality> {
   }
 
   ARModeUnityParams getDynamicARParams() {
-    return ARModeUnityParams(refreshData, distanceLimitData, angleLimitData,
-        accuracyLimitData, cameraLimit);
+    return ARModeUnityParams(
+        refreshData,
+        ARModeDebugValues.navigationDistanceLimitData.value,
+        ARModeDebugValues.navigationAngleLimitData.value,
+        ARModeDebugValues.navigationAccuracyLimitDada.value,
+        ARModeDebugValues.navigationCameraLimit.value);
   }
 }

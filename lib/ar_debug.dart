@@ -58,8 +58,6 @@ class ARModeDebugValues {
       ValueNotifier<int>(ENJOY_REFRESS_DATA);
 
   // Value Notifiers Dynamic params
-  static ValueNotifier<int> accuracyLimitData =
-      ValueNotifier<int>(NAVIGATION_ACCURACY_LIMIT_DATA);
   static ValueNotifier<int> dynamicStableRefreshTime =
       ValueNotifier<int>(DYNAMIC_STABLE_REFRESH_TIME);
   static ValueNotifier<double> dynamicYawDiffStdThreshold =
@@ -140,6 +138,27 @@ class ARModeUnityParams {
 
   ARModeUnityParams(this.refreshData, this.distanceLimit, this.angleLimit,
       this.accuracyLimit, this.cameraLimit);
+
+  @override
+  String toString() {
+    return 'ARModeUnityParams('
+        'refreshData: $refreshData, '
+        'distanceLimit: $distanceLimit, '
+        'angleLimit: $angleLimit, '
+        'accuracyLimit: $accuracyLimit, '
+        'cameraLimit: $cameraLimit)';
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ARModeUnityParams &&
+          runtimeType == other.runtimeType &&
+          refreshData == other.refreshData &&
+          distanceLimit == other.distanceLimit &&
+          angleLimit == other.angleLimit &&
+          accuracyLimit == other.accuracyLimit &&
+          cameraLimit == other.cameraLimit;
 }
 
 class ARDebugUI {

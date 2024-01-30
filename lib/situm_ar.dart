@@ -265,6 +265,7 @@ class ARController {
   UnityViewController? _unityViewController;
   MapViewController? _mapViewController;
   ARModeManager? _arModeManager;
+  ARModeUnityParams? _lastSetARModeUnityParams;
 
   // The UnityView may be constantly created/disposed. On the disposed state,
   // any method call will probably be ignored (mostly in Android).
@@ -366,12 +367,18 @@ class ARController {
     locationMap['timestamp'] = 0;
     _unityViewController?.send(
         "MessageManager", "SendLocation", jsonEncode(locationMap));
+    updateArPosQualityState(location);
+  }
+
+  void updateArPosQualityState(location) {
     _arPosQualityState?.updateLocation(location);
     if (_arModeManager?.arMode == ARMode.dynamicRefreshRate &&
         _arPosQualityState != null) {
       ARModeUnityParams dynamicParams =
           _arPosQualityState!.getDynamicARParams();
-      _setARModeParams(dynamicParams);
+      if (this._lastSetARModeUnityParams != dynamicParams) {
+        _setARModeParams(dynamicParams);
+      }
     }
   }
 
@@ -436,6 +443,8 @@ class ARController {
   }
 
   void _setARModeParams(ARModeUnityParams arModeUnityParams) {
+    debugPrint("UPDATE AR PARAMS: $arModeUnityParams");
+    this._lastSetARModeUnityParams = arModeUnityParams;
     _unityViewController?.send("MessageManager", "SendRefressData",
         arModeUnityParams.refreshData.toString());
     _unityViewController?.send("MessageManager", "SendDistanceLimitData",
