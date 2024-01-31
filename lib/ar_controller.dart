@@ -8,6 +8,7 @@ class ARController {
   UnityViewController? _unityViewController;
   MapViewController? _mapViewController;
   ARModeManager? _arModeManager;
+  ARModeUnityParams? _lastSetARModeUnityParams;
   final ValueNotifier<int> _current3DAmbience = ValueNotifier<int>(0);
 
   // The UnityView may be constantly created/disposed. On the disposed state,
@@ -149,7 +150,19 @@ class ARController {
     locationMap['timestamp'] = 0;
     _unityViewController?.send(
         "MessageManager", "SendLocation", jsonEncode(locationMap));
+    _updateArPosQualityState(location);
+  }
+
+  void _updateArPosQualityState(location) {
     _arPosQualityState?.updateLocation(location);
+    if (_arModeManager?.arMode == ARMode.dynamicRefreshRate &&
+        _arPosQualityState != null) {
+      ARModeUnityParams dynamicParams =
+      _arPosQualityState!.getDynamicARParams();
+      if (_lastSetARModeUnityParams != dynamicParams) {
+        _setARModeParams(dynamicParams);
+      }
+    }
   }
 
   void _onNavigationCancelled() {
@@ -189,6 +202,7 @@ class ARController {
     if (_unityViewController != null) {
       _unityViewController?.send(
           "MessageManager", "SendRoute", jsonEncode(route.rawContent));
+      _arPosQualityState?.forceResetRefreshTimers();
       _arModeManager?.updateWithNavigationStatus(NavigationStatus.started);
     } else {
       _navigationPendingAction = () => _onNavigationStart(route);
@@ -239,6 +253,8 @@ class ARController {
   }
 
   void _setARModeParams(ARModeUnityParams arModeUnityParams) {
+    debugPrint("UPDATE AR PARAMS: $arModeUnityParams");
+    _lastSetARModeUnityParams = arModeUnityParams;
     _unityViewController?.send("MessageManager", "SendRefressData",
         arModeUnityParams.refreshData.toString());
     _unityViewController?.send("MessageManager", "SendDistanceLimitData",

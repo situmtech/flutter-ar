@@ -105,6 +105,7 @@ class _ARWidgetState extends State<ARWidget> {
               // TODO: fix this:
               //...debugUI.createAlertVisibilityParamsDebugWidgets(),
               //...debugUI.createUnityParamsDebugWidgets(),
+              //...debugUI.createDynamicUnityParamsWidgets(),
               _ARPosQuality(onCreate: _onARPosQuality),
               // TODO: fix at Unity (message not being received):
               _createTempBackButton(() {
@@ -215,7 +216,7 @@ class _ARWidgetState extends State<ARWidget> {
     });
     arController._onUnityViewController(controller);
     debugUI.controller = controller;
-    arController.updateUnityModeParams(ARMode.relaxed);
+    arController.updateUnityModeParams(DEFAULT_AR_MODE);
     // Resume Unity Player if there is a MapView. Otherwise the AR Widget will
     // be hidden.
     if (widget.mapView == null) {

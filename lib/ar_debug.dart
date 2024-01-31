@@ -21,6 +21,12 @@ const NAVIGATION_ANGLE_LIMIT_DATA = 30;
 const NAVIGATION_ACCURACY_LIMIT_DATA = 6;
 const NAVIGATION_CAMERA_LIMIT = 10.0;
 
+const DYNAMIC_STABLE_REFRESH_TIME = 100;
+const DYNAMIC_YAW_DIFF_STD_THRESHOLD = 15.0;
+const DYNAMIC_TIME_TO_REFRESH = 3;
+const DYNAMIC_TIME_TO_KEEP_REFRESHING = 5;
+const DYNAMIC_LOCATION_BUFFER_SIZE = 10;
+
 enum DebugMode {
   deactivated,
   alertVisibilityParams, //0 Navigation Thresholds (accuracy, jump, distance, noBearing)
@@ -32,7 +38,7 @@ class ARModeDebugValues {
       ValueNotifier<DebugMode>(DebugMode.alertVisibilityParams);
 
   static ValueNotifier<ARMode> arModeNotifier =
-      ValueNotifier<ARMode>(ARMode.relaxed);
+      ValueNotifier<ARMode>(DEFAULT_AR_MODE);
 
   // Value Notifiers to listen in params to set the accuracy alert
 
@@ -49,7 +55,19 @@ class ARModeDebugValues {
   // Value Notifiers to listen changes in unity params
 
   static ValueNotifier<int> enjoyRefreshData =
-  ValueNotifier<int>(ENJOY_REFRESS_DATA);
+      ValueNotifier<int>(ENJOY_REFRESS_DATA);
+
+  // Value Notifiers Dynamic params
+  static ValueNotifier<int> dynamicStableRefreshTime =
+      ValueNotifier<int>(DYNAMIC_STABLE_REFRESH_TIME);
+  static ValueNotifier<double> dynamicYawDiffStdThreshold =
+      ValueNotifier<double>(DYNAMIC_YAW_DIFF_STD_THRESHOLD);
+  static ValueNotifier<int> dynamicTimeToRefresh =
+      ValueNotifier<int>(DYNAMIC_TIME_TO_REFRESH);
+  static ValueNotifier<int> dynamicTimeToKeepRefreshing =
+      ValueNotifier<int>(DYNAMIC_TIME_TO_KEEP_REFRESHING);
+  static ValueNotifier<int> locationBufferSize =
+      ValueNotifier<int>(DYNAMIC_LOCATION_BUFFER_SIZE);
 
   static ValueNotifier<int> explorationRefreshData =
       ValueNotifier<int>(EXPLORATION_REFRESS_DATA);
@@ -100,6 +118,13 @@ class ARModeDebugValues {
             navigationAngleLimitData.value,
             navigationAccuracyLimitDada.value,
             navigationCameraLimit.value);
+      case ARMode.dynamicRefreshRate:
+        return ARModeUnityParams(
+            navigationRefreshData.value,
+            navigationDistanceLimitData.value,
+            navigationAngleLimitData.value,
+            navigationAccuracyLimitDada.value,
+            navigationCameraLimit.value);
     }
   }
 }
@@ -113,6 +138,27 @@ class ARModeUnityParams {
 
   ARModeUnityParams(this.refreshData, this.distanceLimit, this.angleLimit,
       this.accuracyLimit, this.cameraLimit);
+
+  @override
+  String toString() {
+    return 'ARModeUnityParams('
+        'refreshData: $refreshData, '
+        'distanceLimit: $distanceLimit, '
+        'angleLimit: $angleLimit, '
+        'accuracyLimit: $accuracyLimit, '
+        'cameraLimit: $cameraLimit)';
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ARModeUnityParams &&
+          runtimeType == other.runtimeType &&
+          refreshData == other.refreshData &&
+          distanceLimit == other.distanceLimit &&
+          angleLimit == other.angleLimit &&
+          accuracyLimit == other.accuracyLimit &&
+          cameraLimit == other.cameraLimit;
 }
 
 class ARDebugUI {
@@ -177,11 +223,10 @@ class ARDebugUI {
                     ),
                     child: ValueListenableBuilder(
                       valueListenable: ARModeDebugValues.debugVariables,
-                      builder: (context, value, child) =>
-                          Text(
-                            value,
-                            style: const TextStyle(fontSize: 10),
-                          ),
+                      builder: (context, value, child) => Text(
+                        value,
+                        style: const TextStyle(fontSize: 10),
+                      ),
                     ),
                   ),
                 ));
@@ -261,6 +306,56 @@ class ARDebugUI {
     return widgets;
   }
 
+  List<Widget> createDynamicUnityParamsWidgets() {
+    return [
+      createDebugButton(ARModeDebugValues.navigationAccuracyLimitDada,
+          DebugMode.alertVisibilityParams, 'NavAcc', 1, 450, 5),
+      createDebugButton(ARModeDebugValues.navigationDistanceLimitData,
+          DebugMode.alertVisibilityParams, 'NavDist', 0.2, 400, 5),
+      createDebugButton(ARModeDebugValues.dynamicStableRefreshTime,
+          DebugMode.alertVisibilityParams, 'stable refresh time', 5, 350, 5),
+      createDebugButton(ARModeDebugValues.walkedThreshold,
+          DebugMode.alertVisibilityParams, 'WalkTh', 1, 300, 5),
+      createDebugButton(ARModeDebugValues.dynamicYawDiffStdThreshold,
+          DebugMode.alertVisibilityParams, 'yawDiffStdTh', 1.0, 250, 5),
+      createDebugButton(ARModeDebugValues.dynamicTimeToRefresh,
+          DebugMode.alertVisibilityParams, 'time to refresh', 1, 200, 5),
+      createDebugButton(
+          ARModeDebugValues.dynamicTimeToKeepRefreshing,
+          DebugMode.alertVisibilityParams,
+          'time to keep refreshing',
+          1,
+          150,
+          5),
+      createDebugButton(ARModeDebugValues.locationBufferSize,
+          DebugMode.alertVisibilityParams, 'locations buffer size ', 1, 500, 5),
+      ValueListenableBuilder<DebugMode>(
+          valueListenable: ARModeDebugValues.debugMode,
+          builder: (context, value, child) {
+            return Visibility(
+                visible: (value == DebugMode.alertVisibilityParams),
+                child: Positioned(
+                  //bottom: 10,
+                  top: 10,
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color.fromARGB(77, 255, 255, 255),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: ValueListenableBuilder(
+                      valueListenable: ARModeDebugValues.debugVariables,
+                      builder: (context, value, child) => Text(
+                        value,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ),
+                ));
+          }),
+    ];
+  }
+
   ValueListenableBuilder createDebugButton(
       ValueNotifier notifier,
       DebugMode visibleDebugMode,
@@ -268,7 +363,7 @@ class ARDebugUI {
       num increment,
       double bottom,
       double left,
-      {double width = 150}) {
+      {double width = 200}) {
     return ValueListenableBuilder(
         valueListenable: ARModeDebugValues.debugMode,
         builder: (context, value, child) {
