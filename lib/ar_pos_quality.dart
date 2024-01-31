@@ -6,9 +6,9 @@ class _ARPosQuality extends StatefulWidget {
   final Function(_ARPosQualityState) onCreate;
 
   const _ARPosQuality({
-    Key? key,
+    super.key,
     required this.onCreate,
-  }) : super(key: key);
+  });
 
   @override
   _ARPosQualityState createState() => _ARPosQualityState();

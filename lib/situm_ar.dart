@@ -9,13 +9,24 @@ class ARWidget extends StatefulWidget {
   final MapView? mapView;
   final double arHeightRatio;
   final bool debugMode;
+  final bool enable3DAmbiences;
+  final bool occlusionAndroid;
+  final bool occlusionIOS;
 
   /// Widget for augmented reality compatible with Situm MapView.
   /// - buildingIdentifier: The building that will be loaded.
   /// - mapView: Optional MapView, to be integrated with the augmented reality module.
-  /// - arHeightRatio: Screen ratio (from 0 to 1) that the augmented reality view will occupy.
+  /// - arHeightRatio: Screen ratio (from 0 to 1) that the augmented reality view will occupy. Default is 2/3.
   /// - apiDomain: A String parameter that allows you to choose the API you will be retrieving
   /// our cartography from. Default is https://dashboard.situm.com.
+  /// - enable3DAmbiences: Recreate ambiences in the augmented reality view with animations and 3D objects.
+  /// The activation of each environment is based on the entry/exit on [Geofence]s,
+  /// which must be configured in the dashboard through the "ar_metadata" custom field. Default value is false.
+  /// Example:
+  /// ```dart
+  /// ar_metadata: {"ambience": "oasis"}
+  /// ```.
+  /// - occlusionAndroid, occlusionIOS: Enable or disable 3D model occlusion. Default value is true.
   const ARWidget({
     super.key,
     required this.buildingIdentifier,
@@ -26,6 +37,9 @@ class ARWidget extends StatefulWidget {
     this.arHeightRatio = 2 / 3,
     this.debugMode = false,
     this.apiDomain = "https://dashboard.situm.com",
+    this.enable3DAmbiences = false,
+    this.occlusionAndroid = true,
+    this.occlusionIOS = true,
   });
 
   @override
@@ -47,7 +61,13 @@ class _ARWidgetState extends State<ARWidget> {
   @override
   void initState() {
     super.initState();
-    apiDomain = _validateApiDomain(widget.apiDomain);
+    var validations = _Validations();
+    apiDomain = validations.validateApiDomain(widget.apiDomain);
+    if (widget.enable3DAmbiences) {
+      var situmSdk = SitumSdk();
+      situmSdk.init();
+      situmSdk.internalEnableGeofenceListening();
+    }
     ARController()._onARWidgetState(this);
   }
 
@@ -90,15 +110,11 @@ class _ARWidgetState extends State<ARWidget> {
               _createTempBackButton(() {
                 arController.onArGone();
               }),
-              // TODO: select ambience by zone? To decide.
-              _AmbienceSelector(
-                onAmbienceSelected: (int ambience) {
-                  arController._selectAmbience(ambience);
-                },
-                onEnjoyToggle: (enjoySelected) {
-                  arController._setEnjoyMode(enjoySelected);
-                },
-              ),
+              widget.enable3DAmbiences
+                  ? _AmbienceSelector(
+                      debugMode: widget.debugMode,
+                    )
+                  : const SizedBox(),
             ],
           ),
         ),
@@ -178,6 +194,12 @@ class _ARWidgetState extends State<ARWidget> {
       BuildContext context, UnityViewController? controller) {
     debugPrint("Situm> AR> onUnityViewCreated");
     unityViewController = controller;
+    if ((Platform.isAndroid && widget.occlusionAndroid) ||
+        (Platform.isIOS && widget.occlusionIOS)) {
+      controller?.send("MessageManager", "SendActivateOcclusion ", "null");
+    } else {
+      controller?.send("MessageManager", "SendDeactivateOcclusion ", "null");
+    }
     var sdk = SitumSdk();
     sdk.fetchBuildingInfo(widget.buildingIdentifier).then((buildingInfo) {
       controller?.send("MessageManager", "SendContentUrl", apiDomain);
@@ -253,209 +275,5 @@ class _ARWidgetState extends State<ARWidget> {
     setState(() {
       mapViewLoaded = true;
     });
-  }
-}
-
-class ARController {
-  static ARController? _instance;
-
-  _ARWidgetState? _widgetState;
-  _ARPosQualityState? _arPosQualityState;
-  UnityViewController? _unityViewController;
-  MapViewController? _mapViewController;
-  ARModeManager? _arModeManager;
-
-  // The UnityView may be constantly created/disposed. On the disposed state,
-  // any method call will probably be ignored (mostly in Android).
-  // As a workaround we can keep a pending action that will be executed when
-  // the UnityView#onCreated callback is invoked.
-  Function? _navigationPendingAction;
-
-  // Keep resumed state to avoid consecutive calls to "pause" on the UnityView
-  // as it seems to be freezing the AR module on iOS.
-  bool? _resumed;
-
-  ARController._() {
-    _arModeManager = ARModeManager(arModeChanged);
-  }
-
-  factory ARController() {
-    _instance ??= ARController._();
-    return _instance!;
-  }
-
-  /// Let this ARController be up to date with the latest UnityViewController.
-  void _onUnityViewController(UnityViewController? controller) {
-    _unityViewController = controller;
-    if (_unityViewController != null && _navigationPendingAction != null) {
-      _navigationPendingAction?.call();
-      _navigationPendingAction = null;
-    }
-  }
-
-  /// Update this ARController with the ARPosQuality state so it can notify
-  /// location updates and determine the alert visibility by itself.
-  void _onARPosQualityState(_ARPosQualityState? state) {
-    _arPosQualityState = state;
-  }
-
-  /// Let this ARController be up to date with the AR Widget State.
-  void _onARWidgetState(_ARWidgetState? state) {
-    _widgetState = state;
-  }
-
-  // === Internal MapViewer messages:
-
-  /// Notifies the AR module that the MapView has been loaded, ensuring seamless
-  /// integration between both.
-  void onMapViewLoad(MapViewController controller) {
-    _mapViewController = controller;
-    controller.internalARMessageDelegate(_onMapViewMessage);
-    _widgetState?._onMapViewLoaded();
-    debugPrint("Situm> AR> onMapViewLoad");
-  }
-
-  void _onMapViewMessage(String message, dynamic payload) {
-    switch (message) {
-      case WV_MESSAGE_AR_REQUESTED:
-        debugPrint("Situm> AR> WV_MESSAGE_AR_REQUESTED");
-        onArRequested();
-        break;
-    }
-  }
-
-  // === Sleep/Wake actions:
-
-  void onArRequested() {
-    wakeup();
-    _widgetState?.updateStatusArRequested();
-    _mapViewController?.updateAugmentedRealityStatus(ARStatus.success);
-    _mapViewController?.followUser();
-    Future.delayed(_ARWidgetState.animationDuration, () {
-      // Repeat the call to followUser after the animation, as it seems possible
-      // to move the map during that time interval.
-      _mapViewController?.followUser();
-    });
-  }
-
-  void onArGone() {
-    _widgetState?.updateStatusArGone();
-    _mapViewController?.updateAugmentedRealityStatus(ARStatus.finished);
-    sleep();
-  }
-
-  void sleep() {
-    if (_resumed == null || _resumed == true) {
-      _unityViewController?.pause();
-      _resumed = false;
-    }
-  }
-
-  void wakeup() {
-    if (_resumed == null || _resumed == false) {
-      _unityViewController?.resume();
-      _resumed = true;
-    }
-  }
-
-  // === Set of methods to keep the AR module updated regarding position and navigation.
-
-  void setLocation(Location location) {
-    var locationMap = location.toMap();
-    locationMap['timestamp'] = 0;
-    _unityViewController?.send(
-        "MessageManager", "SendLocation", jsonEncode(locationMap));
-    _arPosQualityState?.updateLocation(location);
-  }
-
-  void setNavigationCancelled() {
-    if (_unityViewController != null) {
-      _unityViewController?.send("MessageManager", "CancelRoute", "null");
-      _arModeManager?.updateWithNavigationStatus(NavigationStatus.finished);
-      onArGone();
-    } else {
-      _navigationPendingAction = () => setNavigationCancelled();
-    }
-  }
-
-  void setNavigationDestinationReached() {
-    if (_unityViewController != null) {
-      _unityViewController?.send("MessageManager", "SendRouteEnd", "null");
-      _arModeManager?.updateWithNavigationStatus(NavigationStatus.finished);
-      onArGone();
-    } else {
-      _navigationPendingAction = () => setNavigationDestinationReached();
-    }
-  }
-
-  void setNavigationOutOfRoute() {
-    if (_unityViewController != null) {
-      _unityViewController?.send("MessageManager", "SendRouteUserOut", "null");
-    } else {
-      _navigationPendingAction = () => setNavigationOutOfRoute();
-    }
-  }
-
-  void setNavigationProgress(RouteProgress progress) {
-    _unityViewController?.send(
-        "MessageManager", "SendRouteProgress", jsonEncode(progress.rawContent));
-  }
-
-  void setNavigationStart(SitumRoute route) {
-    if (_unityViewController != null) {
-      _unityViewController?.send(
-          "MessageManager", "SendRoute", jsonEncode(route.rawContent));
-      _arModeManager?.updateWithNavigationStatus(NavigationStatus.started);
-    } else {
-      _navigationPendingAction = () => setNavigationStart(route);
-    }
-  }
-
-  void setSelectedPoi(Poi poi) {
-    _unityViewController?.send(
-        "MessageManager", "SendLastSelectedPOI", jsonEncode(poi.toMap()));
-  }
-
-  //Callback thas is called when the arMode has changed
-  void arModeChanged(ARMode arMode) {
-    ARModeDebugValues.arMode = arMode;
-    updateUnityModeParams(arMode);
-  }
-
-  void updateUnityModeParams(ARMode arMode) {
-    ARModeUnityParams unityParams =
-        ARModeDebugValues.getUnityParamsForMode(arMode);
-    _setARModeParams(unityParams);
-  }
-
-  void _setARModeParams(ARModeUnityParams arModeUnityParams) {
-    _unityViewController?.send("MessageManager", "SendRefressData",
-        arModeUnityParams.refreshData.toString());
-    _unityViewController?.send("MessageManager", "SendDistanceLimitData",
-        arModeUnityParams.distanceLimit.toString());
-    _unityViewController?.send("MessageManager", "SendAngleLimitData",
-        arModeUnityParams.angleLimit.toString());
-    _unityViewController?.send("MessageManager", "SendAccurancyLimitData",
-        arModeUnityParams.accuracyLimit.toString());
-    _unityViewController?.send("MessageManager", "SendCameraLimit",
-        arModeUnityParams.cameraLimit.toString());
-  }
-
-  /// Change the AR ambience (private by now).
-  void _selectAmbience(int ambience) {
-    _unityViewController?.send(
-        "MessageManager", "SendOnAmbienceZoneEnter", "$ambience");
-  }
-
-  void _setEnjoyMode(bool enjoySelected) {
-    if (enjoySelected) {
-      _unityViewController?.send(
-          "MessageManager", "SendHideRouteElements", "null");
-      _arModeManager?.setARMode(ARMode.enjoy);
-    } else {
-      _unityViewController?.send(
-          "MessageManager", "SendShowRouteElements", "null");
-      _arModeManager?.switchToPreviousMode();
-    }
   }
 }

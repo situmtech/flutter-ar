@@ -8,7 +8,7 @@ PODS:
   - situm_flutter (3.11.1):
     - Flutter
     - SitumSDK (~> 3.5.0)
-  - situm_flutter_ar (0.0.1):
+  - situm_flutter_ar (0.0.3):
     - Flutter
   - situm_flutter_unity (0.0.1):
     - Flutter
@@ -56,7 +56,7 @@ SPEC CHECKSUMS:
   permission_handler_apple: e76247795d700c14ea09e3a2d8855d41ee80a2e6
   Protobuf: 34db13339da0d02d64fa8a2ac6a124cfcc603703
   situm_flutter: 9565841780e0e16290f01a910a4786129d5a7007
-  situm_flutter_ar: 3d1fefc311d1c8c20d4b0946c7fe81942a23ecad
+  situm_flutter_ar: 7fb24569a284e47f2b03fa336fd493f5a87b8a7e
   situm_flutter_unity: 99318030326e66563eddea5036fcc4e25e9ad6fd
   SitumSDK: 1285630173fe955b12738c31a91af6b8dabae885
   SSZipArchive: fe6a26b2a54d5a0890f2567b5cc6de5caa600aef
