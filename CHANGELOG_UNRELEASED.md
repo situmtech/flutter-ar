@@ -12,6 +12,8 @@
   Geofences, which must be configured in the dashboard through the "ar_metadata" custom field.
   Example:
    ```
-    ar_metadata: {"ambience": "oasis"}
+    ar_metadata: {"ambience": "ambience_name"}
   ```
+  To enable 3D ambiences for your venue, contact [Situm support](mailto:support@situm.com).
+
 - Added new parameters `occlusionAndroid`, `occlusionIOS` to enable or disable 3D model occlusion.
