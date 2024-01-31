@@ -54,7 +54,7 @@ class _ARWidgetState extends State<ARWidget> {
   @override
   Widget build(BuildContext context) {
     // Create the AR widget:
-    var unityView = true //Platform.isIOS
+    var unityView = Platform.isIOS
         ? UnityView(
             onCreated: (controller) => onUnityViewCreated(context, controller),
             onReattached: onUnityViewReattached,
@@ -84,8 +84,8 @@ class _ARWidgetState extends State<ARWidget> {
               unityView,
               // TODO: fix this:
               //...debugUI.createAlertVisibilityParamsDebugWidgets(),
-              ...debugUI.createUnityParamsDebugWidgets(),
-              ...debugUI.createDynamicUnityParamsWidgets(),
+              //...debugUI.createUnityParamsDebugWidgets(),
+              //...debugUI.createDynamicUnityParamsWidgets(),
               _ARPosQuality(onCreate: _onARPosQuality),
               // TODO: fix at Unity (message not being received):
               _createTempBackButton(() {
@@ -194,7 +194,7 @@ class _ARWidgetState extends State<ARWidget> {
     });
     arController._onUnityViewController(controller);
     debugUI.controller = controller;
-    arController.updateUnityModeParams(ARMode.dynamicRefreshRate);
+    arController.updateUnityModeParams(DEFAULT_AR_MODE);
     // Resume Unity Player if there is a MapView. Otherwise the AR Widget will
     // be hidden.
     if (widget.mapView == null) {
@@ -419,6 +419,7 @@ class ARController {
     if (_unityViewController != null) {
       _unityViewController?.send(
           "MessageManager", "SendRoute", jsonEncode(route.rawContent));
+      _arPosQualityState?.forceResetRefreshTimers();
       _arModeManager?.updateWithNavigationStatus(NavigationStatus.started);
     } else {
       _navigationPendingAction = () => setNavigationStart(route);

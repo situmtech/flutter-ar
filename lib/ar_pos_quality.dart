@@ -210,6 +210,12 @@ class _ARPosQualityState extends State<_ARPosQuality> {
     }
   }
 
+  void forceResetRefreshTimers() {
+    this.refreshData = 1;
+    keepRefreshingTimer = 0;
+    hasToRefresh = true;
+  }
+
   bool _enoughARQuality(List<Location> locations) {
     if (locations.isEmpty) return false;
     avgLocAccuracy = 0;
