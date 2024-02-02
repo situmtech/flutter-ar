@@ -5,6 +5,7 @@
     - A new button completely hides the MapView for a full screen AR experience.
 - Enhanced the plugin to exit the AR view when navigation concludes, accommodating cancellations or
   reaching the destination.
+- Updated Situm Flutter SDK dependency to version 3.11.4.
 
 ## 0.0.2 - January 19, 2024
 
