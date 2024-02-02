@@ -46,7 +46,7 @@ class ARWidget extends StatefulWidget {
   State createState() => _ARWidgetState();
 }
 
-class _ARWidgetState extends State<ARWidget> {
+class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
   ARController arController = ARController();
   UnityViewController? unityViewController;
   bool mapViewLoaded = false;
@@ -61,6 +61,7 @@ class _ARWidgetState extends State<ARWidget> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     var validations = _Validations();
     apiDomain = validations.validateApiDomain(widget.apiDomain);
     if (widget.enable3DAmbiences) {
@@ -74,18 +75,11 @@ class _ARWidgetState extends State<ARWidget> {
   @override
   Widget build(BuildContext context) {
     // Create the AR widget:
-    var unityView = Platform.isIOS
-        ? UnityView(
-            onCreated: (controller) => onUnityViewCreated(context, controller),
-            onReattached: onUnityViewReattached,
-            onMessage: onUnityViewMessage,
-          )
-        // TODO: temp, remove when we are happy with Android.
-        : _ARWIPScreen(
-            onBackButtonPressed: () =>
-                {onUnityViewMessage(null, "BackButtonTouched")},
-            onWidgetCreated: () => {onUnityViewCreated(context, null)},
-          );
+    var unityView = UnityView(
+      onCreated: (controller) => onUnityViewCreated(context, controller),
+      onReattached: onUnityViewReattached,
+      onMessage: onUnityViewMessage,
+    );
 
     // If there is not a MapView, return it immediately:
     if (widget.mapView == null) {
@@ -244,10 +238,28 @@ class _ARWidgetState extends State<ARWidget> {
   @override
   void dispose() {
     super.dispose();
+    WidgetsBinding.instance.removeObserver(this);
     debugPrint("Situm> AR> dispose()");
     unityViewController?.pause();
     arController._onUnityViewController(null);
     arController._onARWidgetState(null);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    switch (state) {
+      case AppLifecycleState.paused:
+      case AppLifecycleState.resumed:
+      case AppLifecycleState.hidden:
+      case AppLifecycleState.detached:
+        debugPrint("Situm> AR> LIFECYCLE> App is $state");
+        break;
+      case AppLifecycleState.inactive:
+        debugPrint("Situm> AR> LIFECYCLE> INACTIVE --> PAUSE AR");
+        arController.onArGone();
+        break;
+    }
   }
 
   void updateStatusArRequested() {

@@ -158,7 +158,7 @@ class ARController {
     if (_arModeManager?.arMode == ARMode.dynamicRefreshRate &&
         _arPosQualityState != null) {
       ARModeUnityParams dynamicParams =
-      _arPosQualityState!.getDynamicARParams();
+          _arPosQualityState!.getDynamicARParams();
       if (_lastSetARModeUnityParams != dynamicParams) {
         _setARModeParams(dynamicParams);
       }
@@ -264,7 +264,7 @@ class ARController {
     _unityViewController?.send("MessageManager", "SendAccurancyLimitData",
         arModeUnityParams.accuracyLimit.toString());
     _unityViewController?.send("MessageManager", "SendCameraLimit",
-        arModeUnityParams.cameraLimit.toString());
+        arModeUnityParams.cameraLimit.toInt().toString());
   }
 
   /// Change the AR ambience (private by now).
