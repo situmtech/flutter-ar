@@ -1,73 +1,5 @@
 part of 'ar.dart';
 
-// TODO: temporal AR screen for Android (WIP).
-
-class _ARWIPScreen extends StatefulWidget {
-  final VoidCallback onWidgetCreated;
-  final VoidCallback onBackButtonPressed;
-
-  const _ARWIPScreen({
-    Key? key,
-    required this.onWidgetCreated,
-    required this.onBackButtonPressed,
-  }) : super(key: key);
-
-  @override
-  _ARWIPScreenState createState() => _ARWIPScreenState();
-}
-
-class _ARWIPScreenState extends State<_ARWIPScreen> {
-  bool widgetCreated = false;
-
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (!widgetCreated) {
-      widgetCreated = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        widget.onWidgetCreated.call();
-      });
-    }
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back,
-            color: Colors.blue,
-          ),
-          onPressed: () {
-            widget.onBackButtonPressed.call();
-          },
-        ),
-        title: const Text('AR Screen'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      body: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.camera,
-              size: 100.0,
-              color: Colors.blue,
-            ),
-            SizedBox(height: 20.0),
-            Text(
-              'AR for Android coming soon',
-              style: TextStyle(fontSize: 18.0),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 Widget _createTempBackButton(VoidCallback onPressed) {
   return Positioned(
       top: Platform.isAndroid ? 31.0 : 28.0,
@@ -111,13 +43,11 @@ Widget _createDebugModeSwitchButton(VoidCallback onPressed) {
 }
 
 class _AmbienceSelector extends StatefulWidget {
-  final Function(int ambience) onAmbienceSelected;
-  final Function(bool enjoyEnabled) onEnjoyToggle;
+  final bool debugMode;
 
   const _AmbienceSelector({
     super.key,
-    required this.onAmbienceSelected,
-    required this.onEnjoyToggle,
+    required this.debugMode,
   });
 
   @override
@@ -125,10 +55,10 @@ class _AmbienceSelector extends StatefulWidget {
 }
 
 class _AmbienceSelectorState extends State<_AmbienceSelector> {
-  int _selectedOption = 0;
   final List<bool> _enjoySelected = [false];
+  ARController arController = ARController();
 
-  static const ambiences = {
+  static const _ambiences3DNames = {
     0: 'No ambience',
     1: 'Desert',
     2: 'Oasis',
@@ -146,108 +76,107 @@ class _AmbienceSelectorState extends State<_AmbienceSelector> {
           crossAxisAlignment: CrossAxisAlignment.end,
           mainAxisSize: MainAxisSize.min,
           children: [
-            PopupMenuButton<int>(
-              onSelected: (int value) {
-                setState(() {
-                  _selectedOption = value;
-                  widget.onAmbienceSelected.call(value);
-                  if (value == 0) {
-                    _enjoySelected[0] = false;
-                    widget.onEnjoyToggle(false);
-                  }
-                });
-              },
-              itemBuilder: (BuildContext context) => [
-                ...ambiences.entries.map(
-                  (e) => PopupMenuItem<int>(
-                    value: e.key,
-                    child: Text(e.value.toUpperCase()),
-                  ),
-                ),
-              ],
-              child: ElevatedButton(
-                onPressed: null,
-                style: ButtonStyle(
-                  fixedSize: MaterialStateProperty.all<Size>(
-                    const Size.fromHeight(55.0),
-                  ),
-                  foregroundColor: MaterialStateProperty.all<Color>(
-                    Colors.white,
-                  ),
-                  backgroundColor: MaterialStateProperty.all<Color>(
-                    Colors.grey.withOpacity(0.80),
-                  ),
-                  shape: MaterialStateProperty.all<RoundedRectangleBorder>(
-                    RoundedRectangleBorder(
-                      borderRadius: BorderRadius.only(
-                          topLeft: const Radius.circular(10.0),
-                          topRight: const Radius.circular(10.0),
-                          bottomLeft: const Radius.circular(10.0),
-                          bottomRight:
-                              Radius.circular(_selectedOption != 0 ? 0 : 10)),
+            Visibility(
+              visible: widget.debugMode,
+              child: PopupMenuButton<int>(
+                onSelected: (int value) {
+                  setState(() {
+                    arController._selectAmbience(value);
+                    if (value == 0) {
+                      _enjoySelected[0] = false;
+                      arController._setEnjoyMode(false);
+                    }
+                  });
+                },
+                itemBuilder: (BuildContext context) => [
+                  ..._ambiences3DNames.entries.map(
+                    (e) => PopupMenuItem<int>(
+                      value: e.key,
+                      child: Text(e.value.toUpperCase()),
                     ),
                   ),
-                  side: MaterialStateProperty.all<BorderSide>(
-                    const BorderSide(
-                      color: Colors.white,
-                      width: 2,
-                    ),
-                  ),
+                ],
+                child: ValueListenableBuilder<int>(
+                  valueListenable: arController._current3DAmbience,
+                  builder: (context, ambienceCode, child) {
+                    return ElevatedButton(
+                      onPressed: null,
+                      style: ButtonStyle(
+                        fixedSize: MaterialStateProperty.all<Size>(
+                          const Size.fromHeight(55.0),
+                        ),
+                        foregroundColor: MaterialStateProperty.all<Color>(
+                          Colors.white,
+                        ),
+                        backgroundColor: MaterialStateProperty.all<Color>(
+                          Colors.grey.withOpacity(0.80),
+                        ),
+                        shape:
+                            MaterialStateProperty.all<RoundedRectangleBorder>(
+                          RoundedRectangleBorder(
+                            borderRadius: BorderRadius.only(
+                                topLeft: const Radius.circular(10.0),
+                                topRight: const Radius.circular(10.0),
+                                bottomLeft: const Radius.circular(10.0),
+                                bottomRight: Radius.circular(
+                                    ambienceCode != 0 ? 0 : 10)),
+                          ),
+                        ),
+                        side: MaterialStateProperty.all<BorderSide>(
+                          const BorderSide(
+                            color: Colors.white,
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                      child:
+                          Text(_ambiences3DNames[ambienceCode]!.toUpperCase()),
+                    );
+                  },
                 ),
-                child: Text(ambiences[_selectedOption]!.toUpperCase()),
               ),
             ),
-            Visibility(
-              visible: _selectedOption != 0,
-              child: SizedBox(
-                height: 34,
-                child: ToggleButtons(
-                  onPressed: (int index) {
-                    setState(() {
-                      if (_selectedOption != 0) {
-                        _enjoySelected[index] = !_enjoySelected[index];
-                        widget.onEnjoyToggle(_enjoySelected[index]);
-                      }
-                    });
-                  },
-                  borderWidth: 2,
-                  color: Colors.white,
-                  fillColor: Colors.green[400],
-                  selectedColor: Colors.white,
-                  borderColor: Colors.white,
-                  selectedBorderColor: Colors.white,
-                  borderRadius: const BorderRadius.only(
-                    topRight: Radius.circular(8.0),
-                    bottomRight: Radius.circular(8.0),
-                  ),
-                  isSelected: _enjoySelected,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(6, 0, 6, 0),
-                      child: Text("Enjoy".toUpperCase()),
+            ValueListenableBuilder<int>(
+              valueListenable: arController._current3DAmbience,
+              builder: (context, ambienceCode, child) {
+                return Visibility(
+                  visible: ambienceCode != 0,
+                  child: SizedBox(
+                    height: 34,
+                    child: ToggleButtons(
+                      onPressed: (int index) {
+                        setState(() {
+                          if (ambienceCode != 0) {
+                            _enjoySelected[index] = !_enjoySelected[index];
+                            arController._setEnjoyMode(_enjoySelected[index]);
+                          }
+                        });
+                      },
+                      borderWidth: 2,
+                      color: Colors.white,
+                      fillColor: Colors.green[400],
+                      selectedColor: Colors.white,
+                      borderColor: Colors.white,
+                      selectedBorderColor: Colors.white,
+                      borderRadius: const BorderRadius.only(
+                        topRight: Radius.circular(8.0),
+                        bottomRight: Radius.circular(8.0),
+                      ),
+                      isSelected: _enjoySelected,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(6, 0, 6, 0),
+                          child: Text("Enjoy".toUpperCase()),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             ),
           ],
         ),
       ),
     );
   }
-}
-
-String _validateApiDomain(String apiDomain) {
-  if (!apiDomain.startsWith('http://') && !apiDomain.startsWith('https://')) {
-    apiDomain = 'https://$apiDomain';
-  }
-  Uri? uri = Uri.tryParse(apiDomain);
-  if (uri == null || !uri.isAbsolute) {
-    throw ArgumentError(
-        'Incorrect configuration: apiDomain ($apiDomain) must be a valid URL.');
-  }
-  if (apiDomain.endsWith("/")) {
-    apiDomain = apiDomain.substring(0, apiDomain.length - 1);
-  }
-  return apiDomain;
 }

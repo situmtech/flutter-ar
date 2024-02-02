@@ -1,7 +1,29 @@
+## 0.0.4 - February 02, 2024
+
+### Changed
+
+- Now it is not necessary to forward SDK calls to the `ARController`. The AR module is notified
+  internally about changes on location, navigation, geofencing (and so on).
+- Updated Situm Flutter SDK dependency to version 3.11.4.
+
+### Added
+
+- Added a new parameter `enable3DAmbiences` to recreate ambiences in the augmented reality view with
+  animations and 3D objects. The activation of each environment is based on the entry/exit on
+  Geofences, which must be configured in the dashboard through the "ar_metadata" custom field.
+  Example:
+   ```
+    ar_metadata: {"ambience": "ambience_name"}
+  ```
+  To enable 3D ambiences for your venue, contact [Situm support](mailto:support@situm.com).
+
+- Added new parameters `occlusionAndroid`, `occlusionIOS` to enable or disable 3D model occlusion.
+
 ## 0.0.3 - January 26, 2024
 
 - Improved MapView integration by introducing a combined AR-MapView view.
-    - The combined view automatically centers the user position and disables user events for the map.
+    - The combined view automatically centers the user position and disables user events for the
+      map.
     - A new button completely hides the MapView for a full screen AR experience.
 - Enhanced the plugin to exit the AR view when navigation concludes, accommodating cancellations or
   reaching the destination.
