@@ -35,47 +35,9 @@ class _NavigationBaseState extends State<NavigationBase> {
   void initState() {
     super.initState();
     var sdk = SitumSdk();
-    sdk.init(null, situmApiKey);
-
-    // Location:
-    sdk.onLocationUpdate((location) {
-      // debugPrint("Situm> SDK> Received location.");
-      arController.setLocation(location);
-    });
-
-    sdk.onLocationError((error) {
-      debugPrint("Situm> SDK> ERROR: ${error.message}");
-    });
-
-    sdk.onLocationStatus((status) {
-      debugPrint("Situm> SDK> STATUS: $status");
-    });
-
-    // Navigation:
-    sdk.onNavigationCancellation(() {
-      debugPrint("Situm> SDK> CANCEL NAVIGATION");
-      arController.setNavigationCancelled();
-    });
-
-    sdk.onNavigationDestinationReached(() {
-      debugPrint("Situm> SDK> NAVIGATION DESTINATION REACHED");
-      arController.setNavigationDestinationReached();
-    });
-
-    sdk.onNavigationOutOfRoute(() {
-      debugPrint("Situm> SDK> NAVIGATION USER OUT OF ROUTE");
-      arController.setNavigationOutOfRoute();
-    });
-
-    sdk.onNavigationProgress((progress) {
-      debugPrint("Situm> SDK> NAVIGATION PROGRESS");
-      arController.setNavigationProgress(progress);
-    });
-
-    sdk.onNavigationStart((route) {
-      debugPrint("Situm> SDK> NAVIGATION START");
-      arController.setNavigationStart(route);
-    });
+    sdk.init();
+    sdk.setDashboardURL(apiDomain);
+    sdk.setApiKey(situmApiKey);
 
     startPositioning();
   }
@@ -104,6 +66,7 @@ class _NavigationBaseState extends State<NavigationBase> {
           onCreated: onUnityViewCreated,
           onPopulated: onUnityViewPopulated,
           onDisposed: onUnityViewDisposed,
+          enable3DAmbiences: true,
           debugMode: true,
           mapView: MapView(
             key: const Key("situm_map"),

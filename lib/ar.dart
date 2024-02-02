@@ -17,4 +17,19 @@ part 'ar_pos_quality.dart';
 
 part 'situm_ar.dart';
 
+part 'ar_controller.dart';
+
+part 'ar_definitions.dart';
+
 part 'utils.dart';
+
+const _keyArMetadata = "ar_metadata";
+const _keyArMetadataAmbience = "ambience";
+
+const _ambiences3DCodes = {
+  'no_ambience': 0,
+  'desert': 1,
+  'oasis': 2,
+  'city': 3,
+  'sea': 4,
+};
