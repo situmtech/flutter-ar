@@ -48,10 +48,7 @@ class ARWidget extends StatefulWidget {
 
 class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
   ARController arController = ARController();
-  UnityViewController? unityViewController;
-  bool mapViewLoaded = false;
   bool isArVisible = false;
-  bool isArAvailable = false;
   bool isMapCollapsed = false;
   ARDebugUI debugUI = ARDebugUI();
   ScrollController scrollController = ScrollController();
@@ -91,27 +88,26 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
     return Stack(
       children: [
         // ============== AR view ==============================================
-        Visibility(
-          visible: mapViewLoaded,
-          child: Stack(
-            children: [
-              unityView,
-              // TODO: fix this:
-              //...debugUI.createAlertVisibilityParamsDebugWidgets(),
-              //...debugUI.createUnityParamsDebugWidgets(),
-              //...debugUI.createDynamicUnityParamsWidgets(),
-              _ARPosQuality(onCreate: _onARPosQuality),
-              // TODO: fix at Unity (message not being received):
-              _createTempBackButton(() {
-                arController.onArGone();
-              }),
-              widget.enable3DAmbiences
-                  ? _AmbienceSelector(
-                      debugMode: widget.debugMode,
-                    )
-                  : const SizedBox(),
-            ],
-          ),
+        Stack(
+          children: [
+            // Add the AR Widget at the bottom of the stack. It will start
+            // loading even when it is not visible.
+            unityView,
+            // TODO: fix this:
+            //...debugUI.createAlertVisibilityParamsDebugWidgets(),
+            //...debugUI.createUnityParamsDebugWidgets(),
+            //...debugUI.createDynamicUnityParamsWidgets(),
+            _ARPosQuality(onCreate: _onARPosQuality),
+            // TODO: fix at Unity (message not being received):
+            _createTempBackButton(() {
+              arController.onArGone();
+            }),
+            widget.enable3DAmbiences
+                ? _AmbienceSelector(
+                    debugMode: widget.debugMode,
+                  )
+                : const SizedBox(),
+          ],
         ),
         // ============== MapView ==============================================
         Align(
@@ -139,10 +135,15 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
                     // Add ScrollView to center the map: TODO fix MapView resizing on iOS.
                     controller: scrollController,
                     physics: const NeverScrollableScrollPhysics(),
-                    child: SizedBox(
-                      // Set the map height equals to the container.
-                      height: constraints.maxHeight,
-                      child: widget.mapView!,
+                    child: Container(
+                      // This opaque Container prevents the AR widget from being
+                      // visible while the map is not loaded.
+                      color: Colors.grey[200],
+                      child: SizedBox(
+                        // Set the map height equals to the container.
+                        height: constraints.maxHeight,
+                        child: widget.mapView!,
+                      ),
                     ),
                   ),
                 ),
@@ -188,7 +189,6 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
   void onUnityViewCreated(
       BuildContext context, UnityViewController? controller) {
     debugPrint("Situm> AR> onUnityViewCreated");
-    unityViewController = controller;
     if ((Platform.isAndroid && widget.occlusionAndroid) ||
         (Platform.isIOS && widget.occlusionIOS)) {
       controller?.send("MessageManager", "SendActivateOcclusion ", "null");
@@ -218,9 +218,6 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
     } else {
       arController.sleep();
     }
-    setState(() {
-      isArAvailable = true;
-    });
     widget.onCreated.call();
   }
 
@@ -238,11 +235,11 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
   @override
   void dispose() {
     super.dispose();
-    WidgetsBinding.instance.removeObserver(this);
-    debugPrint("Situm> AR> dispose()");
-    unityViewController?.pause();
+    arController._onARPosQualityState(null);
     arController._onUnityViewController(null);
     arController._onARWidgetState(null);
+    arController._onDispose();
+    WidgetsBinding.instance.removeObserver(this);
   }
 
   @override
@@ -260,6 +257,12 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
         arController.onArGone();
         break;
     }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    debugPrint("Situm> AR> LIFECYCLE> didChangeDependencies");
   }
 
   void updateStatusArRequested() {
@@ -282,11 +285,5 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
 
   _onARPosQuality(_ARPosQualityState state) {
     arController._onARPosQualityState(state);
-  }
-
-  _onMapViewLoaded() {
-    setState(() {
-      mapViewLoaded = true;
-    });
   }
 }

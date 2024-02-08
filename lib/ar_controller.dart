@@ -63,8 +63,13 @@ class ARController {
   void onMapViewLoad(MapViewController controller) {
     _mapViewController = controller;
     controller.internalARMessageDelegate(_onMapViewMessage);
-    _widgetState?._onMapViewLoaded();
     debugPrint("Situm> AR> onMapViewLoad");
+  }
+
+  /// Let this ARController know that the underlying Widget has been disposed.
+  void _onDispose() {
+    // Reset state.
+    _resumed = false;
   }
 
   // === Internal MapViewer messages:
@@ -99,6 +104,7 @@ class ARController {
   }
 
   void sleep() {
+    // Pause only if not already paused or at the initial state.
     if (_resumed == null || _resumed == true) {
       _unityViewController?.pause();
       _resumed = false;
@@ -106,6 +112,7 @@ class ARController {
   }
 
   void wakeup() {
+    // Resume only if not already resumed or at the initial state.
     if (_resumed == null || _resumed == false) {
       _unityViewController?.resume();
       _resumed = true;
