@@ -44,7 +44,7 @@ First, you'll need to setup Situm SDK Flutter plugin following the instructions 
 
 Then, you may install [situm_flutter_ar](https://pub.dev/packages/situm_flutter_ar) plugin:
 
-```shell
+```
 flutter pub add situm_flutter_ar
 ```
 
@@ -52,7 +52,7 @@ flutter pub add situm_flutter_ar
 
 1. Import the **UnityFramework.xcframework** into your **Runner** project in **XCode**.
 
-   <img src="./images/ios-import-1.png"  width="50%">
+   <img src="https://github.com/situmtech/flutter-ar/blob/main/images/ios-import-1.png"  width="50%">
 
 2. During the impoort, make sure you select the following options:
 
@@ -60,21 +60,21 @@ flutter pub add situm_flutter_ar
 - Select "Create groups" for "Added folders".
 - Add to target "Runner".
 
-  <img src="./images/ios-import-2.png"  width="50%">
+  <img src="https://github.com/situmtech/flutter-ar/blob/main/images/ios-import-2.png"  width="50%">
 
 3. In the main Target of your app, under General > "Frameworks, Libraries and Embedded Content",
    select "Embed & Sign" for the **UnityFramework.xcframework**.
 
-   <img src="./images/ios-import-3.png"  width="80%">
+   <img src="https://github.com/situmtech/flutter-ar/blob/main/images/ios-import-3.png"  width="80%">
 
 4. Under `<your_flutter_project>/ios`, run:
-   ```shell
+   ```
    pod install
    ```
 
 After this, you may compile & run your application:
 
-```shell
+```
 flutter run
 ```
 
@@ -82,12 +82,12 @@ flutter run
 
 1. Copy the AR binaries (**unityExport** folder in Android) into the **android** folder of your Flutter project.
 2. Add the following snippet to the end of the `<your_flutter_project>/android/settings.gradle` file (surely you have similar includes in there!):
-   ```shell
+   ```
    include ':unityExport'
    include ':unityExport:xrmanifest.androidlib'
    ```
 3. Complete your `<your_flutter_project>/android/build.gradle` using the following indications:
-   ```groovy
+   ```
    //...
    allprojects {
      repositories {
@@ -102,17 +102,17 @@ flutter run
      }
    ```
 4. Add the following permission to the `<your_flutter_project>/android/app/src/main/AndroidManifest.xml` file:
-   ```shell
+   ```
    <uses-permission android:name="android.permission.WAKE_LOCK"/>
    ```
 5. Add this line to your `gradle.properties` file:
-   ```properties
+   ```
     unityStreamingAssets=.unity3d, google-services-desktop.json, google-services.json, GoogleService-Info.plist
    ```
 
 After this, you may compile your application:
 
-```shell
+```
 flutter run
 ```
 
@@ -127,7 +127,7 @@ The [example app of this repository](./example/lib/main.dart) contains a complet
 
 First of all, you'll need to wrap your **MapView** widget inside the **ARWidget**. This way, the user will be presented with the **MapView**, and upon clicking on an "AR button" (only visible on dynamic navigation), the **ARWidget** will appear on the screen.
 
-```dart
+```
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -159,7 +159,7 @@ First of all, you'll need to wrap your **MapView** widget inside the **ARWidget*
 
 Then, you'll also need to forward certain events from the Situm SDK to the AR Plugin:
 
-```dart
+```
 @override
   void initState() {
     super.initState();
@@ -207,7 +207,7 @@ Then, you'll also need to forward certain events from the Situm SDK to the AR Pl
 
 Also, you'll need to make sure that the AR Plugin can interact with the **MapView**:
 
-```dart
+```
  void onMapViewLoad(MapViewController controller) {
 
     //...

@@ -1,3 +1,13 @@
+## 0.0.5 - February 09, 2024
+
+### Changed
+
+- The AR Widget now correctly handles `dispose()` calls occurring in "tabs" type implementations.
+
+### Fixed
+
+- Resolved a leak occurring in such situations.
+
 ## 0.0.4 - February 02, 2024
 
 ### Changed

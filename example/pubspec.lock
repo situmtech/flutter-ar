@@ -227,25 +227,25 @@ packages:
     dependency: "direct main"
     description:
       name: situm_flutter
-      sha256: "5b79f42f09c5d7b5a942d3b85487e110ee02d69144688133db9c1a80227babb2"
+      sha256: b672263fd39f6d17b921dbb6213a53abbddfbe4d6b1ee85398c800b375c9dc2e
       url: "https://pub.dev"
     source: hosted
-    version: "3.11.4"
+    version: "3.11.5"
   situm_flutter_ar:
     dependency: "direct main"
     description:
       path: ".."
       relative: true
     source: path
-    version: "0.0.4"
+    version: "0.0.5"
   situm_flutter_unity:
     dependency: "direct main"
     description:
       name: situm_flutter_unity
-      sha256: "31f5a37e64bda13980f3cccd6860767f1a73333f7e75b093b315853015312acd"
+      sha256: "3e847a481c7ab6c28df7bcad0949af8729c07759ead4e508b14c49e41de4306c"
       url: "https://pub.dev"
     source: hosted
-    version: "0.0.1"
+    version: "0.0.2"
   sky_engine:
     dependency: transitive
     description: flutter
