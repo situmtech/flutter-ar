@@ -67,7 +67,7 @@ class ARController {
   }
 
   /// Let this ARController know that the underlying Widget has been disposed.
-  void _onDispose() {
+  void _onARWidgetDispose() {
     // Reset state.
     _resumed = false;
   }

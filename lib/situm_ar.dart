@@ -238,7 +238,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
     arController._onARPosQualityState(null);
     arController._onUnityViewController(null);
     arController._onARWidgetState(null);
-    arController._onDispose();
+    arController._onARWidgetDispose();
     WidgetsBinding.instance.removeObserver(this);
   }
 
