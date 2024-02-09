@@ -116,9 +116,6 @@ After this, you may compile your application:
 flutter run
 ```
 
-> [!NOTE]  
-> We have disabled the AR functionality in Android due to bad performance in low end devices. You'll still need to compile for Android, but you'll not be able to see it working. We'll fix this in a latter version.
-
 ### Integrate the ARWidget in your app:
 
 We assume that you already have an application that uses Situm SDK. You may build one by following our [Quickstart Guide for Flutter](https://situm.com/docs/05-a-basic-flutter-app/).
