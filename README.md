@@ -52,7 +52,7 @@ flutter pub add situm_flutter_ar
 
 1. Import the **UnityFramework.xcframework** into your **Runner** project in **XCode**.
 
-   <img src="./images/ios-import-1.png"  width="50%">
+   <img src="https://github.com/situmtech/flutter-ar/blob/main/images/ios-import-1.png"  width="50%">
 
 2. During the impoort, make sure you select the following options:
 
@@ -60,12 +60,12 @@ flutter pub add situm_flutter_ar
 - Select "Create groups" for "Added folders".
 - Add to target "Runner".
 
-  <img src="./images/ios-import-2.png"  width="50%">
+  <img src="https://github.com/situmtech/flutter-ar/blob/main/images/ios-import-2.png"  width="50%">
 
 3. In the main Target of your app, under General > "Frameworks, Libraries and Embedded Content",
    select "Embed & Sign" for the **UnityFramework.xcframework**.
 
-   <img src="./images/ios-import-3.png"  width="80%">
+   <img src="https://github.com/situmtech/flutter-ar/blob/main/images/ios-import-3.png"  width="80%">
 
 4. Under `<your_flutter_project>/ios`, run:
    ```shell
