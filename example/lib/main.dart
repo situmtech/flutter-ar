@@ -30,6 +30,7 @@ class NavigationBase extends StatefulWidget {
 
 class _NavigationBaseState extends State<NavigationBase> {
   ARController arController = ARController();
+  int _selectedTab = 0;
 
   @override
   void initState() {
@@ -50,17 +51,45 @@ class _NavigationBaseState extends State<NavigationBase> {
       useDeadReckoning: false,
       useForegroundService: true,
       foregroundServiceNotificationOptions:
-          ForegroundServiceNotificationOptions(
+      ForegroundServiceNotificationOptions(
         showStopAction: true,
       ),
     ));
   }
 
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedTab = index;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.map),
+            label: 'Map',
+          ),
+        ],
+        currentIndex: _selectedTab,
+        selectedItemColor: Colors.amber[800],
+        onTap: _onItemTapped,
+      ),
       body: SafeArea(
-        child: ARWidget(
+        child: _selectedTab == 0
+        // IndexedStack(
+            ? const Center(child: Text("Home"))
+            : ARWidget(
+          // index: _selectedTab,
+          // children: [
+          //   const Center(child: Text("Home")),
+          //   ARWidget(
           buildingIdentifier: buildingIdentifier,
           apiDomain: apiDomain,
           onCreated: onUnityViewCreated,
@@ -84,6 +113,8 @@ class _NavigationBaseState extends State<NavigationBase> {
             onLoad: onMapViewLoad,
           ),
         ),
+        // ],
+        // ),
       ),
     );
   }
