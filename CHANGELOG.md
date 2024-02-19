@@ -1,3 +1,14 @@
+## Unreleased
+
+### Added
+
+- Now the plugin will display a `SnackBar` on 3D ambience changes, indicating that the user is
+  entering or exiting 3D ambience zones.
+
+### Fixed
+
+- Fixed a bug that prevent the `MapView` to correctly follow user when the AR is displayed.
+
 ## 0.0.5 - February 09, 2024
 
 ### Changed
