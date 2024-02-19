@@ -47,13 +47,15 @@ class ARWidget extends StatefulWidget {
 }
 
 class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
+  late String apiDomain;
   ARController arController = ARController();
   bool isArVisible = false;
   bool isMapCollapsed = false;
   ARDebugUI debugUI = ARDebugUI();
   ScrollController scrollController = ScrollController();
   static const Duration animationDuration = Duration(milliseconds: 200);
-  late String apiDomain;
+  static const Duration animationDurationWithDelay =
+      Duration(milliseconds: 300);
 
   @override
   void initState() {
@@ -270,17 +272,32 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
       isArVisible = true;
       isMapCollapsed = false;
     });
-    Future.delayed(animationDuration, () {
+    centerAction() {
       // "Center" the MapView into the ScrollView:
-      scrollController
-          .jumpTo(scrollController.position.maxScrollExtent * 2 / 5);
-    });
+      if (isArVisible) {
+        scrollController
+            .jumpTo(scrollController.position.maxScrollExtent * 2 / 5);
+      }
+    }
+
+    Future.delayed(animationDurationWithDelay, centerAction);
+    // Watchdog:
+    Future.delayed(const Duration(seconds: 1), centerAction);
   }
 
   void updateStatusArGone() {
     setState(() {
       isArVisible = false;
     });
+  }
+
+  void _updateStatusAmbienceSelected(int ambienceCode) {
+    if (widget.enable3DAmbiences && isArVisible) {
+      var message = ambienceCode != 0 // TODO: apply here a better design!
+          ? "Enjoy ${_AmbienceSelectorState._ambiences3DNames[ambienceCode]}!"
+          : "Exiting 3D ambience.";
+      _showToast(context, message);
+    }
   }
 
   _onARPosQuality(_ARPosQualityState state) {

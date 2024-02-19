@@ -279,6 +279,7 @@ class ARController {
     _unityViewController?.send(
         "MessageManager", "SendOnAmbienceZoneEnter", "$ambienceCode");
     _current3DAmbience.value = ambienceCode;
+    _widgetState?._updateStatusAmbienceSelected(ambienceCode);
   }
 
   void _setEnjoyMode(bool enjoySelected) {
