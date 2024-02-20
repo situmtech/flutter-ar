@@ -180,3 +180,30 @@ class _AmbienceSelectorState extends State<_AmbienceSelector> {
     );
   }
 }
+
+void _showToast(BuildContext context, String message) {
+  final scaffold = ScaffoldMessenger.of(context);
+  scaffold.showSnackBar(
+    SnackBar(
+      content: Container(
+        decoration: BoxDecoration(
+          color: const Color.fromARGB(255, 27, 50, 120),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: ListTile(
+          leading: const Icon(Icons.view_in_ar, color: Colors.white),
+          title: Text(
+            message,
+            style: const TextStyle(color: Colors.white),
+          ),
+        ),
+      ),
+      duration: const Duration(seconds: 3),
+      padding: EdgeInsets.zero,
+      behavior: SnackBarBehavior.floating,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(8)),
+      ),
+    ),
+  );
+}

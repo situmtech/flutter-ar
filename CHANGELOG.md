@@ -1,3 +1,19 @@
+## 0.0.6 - February 20, 2024
+
+### Added
+
+- Now the plugin will display a `SnackBar` on 3D ambience changes, indicating that the user is
+  entering or exiting 3D ambience zones.
+
+### Changed
+
+- Updated Situm Flutter SDK to
+  version [3.11.9](https://situm.com/docs/flutter-sdk-changelog/#version-3119--february-16-2024).
+
+### Fixed
+
+- Fixed a bug that prevent the `MapView` to correctly follow user when the AR is displayed.
+
 ## 0.0.5 - February 09, 2024
 
 ### Changed
