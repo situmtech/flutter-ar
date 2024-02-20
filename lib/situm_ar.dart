@@ -53,9 +53,11 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
   bool isMapCollapsed = false;
   ARDebugUI debugUI = ARDebugUI();
   ScrollController scrollController = ScrollController();
-  static const Duration animationDuration = Duration(milliseconds: 200);
+  static const int animationMillis = 200;
+  static const Duration animationDuration =
+      Duration(milliseconds: animationMillis);
   static const Duration animationDurationWithDelay =
-      Duration(milliseconds: 300);
+      Duration(milliseconds: animationMillis + 100);
 
   @override
   void initState() {
@@ -280,6 +282,8 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
       }
     }
 
+    // Use animationDurationWithDelay to move the scroll that contains the MapView
+    // This ensures it has been completely resized (after animationDuration).
     Future.delayed(animationDurationWithDelay, centerAction);
     // Watchdog:
     Future.delayed(const Duration(seconds: 1), centerAction);
