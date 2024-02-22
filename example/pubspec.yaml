@@ -20,7 +20,7 @@ dependencies:
   situm_flutter_ar:
     path: ../
 
-  situm_flutter_unity: ^0.0.2
+  situm_flutter_unity: ^0.0.3
 
   situm_flutter: ^3.11.12
 
