@@ -1,3 +1,21 @@
+## Unreleased
+
+### Changed
+
+- Updated the iOS configuration steps in the documentation to prevent UnityFramework from modifying
+  the visibility of the system's status bar. As mentioned in the documentation, add the
+  `UIViewControllerBasedStatusBarAppearance` key with a value of `false` to your Info.plist file:
+  ```
+   <key>UIViewControllerBasedStatusBarAppearance</key>
+   <false/>
+   ```
+- Update `situm_flutter_unity` to version 0.0.3 to similarly prevent changes to the window mode on
+  Android.
+
+### Fixed
+
+- Fixed AR status mistakenly resumed (instead of paused) under some circumstances.
+
 ## 0.0.6 - February 20, 2024
 
 ### Added

@@ -52,7 +52,7 @@ flutter pub add situm_flutter_ar
 
 1. Import the **UnityFramework.xcframework** into your **Runner** project in **XCode**.
 
-   <img src="https://github.com/situmtech/flutter-ar/blob/main/images/ios-import-1.png"  width="50%">
+   <img src="https://raw.githubusercontent.com/situmtech/flutter-ar/main/images/ios-import-1.png"  width="50%">
 
 2. During the impoort, make sure you select the following options:
 
@@ -60,14 +60,21 @@ flutter pub add situm_flutter_ar
 - Select "Create groups" for "Added folders".
 - Add to target "Runner".
 
-  <img src="https://github.com/situmtech/flutter-ar/blob/main/images/ios-import-2.png"  width="50%">
+  <img src="https://raw.githubusercontent.com/situmtech/flutter-ar/main/images/ios-import-2.png"  width="50%">
 
 3. In the main Target of your app, under General > "Frameworks, Libraries and Embedded Content",
    select "Embed & Sign" for the **UnityFramework.xcframework**.
 
-   <img src="https://github.com/situmtech/flutter-ar/blob/main/images/ios-import-3.png"  width="80%">
+   <img src="https://raw.githubusercontent.com/situmtech/flutter-ar/main/images/ios-import-3.png"  width="80%">
 
-4. Under `<your_flutter_project>/ios`, run:
+4. In your `Info.plist` file, add the `UIViewControllerBasedStatusBarAppearance` key with a value of `false` to prevent
+   UnityFramework from modifying the visibility of the system's status bar:
+   ```
+   <key>UIViewControllerBasedStatusBarAppearance</key>
+   <false/>
+   ```
+
+5. Under `<your_flutter_project>/ios`, run:
    ```
    pod install
    ```
@@ -133,7 +140,6 @@ First of all, you'll need to wrap your **MapView** widget inside the **ARWidget*
         onCreated: onUnityViewCreated,
         onPopulated: onUnityViewPopulated,
         onDisposed: onUnityViewDisposed,
-        arHeightRatio: 0.999,
         mapView: MapView(
           key: const Key("situm_map"),
           configuration: MapViewConfiguration(
