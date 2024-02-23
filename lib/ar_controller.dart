@@ -69,7 +69,7 @@ class ARController {
   /// Let this ARController know that the underlying Widget has been disposed.
   void _onARWidgetDispose() {
     // Reset state.
-    _resumed = false;
+    _resumed = null;
   }
 
   // === Internal MapViewer messages:
