@@ -57,5 +57,9 @@
     <array>
       <string>map-viewer.situm.com</string>
     </array>
+    <!-- Add the UIViewControllerBasedStatusBarAppearance key with a value of false to prevent
+    UnityFramework from modifying the visibility of the system's status bar. -->
+    <key>UIViewControllerBasedStatusBarAppearance</key>
+    <false/>
 </dict>
 </plist>
