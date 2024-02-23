@@ -12,7 +12,7 @@
 - Update `situm_flutter_unity` to version 0.0.3 to similarly prevent changes to the window mode on
   Android.
 - Updated Situm Flutter SDK to
-  version [3.11.12](https://situm.com/docs/flutter-sdk-changelog/#version-31112--february-21-2024).
+  version [3.11.13](https://situm.com/docs/flutter-sdk-changelog/#version-31113--february-23-2024).
 
 ### Fixed
 
