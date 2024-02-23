@@ -11,6 +11,8 @@ class ARController {
   ARModeUnityParams? _lastSetARModeUnityParams;
   final ValueNotifier<int> _current3DAmbience = ValueNotifier<int>(0);
 
+  int _locationCounter = 0;
+  static const int locationRefreshRate = 2;
   // The UnityView may be constantly created/disposed. On the disposed state,
   // any method call will probably be ignored (mostly in Android).
   // As a workaround we can keep a pending action that will be executed when
@@ -153,10 +155,16 @@ class ARController {
   }
 
   void _onLocationChanged(Location location) {
+    _locationCounter++;
     var locationMap = location.toMap();
     locationMap['timestamp'] = 0;
-    _unityViewController?.send(
-        "MessageManager", "SendLocation", jsonEncode(locationMap));
+
+    if (_locationCounter % locationRefreshRate == 0) {
+      debugPrint("send location to unity");
+      _unityViewController?.send(
+          "MessageManager", "SendLocation", jsonEncode(locationMap));
+      _locationCounter = 0;
+    }
     _updateArPosQualityState(location);
   }
 

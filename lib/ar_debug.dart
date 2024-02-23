@@ -22,6 +22,7 @@ const NAVIGATION_ACCURACY_LIMIT_DATA = 6;
 const NAVIGATION_CAMERA_LIMIT = 10.0;
 
 const DYNAMIC_STABLE_REFRESH_TIME = 10;
+const DYNAMIC_UNSTABLE_REFRESH_TIME = 5;
 const DYNAMIC_YAW_DIFF_STD_THRESHOLD = 15.0;
 const DYNAMIC_TIME_TO_REFRESH = 3;
 const DYNAMIC_TIME_TO_KEEP_REFRESHING = 10;
@@ -60,6 +61,8 @@ class ARModeDebugValues {
   // Value Notifiers Dynamic params
   static ValueNotifier<int> dynamicStableRefreshTime =
       ValueNotifier<int>(DYNAMIC_STABLE_REFRESH_TIME);
+  static ValueNotifier<int> dynamicUnstableRefreshTime =
+      ValueNotifier<int>(DYNAMIC_UNSTABLE_REFRESH_TIME);
   static ValueNotifier<double> dynamicYawDiffStdThreshold =
       ValueNotifier<double>(DYNAMIC_YAW_DIFF_STD_THRESHOLD);
   static ValueNotifier<int> dynamicTimeToRefresh =
@@ -309,11 +312,13 @@ class ARDebugUI {
   List<Widget> createDynamicUnityParamsWidgets() {
     return [
       createDebugButton(ARModeDebugValues.navigationAccuracyLimitDada,
-          DebugMode.alertVisibilityParams, 'NavAcc', 1, 450, 5),
+          DebugMode.alertVisibilityParams, 'NavAcc', 1, 500, 5),
       createDebugButton(ARModeDebugValues.navigationDistanceLimitData,
-          DebugMode.alertVisibilityParams, 'NavDist', 0.2, 400, 5),
+          DebugMode.alertVisibilityParams, 'NavDist', 0.2, 450, 5),
       createDebugButton(ARModeDebugValues.dynamicStableRefreshTime,
-          DebugMode.alertVisibilityParams, 'stable refresh time', 5, 350, 5),
+          DebugMode.alertVisibilityParams, 'stable refresh time', 1, 400, 5),
+      createDebugButton(ARModeDebugValues.dynamicUnstableRefreshTime,
+          DebugMode.alertVisibilityParams, 'unstable refresh time', 1, 350, 5),
       createDebugButton(ARModeDebugValues.walkedThreshold,
           DebugMode.alertVisibilityParams, 'WalkTh', 1, 300, 5),
       createDebugButton(ARModeDebugValues.dynamicYawDiffStdThreshold,
@@ -328,7 +333,7 @@ class ARDebugUI {
           150,
           5),
       createDebugButton(ARModeDebugValues.locationBufferSize,
-          DebugMode.alertVisibilityParams, 'locations buffer size ', 1, 500, 5),
+          DebugMode.alertVisibilityParams, 'locations buffer size ', 1, 550, 5),
       ValueListenableBuilder<DebugMode>(
           valueListenable: ARModeDebugValues.debugMode,
           builder: (context, value, child) {
