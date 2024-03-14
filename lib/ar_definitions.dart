@@ -1,5 +1,13 @@
 part of 'ar.dart';
 
+enum ARVisibility {
+  /// The AR module has been requested and is visible.
+  visible,
+
+  /// The AR module is not visible.
+  gone,
+}
+
 class ARMetadata {
   late final String? ambience;
 

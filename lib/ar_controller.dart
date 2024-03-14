@@ -35,16 +35,6 @@ class ARController {
   /// Let this ARController be up to date with the latest UnityViewController.
   void _onUnityViewController(UnityViewController? controller) {
     _unityViewController = controller;
-    if (_unityViewController != null) {
-      if (_navigationPendingAction != null) {
-        _navigationPendingAction?.call();
-        _navigationPendingAction = null;
-      }
-      if (_geofencesPendingAction != null) {
-        _geofencesPendingAction?.call();
-        _geofencesPendingAction = null;
-      }
-    }
   }
 
   /// Update this ARController with the ARPosQuality state so it can notify
@@ -95,12 +85,24 @@ class ARController {
       // to move the map during that time interval.
       _mapViewController?.followUser();
     });
+    // Execute pending actions:
+    if (_navigationPendingAction != null) {
+      _navigationPendingAction?.call();
+      _navigationPendingAction = null;
+    }
+    if (_geofencesPendingAction != null) {
+      _geofencesPendingAction?.call();
+      _geofencesPendingAction = null;
+    }
+    // Notify the client callback:
+    _widgetState?.widget.onARVisibilityChanged?.call(ARVisibility.visible);
   }
 
   void onArGone() {
     _widgetState?.updateStatusArGone();
     _mapViewController?.updateAugmentedRealityStatus(ARStatus.finished);
     sleep();
+    _widgetState?.widget.onARVisibilityChanged?.call(ARVisibility.gone);
   }
 
   void sleep() {
@@ -117,6 +119,10 @@ class ARController {
       _unityViewController?.resume();
       _resumed = true;
     }
+  }
+
+  bool _isReadyToReceiveMessages() {
+    return _unityViewController != null && _resumed == true;
   }
 
   // === Set of methods to keep the AR module updated regarding position and navigation.
@@ -173,7 +179,7 @@ class ARController {
   }
 
   void _onNavigationCancelled() {
-    if (_unityViewController != null) {
+    if (_isReadyToReceiveMessages()) {
       _unityViewController?.send("MessageManager", "CancelRoute", "null");
       _arModeManager?.updateWithNavigationStatus(NavigationStatus.finished);
       onArGone();
@@ -183,7 +189,7 @@ class ARController {
   }
 
   void _onNavigationDestinationReached() {
-    if (_unityViewController != null) {
+    if (_isReadyToReceiveMessages()) {
       _unityViewController?.send("MessageManager", "SendRouteEnd", "null");
       _arModeManager?.updateWithNavigationStatus(NavigationStatus.finished);
       onArGone();
@@ -193,7 +199,7 @@ class ARController {
   }
 
   void _onNavigationOutOfRoute() {
-    if (_unityViewController != null) {
+    if (_isReadyToReceiveMessages()) {
       _unityViewController?.send("MessageManager", "SendRouteUserOut", "null");
     } else {
       _navigationPendingAction = () => _onNavigationOutOfRoute();
@@ -206,7 +212,8 @@ class ARController {
   }
 
   void _onNavigationStart(SitumRoute route) {
-    if (_unityViewController != null) {
+    if (_isReadyToReceiveMessages()) {
+      debugPrint("Situm> AR> Navigation> _onNavigationStart");
       _unityViewController?.send(
           "MessageManager", "SendRoute", jsonEncode(route.rawContent));
       _arPosQualityState?.forceResetRefreshTimers();
@@ -217,7 +224,7 @@ class ARController {
   }
 
   void _onEnterGeofences(List<Geofence> geofences) {
-    if (_unityViewController != null) {
+    if (_isReadyToReceiveMessages()) {
       debugPrint("Situm> AR> Geofences> _onEnterGeofences");
       ARMetadata? arMetadata = ARMetadata._fromGeofences(geofences);
       if (arMetadata != null) {
@@ -229,7 +236,7 @@ class ARController {
   }
 
   void _onExitGeofences(List<Geofence> geofences) {
-    if (_unityViewController != null) {
+    if (_isReadyToReceiveMessages()) {
       debugPrint("Situm> AR> Geofences> _onExitGeofences");
       ARMetadata? arMetadata = ARMetadata._fromGeofences(geofences);
       if (arMetadata != null) {
