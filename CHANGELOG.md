@@ -1,3 +1,10 @@
+## 0.0.8 - March 14, 2024
+
+### Added
+
+- Added a new optional callback `onARVisibilityChanged` to get notified when the AR visibility
+  changes.
+
 ## 0.0.7 - February 23, 2024
 
 ### Changed

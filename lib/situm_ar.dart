@@ -6,6 +6,7 @@ class ARWidget extends StatefulWidget {
   final Function() onCreated;
   final Function() onPopulated;
   final Function onDisposed;
+  final Function(ARVisibility)? onARVisibilityChanged;
   final MapView? mapView;
   final double arHeightRatio;
   final bool debugMode;
@@ -33,6 +34,7 @@ class ARWidget extends StatefulWidget {
     required this.onCreated,
     required this.onPopulated,
     required this.onDisposed,
+    this.onARVisibilityChanged,
     this.mapView,
     this.arHeightRatio = 2 / 3,
     this.debugMode = false,
