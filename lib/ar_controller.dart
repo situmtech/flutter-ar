@@ -224,28 +224,28 @@ class ARController {
   }
 
   void _onEnterGeofences(List<Geofence> geofences) {
-    if (_isReadyToReceiveMessages()) {
-      debugPrint("Situm> AR> Geofences> _onEnterGeofences");
-      ARMetadata? arMetadata = ARMetadata._fromGeofences(geofences);
-      if (arMetadata != null) {
+    debugPrint("Situm> AR> Geofences> _onEnterGeofences");
+    ARMetadata? arMetadata = ARMetadata._fromGeofences(geofences);
+    if (arMetadata != null) {
+      if (_isReadyToReceiveMessages()) {
         _selectAmbience(arMetadata.ambienceCode);
+      } else {
+        _geofencesPendingAction = () => _onEnterGeofences(geofences);
       }
-    } else {
-      _geofencesPendingAction = () => _onEnterGeofences(geofences);
     }
   }
 
   void _onExitGeofences(List<Geofence> geofences) {
-    if (_isReadyToReceiveMessages()) {
-      debugPrint("Situm> AR> Geofences> _onExitGeofences");
-      ARMetadata? arMetadata = ARMetadata._fromGeofences(geofences);
-      if (arMetadata != null) {
+    debugPrint("Situm> AR> Geofences> _onExitGeofences");
+    ARMetadata? arMetadata = ARMetadata._fromGeofences(geofences);
+    if (arMetadata != null) {
+      if (_isReadyToReceiveMessages()) {
         if (_current3DAmbience.value == arMetadata.ambienceCode) {
           _selectAmbience(0);
         }
+      } else {
+        _geofencesPendingAction = () => _onExitGeofences(geofences);
       }
-    } else {
-      _geofencesPendingAction = () => _onExitGeofences(geofences);
     }
   }
 
