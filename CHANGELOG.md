@@ -1,3 +1,20 @@
+## 0.0.9 - March 20, 2024
+
+### Fixed
+
+- Fixed a bug where the plugin failed to load 3D ambiences when the user was positioned in an
+  area with multiple overlapping geofences, and the last notified geofence did not have AR metadata
+  configured.
+
+### Changed
+
+- Updated Situm Flutter SDK to version 3.11.16.
+- Updated camera distance limit to 20m.
+
+### Removed
+
+- Removed the "Low quality AR" message.
+
 ## 0.0.8 - March 14, 2024
 
 ### Added
