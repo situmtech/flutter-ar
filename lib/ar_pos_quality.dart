@@ -41,9 +41,10 @@ class _ARPosQualityState extends State<_ARPosQuality> {
 
   @override
   Widget build(BuildContext context) {
-    return Visibility(
-      visible: showARAlertWidget,
-      child: const Align(
+    return const Visibility(
+      // TODO: move logic to another component, remove this widget.
+      visible: false,
+      child: Align(
         alignment: Alignment.bottomCenter,
         child: IntrinsicHeight(
           child: Card(
