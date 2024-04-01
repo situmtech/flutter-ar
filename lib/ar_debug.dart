@@ -21,7 +21,8 @@ const NAVIGATION_ANGLE_LIMIT_DATA = 30;
 const NAVIGATION_ACCURACY_LIMIT_DATA = 6;
 const NAVIGATION_CAMERA_LIMIT = 20.0;
 
-const DYNAMIC_STABLE_REFRESH_TIME = 10;
+const DYNAMIC_STABLE_REFRESH_TIME = 30;
+const DYNAMIC_UNSTABLE_REFRESH_TIME = 15;
 const DYNAMIC_YAW_DIFF_STD_THRESHOLD = 15.0;
 const DYNAMIC_TIME_TO_REFRESH = 3;
 const DYNAMIC_TIME_TO_KEEP_REFRESHING = 10;
@@ -60,6 +61,8 @@ class ARModeDebugValues {
   // Value Notifiers Dynamic params
   static ValueNotifier<int> dynamicStableRefreshTime =
       ValueNotifier<int>(DYNAMIC_STABLE_REFRESH_TIME);
+  static ValueNotifier<int> dynamicUnstableRefreshTime =
+      ValueNotifier<int>(DYNAMIC_UNSTABLE_REFRESH_TIME);
   static ValueNotifier<double> dynamicYawDiffStdThreshold =
       ValueNotifier<double>(DYNAMIC_YAW_DIFF_STD_THRESHOLD);
   static ValueNotifier<int> dynamicTimeToRefresh =
