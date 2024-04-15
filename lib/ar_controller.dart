@@ -224,7 +224,6 @@ class ARController {
   }
 
   void _onEnterGeofences(List<Geofence> geofences) {
-    debugPrint("Situm> AR> Geofences> _onEnterGeofences");
     ARMetadata? arMetadata = ARMetadata._fromGeofences(geofences);
     if (arMetadata != null) {
       if (_isReadyToReceiveMessages()) {
@@ -232,20 +231,25 @@ class ARController {
       } else {
         _geofencesPendingAction = () => _onEnterGeofences(geofences);
       }
+      // Keep the state updated anyway so the AR module don't miss ambience
+      // changes when it is paused.
+      _current3DAmbience.value = arMetadata.ambienceCode;
     }
   }
 
   void _onExitGeofences(List<Geofence> geofences) {
-    debugPrint("Situm> AR> Geofences> _onExitGeofences");
     ARMetadata? arMetadata = ARMetadata._fromGeofences(geofences);
-    if (arMetadata != null) {
+    if (arMetadata != null &&
+        (_current3DAmbience.value == arMetadata.ambienceCode ||
+            _current3DAmbience.value == 0)) {
       if (_isReadyToReceiveMessages()) {
-        if (_current3DAmbience.value == arMetadata.ambienceCode) {
-          _selectAmbience(0);
-        }
+        _selectAmbience(0);
       } else {
         _geofencesPendingAction = () => _onExitGeofences(geofences);
       }
+      // Keep the state updated anyway so the AR module don't miss ambience
+      // changes when it is paused.
+      _current3DAmbience.value = 0;
     }
   }
 
@@ -285,8 +289,8 @@ class ARController {
   void _selectAmbience(int ambienceCode) {
     _unityViewController?.send(
         "MessageManager", "SendOnAmbienceZoneEnter", "$ambienceCode");
-    _current3DAmbience.value = ambienceCode;
     _widgetState?._updateStatusAmbienceSelected(ambienceCode);
+    debugPrint("Situm> AR> Ambiences> Selected $ambienceCode");
   }
 
   void _setEnjoyMode(bool enjoySelected) {

@@ -227,17 +227,17 @@ packages:
     dependency: "direct main"
     description:
       name: situm_flutter
-      sha256: e1353f61bb46e37e99f61c0921e8205d6e3f473770085f0b2ca5c0d737202204
+      sha256: "6c6dc93411ae73668c50e03ab2401a7fdcc923aedca90bb0afe2ac371f0ed134"
       url: "https://pub.dev"
     source: hosted
-    version: "3.11.16"
+    version: "3.13.0"
   situm_flutter_ar:
     dependency: "direct main"
     description:
       path: ".."
       relative: true
     source: path
-    version: "0.0.9"
+    version: "0.0.10"
   situm_flutter_unity:
     dependency: "direct main"
     description:

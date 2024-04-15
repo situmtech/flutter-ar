@@ -42,6 +42,11 @@ class ARMetadata {
     }
     return null;
   }
+
+  @override
+  String toString() {
+    return "Ambience_$ambienceCode";
+  }
 }
 
 class _Validations {
