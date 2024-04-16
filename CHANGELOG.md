@@ -1,3 +1,14 @@
+## 0.0.10 - April 15, 2024
+
+### Changed
+
+- Updated Situm Flutter SDK to version 3.13.0.
+
+### Fixed
+
+- Fixed a bug where the plugin failed to load 3D ambiences when the AR module was not visible (and
+  therefore paused).
+
 ## 0.0.9 - March 20, 2024
 
 ### Fixed
