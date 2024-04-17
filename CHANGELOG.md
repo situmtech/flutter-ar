@@ -1,3 +1,9 @@
+## 0.0.11 - April 17, 2024
+
+### Changed
+
+- Updated the value of the position refresh parameter of the AR module.
+
 ## 0.0.10 - April 15, 2024
 
 ### Changed

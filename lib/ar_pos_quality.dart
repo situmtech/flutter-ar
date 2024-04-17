@@ -27,7 +27,7 @@ class _ARPosQualityState extends State<_ARPosQuality> {
 
   bool showARAlertWidget = true;
 
-  int refreshData = 1;
+  int refreshData = ARModeDebugValues.dynamicUnstableRefreshTime.value;
   bool hasToRefresh = true;
   int waitToRefreshTimer = 0;
   int keepRefreshingTimer = 0;
@@ -146,7 +146,7 @@ class _ARPosQualityState extends State<_ARPosQuality> {
   void updateDynamicARParams(List<Location> locations) {
     if (locations.length < ARModeDebugValues.locationBufferSize.value ||
         !this.allLocationsInSameFloor(locations)) {
-      this.refreshData = 1;
+      this.refreshData = ARModeDebugValues.dynamicUnstableRefreshTime.value;
       distanceWalked = 0;
       return;
     }
@@ -174,7 +174,8 @@ class _ARPosQualityState extends State<_ARPosQuality> {
   }
 
   bool isRefreshing() {
-    return this.refreshData == 1;
+    return this.refreshData ==
+        ARModeDebugValues.dynamicUnstableRefreshTime.value;
   }
 
   void updateWaitToRefreshTimer() {
@@ -205,14 +206,14 @@ class _ARPosQualityState extends State<_ARPosQuality> {
       hasToRefresh = false;
     } else if (hasToRefresh &&
         waitToRefreshTimer == ARModeDebugValues.dynamicTimeToRefresh.value) {
-      this.refreshData = 1;
+      this.refreshData = ARModeDebugValues.dynamicUnstableRefreshTime.value;
       waitToRefreshTimer = 0;
       hasToRefresh = false;
     }
   }
 
   void forceResetRefreshTimers() {
-    this.refreshData = 1;
+    this.refreshData = ARModeDebugValues.dynamicUnstableRefreshTime.value;
     keepRefreshingTimer = 0;
     hasToRefresh = true;
   }
