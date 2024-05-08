@@ -53,6 +53,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
   ARController arController = ARController();
   bool isArVisible = false;
   bool isMapCollapsed = false;
+  bool loadingArMessage = false;
   ARDebugUI debugUI = ARDebugUI();
   ScrollController scrollController = ScrollController();
   static const int animationMillis = 200;
@@ -108,11 +109,11 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
             _createTempBackButton(() {
               arController.onArGone();
             }),
-            widget.enable3DAmbiences
-                ? _AmbienceSelector(
-                    debugMode: widget.debugMode,
-                  )
-                : const SizedBox(),
+            if (widget.enable3DAmbiences)
+              _AmbienceSelector(
+                debugMode: widget.debugMode,
+              ),
+            if (loadingArMessage) const ARLoadingWidget()
           ],
         ),
         // ============== MapView ==============================================
@@ -288,7 +289,17 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
     // This ensures it has been completely resized (after animationDuration).
     Future.delayed(animationDurationWithDelay, centerAction);
     // Watchdog:
-    Future.delayed(const Duration(seconds: 1), centerAction);
+    Future.delayed(const Duration(milliseconds: 1500), centerAction);
+
+    // Create a "AR Loading" message:
+    setState(() {
+      loadingArMessage = true;
+    });
+    Future.delayed(const Duration(seconds: 10), () {
+      setState(() {
+        loadingArMessage = false;
+      });
+    });
   }
 
   void updateStatusArGone() {
@@ -302,7 +313,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
       var message = ambienceCode != 0 // TODO: apply here a better design!
           ? "Enjoy ${_AmbienceSelectorState._ambiences3DNames[ambienceCode]}!"
           : "Exiting 3D ambience.";
-      _showToast(context, message);
+      _showToast(context, message, const Duration(seconds: 3));
     }
   }
 
