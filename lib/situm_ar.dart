@@ -54,6 +54,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
   bool isArVisible = false;
   bool isMapCollapsed = false;
   bool loadingArMessage = false;
+  Timer? loadingArMessageTimer;
   ARDebugUI debugUI = ARDebugUI();
   ScrollController scrollController = ScrollController();
   static const int animationMillis = 200;
@@ -291,20 +292,23 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
     // Watchdog:
     Future.delayed(const Duration(milliseconds: 1500), centerAction);
 
-    // Create a "AR Loading" message:
+    // Create a "AR Loading" message that disappears after 10s.:
     setState(() {
       loadingArMessage = true;
     });
-    Future.delayed(const Duration(seconds: 10), () {
+    loadingArMessageTimer = Timer(const Duration(seconds: 10), () {
       setState(() {
+        loadingArMessageTimer = null;
         loadingArMessage = false;
       });
     });
   }
 
   void updateStatusArGone() {
+    loadingArMessageTimer?.cancel();
     setState(() {
       isArVisible = false;
+      loadingArMessage = false;
     });
   }
 
