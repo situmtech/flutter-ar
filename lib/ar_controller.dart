@@ -25,6 +25,9 @@ class ARController {
   ARController._() {
     _arModeManager = ARModeManager(arModeChanged);
     SitumSdk().internalSetMethodCallARDelegate(_methodCallHandler);
+    Timer.periodic(const Duration(milliseconds: 200), (timer) {
+      _getOdometry();
+    });
   }
 
   factory ARController() {
@@ -303,5 +306,9 @@ class ARController {
           "MessageManager", "SendShowRouteElements", "null");
       _arModeManager?.switchToPreviousMode();
     }
+  }
+
+  void _getOdometry() {
+    _unityViewController?.send("MessageManager", "GetOdometryData", "null");
   }
 }

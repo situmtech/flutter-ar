@@ -121,6 +121,7 @@ class _NavigationBaseState extends State<NavigationBase> {
         Permission.storage,
         Permission.bluetoothConnect,
         Permission.bluetoothScan,
+        Permission.manageExternalStorage
       ]);
     }
     Map<Permission, PermissionStatus> statuses = await permissions.request();

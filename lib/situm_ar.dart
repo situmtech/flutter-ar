@@ -61,6 +61,8 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
   static const Duration animationDurationWithDelay =
       Duration(milliseconds: animationMillis + 100);
 
+  late String sessionId;
+
   @override
   void initState() {
     super.initState();
@@ -72,6 +74,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
       situmSdk.init();
       situmSdk.internalEnableGeofenceListening();
     }
+    sessionId = DateFormat('yyyyMMddHHmmss').format(DateTime.now().toString());
     ARController()._onARWidgetState(this);
   }
 
@@ -231,10 +234,39 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
     debugPrint("Situm> AR> REATTACHED!");
   }
 
+  void _saveMessageToFile(String? message) async {
+    try {
+      if (message != null) {
+        if (Platform.isAndroid) {
+          Directory? directory = await getExternalStorageDirectory();
+          //Directory? directory = getApplicationDocumentsDirectory();
+          if (directory != null) {
+            File file = File('${directory.path}/$sessionId.txt');
+
+            if (!await file.exists()) {
+              await file.create(recursive: true);
+            } else {
+              debugPrint("Writing message : $message, to path ${file.path}");
+              await file.writeAsString('$message\n', mode: FileMode.append);
+            }
+          } else {
+            debugPrint('Error: Could not access external storage.');
+          }
+        } else {
+          debugPrint('Error: Only for Android.');
+        }
+      }
+    } catch (e) {
+      debugPrint('Error saving message: $e');
+    }
+  }
+
   void onUnityViewMessage(UnityViewController? controller, String? message) {
     debugPrint("Situm> AR> MESSAGE! $message");
     if (message == "BackButtonTouched") {
       arController.onArGone();
+    } else {
+      _saveMessageToFile(message);
     }
   }
 
