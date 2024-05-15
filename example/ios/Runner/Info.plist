@@ -61,5 +61,9 @@
     UnityFramework from modifying the visibility of the system's status bar. -->
     <key>UIViewControllerBasedStatusBarAppearance</key>
     <false/>
+	<key>UIFileSharingEnabled</key>
+    <true/>
+    <key>LSSupportsOpeningDocumentsInPlace</key>
+    <true/>
 </dict>
 </plist>
