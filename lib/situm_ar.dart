@@ -237,7 +237,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
   void _saveMessageToFile(String? message, int timestamp) async {
     try {
       if (message != null) {
-        if (Platform.isAndroid) {
+        if (Platform.isAndroid || Platform.isIOS) {
           //Directory? directory = await getExternalStorageDirectory();
           Directory? directory = await getApplicationDocumentsDirectory();
           File file = File('${directory.path}/$sessionId.csv');
@@ -264,7 +264,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
             debugPrint("Writing message : $message, to path ${file.path}");
           }
         } else {
-          debugPrint('Error: Only for Android.');
+          debugPrint('Error: Only for Android or iOS.');
         }
       }
     } catch (e) {
