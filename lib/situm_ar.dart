@@ -74,7 +74,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
       situmSdk.init();
       situmSdk.internalEnableGeofenceListening();
     }
-    sessionId = DateFormat('yyyyMMddHHmmss').format(DateTime.now().toString());
+    sessionId = DateFormat('yyyyMMddHHmmss').format(DateTime.now());
     ARController()._onARWidgetState(this);
   }
 
