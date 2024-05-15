@@ -234,23 +234,34 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
     debugPrint("Situm> AR> REATTACHED!");
   }
 
-  void _saveMessageToFile(String? message) async {
+  void _saveMessageToFile(String? message, int timestamp) async {
     try {
       if (message != null) {
         if (Platform.isAndroid) {
-          Directory? directory = await getExternalStorageDirectory();
-          //Directory? directory = getApplicationDocumentsDirectory();
-          if (directory != null) {
-            File file = File('${directory.path}/$sessionId.txt');
+          //Directory? directory = await getExternalStorageDirectory();
+          Directory? directory = await getApplicationDocumentsDirectory();
+          File file = File('${directory.path}/$sessionId.csv');
 
-            if (!await file.exists()) {
-              await file.create(recursive: true);
-            } else {
-              debugPrint("Writing message : $message, to path ${file.path}");
-              await file.writeAsString('$message\n', mode: FileMode.append);
-            }
+          if (!await file.exists()) {
+            await file.create(recursive: true);
+            await file.writeAsString(
+                'timestamp,position.x,position.y,position.z,rotation.x,rotation.y,rotation.z\n',
+                mode: FileMode.append);
           } else {
-            debugPrint('Error: Could not access external storage.');
+            Map<String, dynamic> messageMap = json.decode(message);
+
+            String csvLine = '$timestamp';
+            messageMap.forEach((key, value) {
+              if (value is Map) {
+                value.forEach((k, v) {
+                  csvLine += ',$v';
+                });
+              } else {
+                csvLine += ',$value';
+              }
+            });
+            await file.writeAsString('$csvLine\n', mode: FileMode.append);
+            debugPrint("Writing message : $message, to path ${file.path}");
           }
         } else {
           debugPrint('Error: Only for Android.');
@@ -263,10 +274,12 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
 
   void onUnityViewMessage(UnityViewController? controller, String? message) {
     debugPrint("Situm> AR> MESSAGE! $message");
+
     if (message == "BackButtonTouched") {
       arController.onArGone();
     } else {
-      _saveMessageToFile(message);
+      int timestamp = DateTime.now().millisecondsSinceEpoch;
+      _saveMessageToFile(message, timestamp);
     }
   }
 
