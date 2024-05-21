@@ -1,4 +1,4 @@
-## Unreleased
+## 0.0.11 - May 21, 2024
 
 - Added a new "AR Loading" UI widget.
 - Updated the value of the position refresh parameter of the AR module.
