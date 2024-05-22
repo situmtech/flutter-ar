@@ -278,8 +278,24 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
     if (message == "BackButtonTouched") {
       arController.onArGone();
     } else {
-      int timestamp = DateTime.now().millisecondsSinceEpoch;
-      _saveMessageToFile(message, timestamp);
+      try {
+        var jsonData = jsonDecode(message!);
+
+        if (jsonData.containsKey('position') &&
+            jsonData.containsKey('rotation')) {
+          int timestamp = DateTime.now().millisecondsSinceEpoch;
+          jsonData['timestamp'] = timestamp;
+          String updatedMessage = jsonEncode(jsonData);
+
+          var sdk = SitumSdk();
+          sdk.setArOdometry(updatedMessage);
+        } else {
+          debugPrint(
+              "Situm> AR> Invalid JSON: Missing `position` or `rotation` fields.");
+        }
+      } catch (e) {
+        debugPrint("Situm> AR> Error parsing JSON: $e");
+      }
     }
   }
 
