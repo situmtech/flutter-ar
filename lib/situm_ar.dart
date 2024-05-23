@@ -282,7 +282,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
         var jsonData = jsonDecode(message!);
 
         if (jsonData.containsKey('position') &&
-            jsonData.containsKey('rotation')) {
+            jsonData.containsKey('eulerRotation')) {
           int timestamp = DateTime.now().millisecondsSinceEpoch;
           jsonData['timestamp'] = timestamp;
           String updatedMessage = jsonEncode(jsonData);
