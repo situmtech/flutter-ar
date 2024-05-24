@@ -286,9 +286,9 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
           int timestamp = DateTime.now().millisecondsSinceEpoch;
           jsonData['timestamp'] = timestamp;
           String updatedMessage = jsonEncode(jsonData);
-
-          var sdk = SitumSdk();
-          sdk.setArOdometry(updatedMessage);
+          _saveMessageToFile(updatedMessage, timestamp);
+          //var sdk = SitumSdk();
+          //sdk.setArOdometry(updatedMessage);
         } else {
           debugPrint(
               "Situm> AR> Invalid JSON: Missing `position` or `rotation` fields.");
