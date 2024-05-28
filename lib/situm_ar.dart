@@ -106,7 +106,8 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
             //...debugUI.createAlertVisibilityParamsDebugWidgets(),
             //...debugUI.createUnityParamsDebugWidgets(),
             //...debugUI.createDynamicUnityParamsWidgets(),
-            _ARPosQuality(onCreate: _onARPosQuality),
+            ...debugUI.createWidgetRefresh(),
+            //_ARPosQuality(onCreate: _onARPosQuality),
             // TODO: fix at Unity (message not being received):
             _createTempBackButton(() {
               arController.onArGone();

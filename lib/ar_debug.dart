@@ -22,11 +22,13 @@ const NAVIGATION_ACCURACY_LIMIT_DATA = 6;
 const NAVIGATION_CAMERA_LIMIT = 20.0;
 
 const DYNAMIC_STABLE_REFRESH_TIME = 30;
-const DYNAMIC_UNSTABLE_REFRESH_TIME = 30;
+const DYNAMIC_UNSTABLE_REFRESH_TIME = 5; //30;
 const DYNAMIC_YAW_DIFF_STD_THRESHOLD = 15.0;
 const DYNAMIC_TIME_TO_REFRESH = 3;
 const DYNAMIC_TIME_TO_KEEP_REFRESHING = 10;
 const DYNAMIC_LOCATION_BUFFER_SIZE = 10;
+
+const REFRESH = true;
 
 enum DebugMode {
   deactivated,
@@ -93,6 +95,8 @@ class ARModeDebugValues {
       ValueNotifier<int>(NAVIGATION_ACCURACY_LIMIT_DATA);
   static ValueNotifier<double> navigationCameraLimit =
       ValueNotifier<double>(NAVIGATION_CAMERA_LIMIT);
+
+  static ValueNotifier<bool> refresh = ValueNotifier<bool>(REFRESH);
 
   static set arMode(ARMode arMode) {
     arModeNotifier.value = arMode;
@@ -307,6 +311,60 @@ class ARDebugUI {
     );
 
     return widgets;
+  }
+
+  Widget createButtonRefresh(ValueNotifier<bool> refresh, DebugMode mode,
+      String label, double left, double top, double size) {
+    return Positioned(
+      left: left,
+      top: top,
+      child: ElevatedButton(
+        onPressed: () {
+          refresh.value = !refresh
+              .value; // Cambia el valor de refresh al presionar el botón
+          debugPrint("REfresh: ${refresh.value}");
+          if (refresh.value) {
+            ARModeDebugValues.debugVariables.value = "REFRESHING";
+            _controller?.send("MessageManager", "SendRefressData", '1');
+          } else {
+            ARModeDebugValues.debugVariables.value = "NO REFRESHING";
+            _controller?.send("MessageManager", "SendRefressData", '10000');
+          }
+        },
+        child: Text(label),
+      ),
+    );
+  }
+
+  List<Widget> createWidgetRefresh() {
+    return [
+      createButtonRefresh(ARModeDebugValues.refresh,
+          DebugMode.alertVisibilityParams, 'Refresh', 0, 450, 5),
+      ValueListenableBuilder<DebugMode>(
+          valueListenable: ARModeDebugValues.debugMode,
+          builder: (context, value, child) {
+            return Visibility(
+                visible: (value == DebugMode.alertVisibilityParams),
+                child: Positioned(
+                  //bottom: 10,
+                  top: 100,
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color.fromARGB(77, 255, 255, 255),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: ValueListenableBuilder(
+                      valueListenable: ARModeDebugValues.debugVariables,
+                      builder: (context, value, child) => Text(
+                        value,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ),
+                ));
+          }),
+    ];
   }
 
   List<Widget> createDynamicUnityParamsWidgets() {
