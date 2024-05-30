@@ -22,6 +22,9 @@ class ARController {
   // as it seems to be freezing the AR module on iOS.
   bool? _resumed;
 
+  bool hasToRefresh = true;
+  int refreshingTimer = 5;
+
   ARController._() {
     _arModeManager = ARModeManager(arModeChanged);
     SitumSdk().internalSetMethodCallARDelegate(_methodCallHandler);
@@ -117,6 +120,7 @@ class ARController {
   }
 
   void wakeup() {
+    startRefreshing();
     // Resume only if not already resumed or at the initial state.
     if (_resumed == null || _resumed == false) {
       _unityViewController?.resume();
@@ -161,12 +165,91 @@ class ARController {
     }
   }
 
+  void startRefreshing() {
+    hasToRefresh = true;
+    ARModeDebugValues.refresh.value = true;
+    _unityViewController?.send("MessageManager", "SendRefressData", '1');
+    refreshingTimer = 5;
+  }
+
   void _onLocationChanged(Location location) {
     var locationMap = location.toMap();
     locationMap['timestamp'] = 0;
     _unityViewController?.send(
         "MessageManager", "SendLocation", jsonEncode(locationMap));
     _updateArPosQualityState(location);
+
+    _updateRefreshing();
+
+    // if (areOdoSimilar! < 0.25) {
+    //   ARModeDebugValues.debugVariables.value =
+    //       "REFRESH!!\n ${areOdoSimilar.toString()}";
+    //   _unityViewController?.send("MessageManager", "SendRefressData", '1');
+    // } else {
+    //   ARModeDebugValues.debugVariables.value =
+    //       "NO REFRESH!!\n ${areOdoSimilar.toString()}";
+    //   _unityViewController?.send("MessageManager", "SendRefressData", '1000');
+    // }
+    //}
+  }
+
+  void _updateRefreshing() {
+    // check similarity
+    var areOdoSimilar = _arPosQualityState?.areOdometriesSimilar(
+        _arPosQualityState!.sdkLocationCoordinates,
+        _arPosQualityState!.arLocations,
+        10);
+    debugPrint("areOdoSimilar: $areOdoSimilar, hastorefresh: $hasToRefresh");
+
+    bool stable = areOdoSimilar! < 3;
+    if (hasToRefresh && stable && !ARModeDebugValues.refresh.value) {
+      ARModeDebugValues.refresh.value = true;
+      _unityViewController?.send("MessageManager", "SendRefressData", '1');
+      refreshingTimer = 5;
+    } else if (refreshingTimer > 0 && ARModeDebugValues.refresh.value) {
+      refreshingTimer--;
+    }
+    if (refreshingTimer == 0 && ARModeDebugValues.refresh.value && stable) {
+      ARModeDebugValues.refresh.value = false;
+      hasToRefresh = false;
+      _unityViewController?.send("MessageManager", "SendRefressData", '10000');
+    }
+    if (!stable) {
+      hasToRefresh = true;
+    }
+
+    //      if (ARModeDebugValues
+    //         .refresh.value &&
+    //     refreshingTimer > 0) {
+    //   //if refreshing
+    //   refreshingTimer--;
+    // }
+    // if (areOdoSimilar! < 2 && hasToRefresh) {
+    //   hasToRefresh = false;
+    //   ARModeDebugValues.refresh.value = true;
+    //   refreshingTimer = 5;
+    //   _unityViewController?.send("MessageManager", "SendRefressData", '1');
+    //   debugPrint(
+    //       "SET refresh true! \tareOdoSimilar: $areOdoSimilar, hastorefresh: $hasToRefresh");
+    // } else if (areOdoSimilar >= 2 && ARModeDebugValues.refresh.value) {
+    //   // if not similar and is refreshing do not refresh
+    //   hasToRefresh = true;
+    //   ARModeDebugValues.refresh.value = false;
+    //   _unityViewController?.send("MessageManager", "SendRefressData", '10000');
+    //   debugPrint(
+    //       "SET refresh false! \tareOdoSimilar: $areOdoSimilar, hastorefresh: $hasToRefresh");
+    // } else if (!hasToRefresh && refreshingTimer == 0) {
+    //   ARModeDebugValues.refresh.value = false;
+    //   _unityViewController?.send("MessageManager", "SendRefressData", '10000');
+    // }
+    // update  debug info
+    if (ARModeDebugValues.refresh.value) {
+      ARModeDebugValues.debugVariables.value =
+          "REFRESHING\n ${areOdoSimilar.toString()}";
+    } else {
+      ARModeDebugValues.debugVariables.value =
+          "NOT REFRESHING\n ${areOdoSimilar.toString()}";
+    }
   }
 
   void _updateArPosQualityState(location) {
@@ -220,6 +303,7 @@ class ARController {
       _unityViewController?.send(
           "MessageManager", "SendRoute", jsonEncode(route.rawContent));
       _arPosQualityState?.forceResetRefreshTimers();
+      startRefreshing();
       _arModeManager?.updateWithNavigationStatus(NavigationStatus.started);
     } else {
       _navigationPendingAction = () => _onNavigationStart(route);

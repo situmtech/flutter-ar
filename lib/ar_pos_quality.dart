@@ -14,6 +14,30 @@ class _ARPosQuality extends StatefulWidget {
   _ARPosQualityState createState() => _ARPosQualityState();
 }
 
+class LocationCoordinates {
+  final double x;
+  final double y;
+  final int timestamp;
+
+  LocationCoordinates(this.x, this.y, this.timestamp);
+
+  LocationCoordinates operator -(LocationCoordinates other) =>
+      LocationCoordinates(
+          x - other.x, y - other.y, timestamp - other.timestamp);
+
+  double distanceTo(LocationCoordinates other) {
+    return sqrt((x - other.x) * (x - other.x) + (y - other.y) * (y - other.y));
+  }
+
+  LocationCoordinates rotate(double angle) {
+    double rad = angle * (3.141592653589793 / 180.0);
+    double cosA = cos(rad);
+    double sinA = sin(rad);
+    return LocationCoordinates(
+        x * cosA - y * sinA, x * sinA + y * cosA, timestamp);
+  }
+}
+
 class _ARPosQualityState extends State<_ARPosQuality> {
   double avgLocAccuracy = -1.0;
   double distanceWalked = -1.0;
@@ -23,6 +47,8 @@ class _ARPosQualityState extends State<_ARPosQuality> {
   int debugModeCount = 0;
 
   List<Location> sdkLocations = [];
+  List<LocationCoordinates> sdkLocationCoordinates = [];
+  List<LocationCoordinates> arLocations = [];
   bool userNeedsToWalk = true;
 
   bool showARAlertWidget = true;
@@ -86,62 +112,184 @@ class _ARPosQualityState extends State<_ARPosQuality> {
     );
   }
 
+  Location createLocationFromARMessage(String message) {
+    var jsonData = jsonDecode(message);
+    return Location(
+      coordinate: Coordinate(
+        latitude: 0,
+        longitude: 0,
+      ),
+      cartesianCoordinate: CartesianCoordinate(
+        x: jsonData["position"]["x"] ?? 0,
+        y: jsonData["position"]["z"] ?? 0,
+      ),
+      bearing: Angle(
+        // TODO: conversions
+        degrees: jsonData["eulerRotation"]["y"],
+        degreesClockwise: jsonData["eulerRotation"]["y"],
+        radians: 0,
+        radiansMinusPiPi: 0,
+      ),
+      accuracy: 0,
+      buildingIdentifier: '',
+      floorIdentifier: '',
+      hasBearing: true,
+      isIndoor: true,
+      isOutdoor: false,
+      timestamp: jsonData["timestamp"].toInt(),
+    );
+  }
+
+  LocationCoordinates createLocationCoordinatesFromARMessage(String message) {
+    var jsonData = jsonDecode(message);
+    return LocationCoordinates(
+      jsonData["position"]["x"] ?? 0,
+      jsonData["position"]["z"] ?? 0,
+      jsonData["timestamp"].toInt(),
+    );
+  }
+
+  void updateArLocation(String message) {
+    LocationCoordinates arLocation =
+        createLocationCoordinatesFromARMessage(message);
+    if (arLocations.isEmpty ||
+        arLocation.timestamp > arLocations.last.timestamp + 1000) {
+      // Force roughly same frequency
+      arLocations.add(arLocation); // parse message to location
+    }
+    debugPrint("arlocation size: ${arLocations.length}");
+    if (arLocations.length > LOCATION_BUFFER_SIZE) {
+      arLocations.removeAt(0);
+    }
+  }
+
   void updateLocation(Location location) {
     sdkLocations.add(location);
+    sdkLocationCoordinates.add(LocationCoordinates(
+        location.cartesianCoordinate.x,
+        location.cartesianCoordinate.y,
+        location.timestamp));
     if (sdkLocations.length > LOCATION_BUFFER_SIZE) {
       sdkLocations.removeAt(0);
     }
-
-    var converged = false;
-    var hasWalked = false;
-
-    if (sdkLocations.length == LOCATION_BUFFER_SIZE) {
-      converged = _enoughARQuality(sdkLocations);
-      hasWalked = _enoughARMovement(sdkLocations);
+    if (sdkLocationCoordinates.length > LOCATION_BUFFER_SIZE) {
+      sdkLocationCoordinates.removeAt(0);
     }
-
-    updateDynamicARParams(sdkLocations);
-
-    if (!converged) {
-      userNeedsToWalk = true;
-    }
-
-    var goodARQuality = converged;
-
-    if (userNeedsToWalk) {
-      goodARQuality = converged && hasWalked;
-      if (goodARQuality) {
-        // No need to walk if converged and already walked
-        userNeedsToWalk = false;
-      }
-    }
-
-    setState(() {
-      showARAlertWidget = !goodARQuality;
-    });
-
-    var locationMap = location.toMap();
-    locationMap["timestamp"] = -1;
-
-    ARModeDebugValues.debugVariables.value = """
-        Locations Number: ${sdkLocations.length} 
-        Walked: ${distanceWalked.toStringAsFixed(1)} Th: ${ARModeDebugValues.walkedThreshold.value.toStringAsFixed(1)}
-        ----
-        yawDiffStd: $yawDiffStd,
-        Dynamic params:
-         refreshData: $refreshData, 
-         distanceLimitData: ${ARModeDebugValues.navigationDistanceLimitData.value}, 
-         hasToRefresh: $hasToRefresh,
-         waitToRefreshTimer: $waitToRefreshTimer,
-         keepRefreshingTimer: $keepRefreshingTimer,
-        ---
-        accuracyLimitData: ${ARModeDebugValues.navigationAccuracyLimitDada.value}
-        ---
-        converged: $converged
-        hasWalked: $hasWalked
-        goodARQuality: $goodARQuality
-        """;
   }
+
+  List<LocationCoordinates> transformTrajectory(
+      List<LocationCoordinates> trajectory) {
+    if (trajectory.isEmpty) return [];
+
+    // Trasladar la trayectoria para que comience en el origen
+    LocationCoordinates origin = trajectory[0];
+    List<LocationCoordinates> translatedTrajectory =
+        trajectory.map((loc) => loc - origin).toList();
+
+    if (translatedTrajectory.length == 1) return translatedTrajectory;
+
+    // Calcular el ángulo de rotación necesario
+    LocationCoordinates firstVector = translatedTrajectory[1];
+    double angle =
+        atan2(firstVector.y, firstVector.x) * (180.0 / 3.141592653589793);
+
+    // Rotar la trayectoria para alinear con el eje x
+    List<LocationCoordinates> alignedTrajectory =
+        translatedTrajectory.map((loc) => loc.rotate(-angle)).toList();
+
+    return alignedTrajectory;
+  }
+
+  double areOdometriesSimilar(
+    List<LocationCoordinates> arLocations,
+    List<LocationCoordinates> sdkLocations,
+    double threshold,
+  ) {
+    var maxDifference = 0.0;
+    var cumDifference = 0.0;
+    if (arLocations.length != sdkLocations.length) {
+      debugPrint('The lengths of the location arrays do not match.');
+      return maxDifference;
+    }
+
+    // Transformar ambas trayectorias
+    List<LocationCoordinates> transformedARLocations =
+        transformTrajectory(arLocations);
+    List<LocationCoordinates> transformedSDKLocations =
+        transformTrajectory(sdkLocations);
+
+    for (int i = 0; i < transformedARLocations.length - 1; i++) {
+      double distanceAR =
+          transformedARLocations[i].distanceTo(transformedARLocations[i + 1]);
+      double distanceSDK =
+          transformedSDKLocations[i].distanceTo(transformedSDKLocations[i + 1]);
+      maxDifference = max((distanceAR - distanceSDK).abs(), maxDifference);
+      cumDifference += (distanceAR - distanceSDK).abs();
+    }
+    if (maxDifference > threshold) {
+      debugPrint('Odometries are not similar at index.');
+    } else {
+      debugPrint('Odometries are similar.');
+    }
+
+    return cumDifference;
+  }
+  // void updateLocation(Location location) {
+  //   sdkLocations.add(location);
+  //   if (sdkLocations.length > LOCATION_BUFFER_SIZE) {
+  //     sdkLocations.removeAt(0);
+  //   }
+
+  //   var converged = false;
+  //   var hasWalked = false;
+
+  //   if (sdkLocations.length == LOCATION_BUFFER_SIZE) {
+  //     converged = _enoughARQuality(sdkLocations);
+  //     hasWalked = _enoughARMovement(sdkLocations);
+  //   }
+
+  //   updateDynamicARParams(sdkLocations);
+
+  //   if (!converged) {
+  //     userNeedsToWalk = true;
+  //   }
+
+  //   var goodARQuality = converged;
+
+  //   if (userNeedsToWalk) {
+  //     goodARQuality = converged && hasWalked;
+  //     if (goodARQuality) {
+  //       // No need to walk if converged and already walked
+  //       userNeedsToWalk = false;
+  //     }
+  //   }
+
+  //   setState(() {
+  //     showARAlertWidget = !goodARQuality;
+  //   });
+
+  //   var locationMap = location.toMap();
+  //   locationMap["timestamp"] = -1;
+
+  //   ARModeDebugValues.debugVariables.value = """
+  //       Locations Number: ${sdkLocations.length}
+  //       Walked: ${distanceWalked.toStringAsFixed(1)} Th: ${ARModeDebugValues.walkedThreshold.value.toStringAsFixed(1)}
+  //       ----
+  //       yawDiffStd: $yawDiffStd,
+  //       Dynamic params:
+  //        refreshData: $refreshData,
+  //        distanceLimitData: ${ARModeDebugValues.navigationDistanceLimitData.value},
+  //        hasToRefresh: $hasToRefresh,
+  //        waitToRefreshTimer: $waitToRefreshTimer,
+  //        keepRefreshingTimer: $keepRefreshingTimer,
+  //       ---
+  //       accuracyLimitData: ${ARModeDebugValues.navigationAccuracyLimitDada.value}
+  //       ---
+  //       converged: $converged
+  //       hasWalked: $hasWalked
+  //       goodARQuality: $goodARQuality
+  //       """;
+  // }
 
   void updateDynamicARParams(List<Location> locations) {
     if (locations.length < ARModeDebugValues.locationBufferSize.value ||

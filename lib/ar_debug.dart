@@ -322,6 +322,7 @@ class ARDebugUI {
         onPressed: () {
           refresh.value = !refresh
               .value; // Cambia el valor de refresh al presionar el botón
+
           debugPrint("REfresh: ${refresh.value}");
           if (refresh.value) {
             ARModeDebugValues.debugVariables.value = "REFRESHING";

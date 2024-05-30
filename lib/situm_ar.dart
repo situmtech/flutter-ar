@@ -107,7 +107,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
             //...debugUI.createUnityParamsDebugWidgets(),
             //...debugUI.createDynamicUnityParamsWidgets(),
             ...debugUI.createWidgetRefresh(),
-            //_ARPosQuality(onCreate: _onARPosQuality),
+            _ARPosQuality(onCreate: _onARPosQuality),
             // TODO: fix at Unity (message not being received):
             _createTempBackButton(() {
               arController.onArGone();
@@ -290,6 +290,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
 
           var sdk = SitumSdk();
           sdk.setArOdometry(updatedMessage);
+          arController._arPosQualityState?.updateArLocation(updatedMessage);
         } else {
           debugPrint(
               "Situm> AR> Invalid JSON: Missing `position` or `rotation` fields.");
