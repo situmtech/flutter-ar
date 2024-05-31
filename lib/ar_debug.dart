@@ -29,6 +29,7 @@ const DYNAMIC_TIME_TO_KEEP_REFRESHING = 10;
 const DYNAMIC_LOCATION_BUFFER_SIZE = 10;
 
 const REFRESH = true;
+const ODO_DIFFERENCE_SENSIBILITY = 4;
 
 enum DebugMode {
   deactivated,
@@ -97,6 +98,8 @@ class ARModeDebugValues {
       ValueNotifier<double>(NAVIGATION_CAMERA_LIMIT);
 
   static ValueNotifier<bool> refresh = ValueNotifier<bool>(REFRESH);
+  static ValueNotifier<int> odoDifferenceSensibility =
+      ValueNotifier<int>(ODO_DIFFERENCE_SENSIBILITY);
 
   static set arMode(ARMode arMode) {
     arModeNotifier.value = arMode;
@@ -339,6 +342,8 @@ class ARDebugUI {
 
   List<Widget> createWidgetRefresh() {
     return [
+      createDebugButton(ARModeDebugValues.odoDifferenceSensibility,
+          DebugMode.alertVisibilityParams, 'odometry difference', 1, 450, 5),
       createButtonRefresh(ARModeDebugValues.refresh,
           DebugMode.alertVisibilityParams, 'Refresh', 0, 450, 5),
       ValueListenableBuilder<DebugMode>(

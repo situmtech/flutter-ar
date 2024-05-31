@@ -169,7 +169,7 @@ class ARController {
     hasToRefresh = true;
     ARModeDebugValues.refresh.value = true;
     _unityViewController?.send("MessageManager", "SendRefressData", '1');
-    refreshingTimer = 5;
+    refreshingTimer = 10;
   }
 
   void _onLocationChanged(Location location) {
@@ -201,7 +201,8 @@ class ARController {
         10);
     debugPrint("areOdoSimilar: $areOdoSimilar, hastorefresh: $hasToRefresh");
 
-    bool stable = areOdoSimilar! < 3;
+    bool stable =
+        areOdoSimilar! < ARModeDebugValues.odoDifferenceSensibility.value;
     if (hasToRefresh && stable && !ARModeDebugValues.refresh.value) {
       ARModeDebugValues.refresh.value = true;
       _unityViewController?.send("MessageManager", "SendRefressData", '1');
