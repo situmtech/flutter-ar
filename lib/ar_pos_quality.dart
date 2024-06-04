@@ -1,6 +1,7 @@
 part of 'ar.dart';
 
-const LOCATION_BUFFER_SIZE = 10;
+const LOCATION_BUFFER_SIZE = 30;
+const DEFAUL_REFRESH_THRESHOLD = 0.2;
 
 class _ARPosQuality extends StatefulWidget {
   final Function(_ARPosQualityState) onCreate;
@@ -14,27 +15,68 @@ class _ARPosQuality extends StatefulWidget {
   _ARPosQualityState createState() => _ARPosQualityState();
 }
 
+class RefreshThreshold {
+  double value;
+  int timestamp;
+
+  RefreshThreshold(this.value, this.timestamp);
+
+  @override
+  String toString() {
+    return 'RefreshTrehsold(value: $value, timestamp:$timestamp)';
+  }
+}
+
 class LocationCoordinates {
   final double x;
   final double y;
+  final double yaw;
   final int timestamp;
 
-  LocationCoordinates(this.x, this.y, this.timestamp);
+  LocationCoordinates(this.x, this.y, this.yaw, this.timestamp);
 
   LocationCoordinates operator -(LocationCoordinates other) =>
-      LocationCoordinates(
-          x - other.x, y - other.y, timestamp - other.timestamp);
+      LocationCoordinates(x - other.x, y - other.y, yawAdd(-other.yaw),
+          timestamp - other.timestamp);
 
   double distanceTo(LocationCoordinates other) {
     return sqrt((x - other.x) * (x - other.x) + (y - other.y) * (y - other.y));
   }
 
   LocationCoordinates rotate(double angle) {
-    double rad = angle * (3.141592653589793 / 180.0);
-    double cosA = cos(rad);
-    double sinA = sin(rad);
+    double cosA = cos(angle);
+    double sinA = sin(angle);
     return LocationCoordinates(
-        x * cosA - y * sinA, x * sinA + y * cosA, timestamp);
+        x * cosA - y * sinA, x * sinA + y * cosA, yawAdd(angle), timestamp);
+  }
+
+  double angularDistanceTo(LocationCoordinates other) {
+    double angleDifference = yaw - other.yaw;
+    angleDifference = (angleDifference + pi / 2) % pi - pi / 2;
+    return angleDifference.abs();
+  }
+
+  double yawAdd(double angle) {
+    double newYaw = yaw + angle;
+    newYaw = (newYaw + pi / 2) % pi - pi / 2;
+    return newYaw;
+  }
+
+  @override
+  String toString() {
+    return 'LocationCoordinates(x: $x, y: $y, yaw: $yaw, timestamp: $timestamp)';
+  }
+}
+
+class OdometriesMatchResult {
+  final double distance;
+  final double angularDistance;
+
+  OdometriesMatchResult(this.distance, this.angularDistance);
+
+  @override
+  String toString() {
+    return 'OdometriesMatchResult(distance: $distance, angularDistance: $angularDistance)';
   }
 }
 
@@ -58,6 +100,10 @@ class _ARPosQualityState extends State<_ARPosQuality> {
   int waitToRefreshTimer = 0;
   int keepRefreshingTimer = 0;
   double yawDiffStd = 0;
+
+  LocationCoordinates lastArLocation = LocationCoordinates(0, 0, 0, 0);
+  RefreshThreshold refreshThreshold =
+      RefreshThreshold(DEFAUL_REFRESH_THRESHOLD, 0);
 
   @override
   void initState() {
@@ -142,21 +188,29 @@ class _ARPosQualityState extends State<_ARPosQuality> {
 
   LocationCoordinates createLocationCoordinatesFromARMessage(String message) {
     var jsonData = jsonDecode(message);
+    debugPrint(
+        "set Ar location:  ${jsonData["eulerRotation"]["y"]}, set to: ${jsonData["eulerRotation"]["y"] * pi / 180}");
     return LocationCoordinates(
       jsonData["position"]["x"] ?? 0,
       jsonData["position"]["z"] ?? 0,
+      (jsonData["eulerRotation"]["y"] * pi / 180) ?? 0,
       jsonData["timestamp"].toInt(),
     );
   }
 
+  void clearBuffers() {
+    sdkLocations.clear();
+    sdkLocationCoordinates.clear();
+    arLocations.clear();
+  }
+
   void updateArLocation(String message) {
-    LocationCoordinates arLocation =
-        createLocationCoordinatesFromARMessage(message);
-    if (arLocations.isEmpty ||
-        arLocation.timestamp > arLocations.last.timestamp + 1000) {
-      // Force roughly same frequency
-      arLocations.add(arLocation); // parse message to location
-    }
+    lastArLocation = createLocationCoordinatesFromARMessage(message);
+  }
+
+  void updateArLocationBuffer() {
+    arLocations.add(lastArLocation); // parse message to location
+
     debugPrint("arlocation size: ${arLocations.length}");
     if (arLocations.length > LOCATION_BUFFER_SIZE) {
       arLocations.removeAt(0);
@@ -164,17 +218,112 @@ class _ARPosQualityState extends State<_ARPosQuality> {
   }
 
   void updateLocation(Location location) {
+//    sdkLocations.add(location);
+    //if (lastArLocation.x != 0 && lastArLocation.y != 0) {   //
+    //if (lastArLocation.timestamp != 0) {
+    updateArLocationBuffer();
     sdkLocations.add(location);
     sdkLocationCoordinates.add(LocationCoordinates(
         location.cartesianCoordinate.x,
         location.cartesianCoordinate.y,
+        location.bearing!.radians,
         location.timestamp));
+    //}
+
     if (sdkLocations.length > LOCATION_BUFFER_SIZE) {
       sdkLocations.removeAt(0);
     }
     if (sdkLocationCoordinates.length > LOCATION_BUFFER_SIZE) {
       sdkLocationCoordinates.removeAt(0);
     }
+  }
+
+  double estimateArConf() {
+    const int requiredPositions = 10;
+    const double maxConfidence = 1.0;
+    // const double minConfidence = 0.0;
+
+    // if (arLocations.length < requiredPositions) {
+    //   return minConfidence;
+    // }
+
+    int numOkPositions = 0;
+    // Verificar las últimas 10 posiciones
+    double confidence = maxConfidence;
+    for (int i = arLocations.length - 1;
+        i >= max(arLocations.length - requiredPositions, 0);
+        i--) {
+      debugPrint("i:$i, arLocationsLength: ${arLocations.length}");
+      debugPrint(
+          "arLocations[i].x: ${arLocations[i].x} , arLocations[i].y: ${arLocations[i].y}");
+      // If no ar it freezes, we receive the last value again.
+      if (arLocations[i].x == 0 && arLocations[i].y == 0 ||
+          i < 1 ||
+          arLocations[i].y == arLocations[i - 1].y &&
+              arLocations[i].x == arLocations[i - 1].x) {
+        break;
+      } else {
+        numOkPositions++;
+      }
+    }
+    confidence = (numOkPositions / requiredPositions) * maxConfidence;
+    return confidence;
+  }
+
+  double estimateSitumConf() {
+    const int requiredPositions = 10;
+    const double maxConfidence = 1.0;
+
+    int numOkPositions = 0;
+    double confidence = maxConfidence;
+
+    for (int i = sdkLocations.length - 1;
+        i >= max(sdkLocations.length - requiredPositions, 0);
+        i--) {
+      debugPrint(
+          "sdkLocations[i].accuracy: ${sdkLocations[i].accuracy} , sdkLocations[i].hasBearing: ${sdkLocations[i].hasBearing}");
+      if (sdkLocations[i].accuracy > 5 &&
+              !sdkLocations[i].hasBearing || //has bearing works?
+          i < 0) {
+        break;
+      } else {
+        numOkPositions++;
+      }
+    }
+
+    confidence = (numOkPositions / requiredPositions) * maxConfidence;
+    debugPrint("numOkPositions: $numOkPositions, conf: $confidence");
+    return confidence;
+  }
+
+///////////////////////////////////////////
+
+  double computeAccumulatedDisplacement(List<LocationCoordinates> coordinates) {
+    if (coordinates.length < 2) return 0.0;
+
+    double totalDisplacement = 0.0;
+
+    for (int i = 0; i < coordinates.length - 1; i++) {
+      totalDisplacement += coordinates[i].distanceTo(coordinates[i + 1]);
+    }
+
+    return totalDisplacement;
+  }
+
+// from defines last n positions. if 0, is from origin
+  double computeTotalDisplacement(
+      List<LocationCoordinates> coordinates, int from) {
+    if (coordinates.length < 2) return 0.0;
+
+    double totalDisplacement = 0.0;
+    if (from == 0) {
+      totalDisplacement = coordinates.first.distanceTo(coordinates.last);
+    } else {
+      int fromIndex = max(coordinates.length - from, 0);
+      totalDisplacement = coordinates[fromIndex].distanceTo(coordinates.last);
+    }
+
+    return totalDisplacement;
   }
 
   List<LocationCoordinates> transformTrajectory(
@@ -188,11 +337,23 @@ class _ARPosQualityState extends State<_ARPosQuality> {
 
     if (translatedTrajectory.length == 1) return translatedTrajectory;
 
-    // Calcular el ángulo de rotación necesario
-    LocationCoordinates firstVector = translatedTrajectory[1];
-    double angle =
-        atan2(firstVector.y, firstVector.x) * (180.0 / 3.141592653589793);
+    // Buscar un vector con desplazamiento mayor a 2 metros
+    double distance = 0;
+    int index = 1;
+    while (index < translatedTrajectory.length) {
+      distance =
+          translatedTrajectory[0].distanceTo(translatedTrajectory[index]);
+      if (distance > 2) break;
+      index++;
+    }
+    if (index >= translatedTrajectory.length) {
+      return translatedTrajectory;
+    } // No se encontró un vector con desplazamiento suficiente}
 
+    // Calcular el ángulo de rotación necesario
+    LocationCoordinates firstVector = translatedTrajectory[index];
+    double angle = atan2(firstVector.y, firstVector.x);
+    debugPrint("rotate substract angle ${angle}");
     // Rotar la trayectoria para alinear con el eje x
     List<LocationCoordinates> alignedTrajectory =
         translatedTrajectory.map((loc) => loc.rotate(-angle)).toList();
@@ -200,17 +361,13 @@ class _ARPosQualityState extends State<_ARPosQuality> {
     return alignedTrajectory;
   }
 
-  double areOdometriesSimilar(
-    List<LocationCoordinates> arLocations,
-    List<LocationCoordinates> sdkLocations,
-    double threshold,
-  ) {
-    var maxDifference = 0.0;
-    var cumDifference = 0.0;
-    if (arLocations.length != sdkLocations.length) {
-      debugPrint('The lengths of the location arrays do not match.');
-      return maxDifference;
-    }
+  OdometriesMatchResult estimateOdometriesMatch(
+      List<LocationCoordinates> arLocations,
+      List<LocationCoordinates> sdkLocations) {
+    // if (arLocations.length != sdkLocations.length) {
+    //   debugPrint('The lengths of the location arrays do not match.');
+    //   return OdometriesMatchResult(-1, -1);
+    // }
 
     // Transformar ambas trayectorias
     List<LocationCoordinates> transformedARLocations =
@@ -218,22 +375,61 @@ class _ARPosQualityState extends State<_ARPosQuality> {
     List<LocationCoordinates> transformedSDKLocations =
         transformTrajectory(sdkLocations);
 
-    for (int i = 0; i < transformedARLocations.length - 1; i++) {
-      double distanceAR =
-          transformedARLocations[i].distanceTo(transformedARLocations[i + 1]);
-      double distanceSDK =
-          transformedSDKLocations[i].distanceTo(transformedSDKLocations[i + 1]);
-      maxDifference = max((distanceAR - distanceSDK).abs(), maxDifference);
-      cumDifference += (distanceAR - distanceSDK).abs();
-    }
-    if (maxDifference > threshold) {
-      debugPrint('Odometries are not similar at index.');
-    } else {
-      debugPrint('Odometries are similar.');
-    }
+    var distance =
+        transformedARLocations.last.distanceTo(transformedSDKLocations.last);
+    var angularDistance = transformedARLocations.last
+        .angularDistanceTo(transformedSDKLocations.last);
+    debugPrint(
+        "arlocation _ original: ${arLocations.last.toString()} , sdklocation original: ${sdkLocations.last.toString()}");
+    debugPrint(
+        "arlocation _ first: ${arLocations.first.toString()} , sdklocation original: ${sdkLocations.first.toString()}");
+    debugPrint(
+        "arlocation: ${transformedARLocations.last.toString()} , sdklocation: ${transformedSDKLocations.last.toString()}");
 
-    return cumDifference;
+    return OdometriesMatchResult(distance, angularDistance);
   }
+
+  double odometriesDifferenceConf(double difference) {
+    const diffThreshold = 10;
+    if (difference > diffThreshold) {
+      return 0;
+    }
+    return (1 - difference / diffThreshold);
+  }
+
+  double totalDisplacementConf(double distance) {
+    const minDistanceThreshold = 10;
+    if (distance > minDistanceThreshold) {
+      return 1;
+    }
+    return (distance / minDistanceThreshold);
+  }
+
+//TODO: Rename
+  bool updateRefreshing(double conf, double arConf) {
+    // conf threshold to force refresh
+    int currentTimestamp = DateTime.now().millisecondsSinceEpoch;
+    if (arConf < 0.8) {
+      refreshThreshold.value = DEFAUL_REFRESH_THRESHOLD;
+      refreshThreshold.timestamp = currentTimestamp;
+      ARModeDebugValues.dynamicRefreshThreshold.value = refreshThreshold.value;
+      return true;
+    } // if ar wrong, restart
+    if (conf > refreshThreshold.value) {
+      // To state refresh and update refresh threshold
+      refreshThreshold.value = conf;
+      refreshThreshold.timestamp = currentTimestamp;
+      ARModeDebugValues.dynamicRefreshThreshold.value = refreshThreshold.value;
+      return true;
+    } else if (currentTimestamp - refreshThreshold.timestamp > 10000) {
+      // if has passed more than n time, decrease threshld. TODO: Extract and adjust values, now, each 10s decrease 0.01.
+      refreshThreshold.value = refreshThreshold.value - 0.01;
+      refreshThreshold.timestamp = currentTimestamp;
+      ARModeDebugValues.dynamicRefreshThreshold.value = refreshThreshold.value;
+    }
+    return false;
+  }
+
   // void updateLocation(Location location) {
   //   sdkLocations.add(location);
   //   if (sdkLocations.length > LOCATION_BUFFER_SIZE) {

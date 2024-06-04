@@ -100,7 +100,8 @@ class ARModeDebugValues {
   static ValueNotifier<bool> refresh = ValueNotifier<bool>(REFRESH);
   static ValueNotifier<int> odoDifferenceSensibility =
       ValueNotifier<int>(ODO_DIFFERENCE_SENSIBILITY);
-
+  static ValueNotifier<double> dynamicRefreshThreshold =
+      ValueNotifier<double>(0);
   static set arMode(ARMode arMode) {
     arModeNotifier.value = arMode;
   }
@@ -329,6 +330,7 @@ class ARDebugUI {
           debugPrint("REfresh: ${refresh.value}");
           if (refresh.value) {
             ARModeDebugValues.debugVariables.value = "REFRESHING";
+            ARController._instance!.startRefreshing();
             _controller?.send("MessageManager", "SendRefressData", '1');
           } else {
             ARModeDebugValues.debugVariables.value = "NO REFRESHING";
@@ -342,8 +344,8 @@ class ARDebugUI {
 
   List<Widget> createWidgetRefresh() {
     return [
-      createDebugButton(ARModeDebugValues.odoDifferenceSensibility,
-          DebugMode.alertVisibilityParams, 'odometry difference', 1, 450, 5),
+      // createDebugButton(ARModeDebugValues.odoDifferenceSensibility,
+      //     DebugMode.alertVisibilityParams, 'odometry difference', 1, 450, 5),
       createButtonRefresh(ARModeDebugValues.refresh,
           DebugMode.alertVisibilityParams, 'Refresh', 0, 450, 5),
       ValueListenableBuilder<DebugMode>(

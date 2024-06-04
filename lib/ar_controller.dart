@@ -22,7 +22,7 @@ class ARController {
   // as it seems to be freezing the AR module on iOS.
   bool? _resumed;
 
-  bool hasToRefresh = true;
+  //bool hasToRefresh = true;
   int refreshingTimer = 5;
 
   ARController._() {
@@ -166,10 +166,18 @@ class ARController {
   }
 
   void startRefreshing() {
-    hasToRefresh = true;
+    //hasToRefresh = true;
     ARModeDebugValues.refresh.value = true;
-    _unityViewController?.send("MessageManager", "SendRefressData", '1');
-    refreshingTimer = 10;
+    //_unityViewController?.send("MessageManager", "SendRefressData", '1');
+    _unityViewController?.send("MessageManager", "ForceReposition", "null");
+    refreshingTimer = 3;
+    //_arPosQualityState!.clearBuffers();
+  }
+
+  void stopRefreshing() {
+    //hasToRefresh = true;
+    ARModeDebugValues.refresh.value = false;
+    _unityViewController?.send("MessageManager", "SendRefressData", '1000000');
   }
 
   void _onLocationChanged(Location location) {
@@ -194,63 +202,89 @@ class ARController {
   }
 
   void _updateRefreshing() {
+    if (_arPosQualityState!.arLocations.isEmpty ||
+        _arPosQualityState!.sdkLocationCoordinates.isEmpty) {
+      return;
+    }
     // check similarity
-    var areOdoSimilar = _arPosQualityState?.areOdometriesSimilar(
-        _arPosQualityState!.sdkLocationCoordinates,
+    var totalDisplacementSitum = _arPosQualityState?.computeTotalDisplacement(
+        _arPosQualityState!.sdkLocationCoordinates, 20);
+    var totalDisplacementAR = _arPosQualityState?.computeTotalDisplacement(
+        _arPosQualityState!.arLocations, 20);
+
+    var areOdoSimilar = _arPosQualityState?.estimateOdometriesMatch(
         _arPosQualityState!.arLocations,
-        10);
-    debugPrint("areOdoSimilar: $areOdoSimilar, hastorefresh: $hasToRefresh");
+        _arPosQualityState!.sdkLocationCoordinates);
+    // debugPrint(
+    //     "odoMatch: ${areOdoSimilar!.distance},  ${areOdoSimilar.angularDistance}, hastorefresh: $hasToRefresh");
 
-    bool stable =
-        areOdoSimilar! < ARModeDebugValues.odoDifferenceSensibility.value;
-    if (hasToRefresh && stable && !ARModeDebugValues.refresh.value) {
-      ARModeDebugValues.refresh.value = true;
-      _unityViewController?.send("MessageManager", "SendRefressData", '1');
-      refreshingTimer = 5;
-    } else if (refreshingTimer > 0 && ARModeDebugValues.refresh.value) {
+    bool stable = areOdoSimilar!.distance <
+            ARModeDebugValues.odoDifferenceSensibility.value &&
+        // areOdoSimilar.angularDistance < 0.7 &&
+        //TODO: remove hardcoded thresholds
+        totalDisplacementAR! > 5 &&
+        totalDisplacementSitum! > 5;
+
+    double arConf = _arPosQualityState!.estimateArConf();
+    double situmConf = _arPosQualityState!.estimateSitumConf();
+    double displacementConf =
+        _arPosQualityState!.totalDisplacementConf(totalDisplacementSitum!);
+    double odometriesDistanceConf =
+        _arPosQualityState!.odometriesDifferenceConf(areOdoSimilar.distance);
+    double qualityMetric =
+        arConf * situmConf * displacementConf * odometriesDistanceConf;
+
+    // check if has to refresh
+    bool hasToRefresh =
+        _arPosQualityState!.updateRefreshing(qualityMetric, arConf);
+    if (hasToRefresh) {
+      startRefreshing();
+    } else if (refreshingTimer > 0) {
       refreshingTimer--;
-    }
-    if (refreshingTimer == 0 && ARModeDebugValues.refresh.value && stable) {
-      ARModeDebugValues.refresh.value = false;
-      hasToRefresh = false;
-      _unityViewController?.send("MessageManager", "SendRefressData", '10000');
-    }
-    if (!stable) {
-      hasToRefresh = true;
+      if (refreshingTimer == 0) {
+        stopRefreshing();
+      }
     }
 
-    //      if (ARModeDebugValues
-    //         .refresh.value &&
-    //     refreshingTimer > 0) {
-    //   //if refreshing
-    //   refreshingTimer--;
-    // }
-    // if (areOdoSimilar! < 2 && hasToRefresh) {
-    //   hasToRefresh = false;
-    //   ARModeDebugValues.refresh.value = true;
-    //   refreshingTimer = 5;
-    //   _unityViewController?.send("MessageManager", "SendRefressData", '1');
-    //   debugPrint(
-    //       "SET refresh true! \tareOdoSimilar: $areOdoSimilar, hastorefresh: $hasToRefresh");
-    // } else if (areOdoSimilar >= 2 && ARModeDebugValues.refresh.value) {
-    //   // if not similar and is refreshing do not refresh
-    //   hasToRefresh = true;
-    //   ARModeDebugValues.refresh.value = false;
-    //   _unityViewController?.send("MessageManager", "SendRefressData", '10000');
-    //   debugPrint(
-    //       "SET refresh false! \tareOdoSimilar: $areOdoSimilar, hastorefresh: $hasToRefresh");
-    // } else if (!hasToRefresh && refreshingTimer == 0) {
-    //   ARModeDebugValues.refresh.value = false;
-    //   _unityViewController?.send("MessageManager", "SendRefressData", '10000');
-    // }
     // update  debug info
-    if (ARModeDebugValues.refresh.value) {
-      ARModeDebugValues.debugVariables.value =
-          "REFRESHING\n ${areOdoSimilar.toString()}";
-    } else {
-      ARModeDebugValues.debugVariables.value =
-          "NOT REFRESHING\n ${areOdoSimilar.toString()}";
-    }
+    ARModeDebugValues.debugVariables.value = buildDebugMessage(
+        ARModeDebugValues.refresh.value,
+        areOdoSimilar,
+        stable,
+        totalDisplacementSitum,
+        totalDisplacementAR,
+        _arPosQualityState!.arLocations.length,
+        _arPosQualityState!.sdkLocationCoordinates.length,
+        arConf,
+        situmConf,
+        ARModeDebugValues.dynamicRefreshThreshold.value,
+        qualityMetric);
+  }
+
+  String buildDebugMessage(
+      bool isRefreshing,
+      areOdoSimilar,
+      stable,
+      totalDisplacementSitum,
+      totalDisplacementAR,
+      arBufferSize,
+      sdkBufferSize,
+      arConf,
+      situmConf,
+      currentRefreshThreshold,
+      qualityMetric) {
+    String status = isRefreshing ? "REFRESHING" : "NOT REFRESHING";
+    return "$status\n"
+        "ar / Situm diff: ${areOdoSimilar.distance.toString()}\n"
+        "ar / situm angle diff: ${areOdoSimilar.angularDistance.toString()}\n"
+        "totalDisplacementSitum: $totalDisplacementSitum\n"
+        "totalDisplacementAR: $totalDisplacementAR\n"
+        "ar buffer size: $arBufferSize\n"
+        "sdk buffer size: $sdkBufferSize\n"
+        "arCore Conf: $arConf\n"
+        "situm Conf: $situmConf\n"
+        "currentRefreshThreshold: $currentRefreshThreshold\n"
+        "quality: $qualityMetric\n";
   }
 
   void _updateArPosQualityState(location) {
@@ -260,7 +294,7 @@ class ARController {
       ARModeUnityParams dynamicParams =
           _arPosQualityState!.getDynamicARParams();
       if (_lastSetARModeUnityParams != dynamicParams) {
-        _setARModeParams(dynamicParams);
+        //_setARModeParams(dynamicParams);
       }
     }
   }
@@ -355,7 +389,7 @@ class ARController {
   void updateUnityModeParams(ARMode arMode) {
     ARModeUnityParams unityParams =
         ARModeDebugValues.getUnityParamsForMode(arMode);
-    _setARModeParams(unityParams);
+    //_setARModeParams(unityParams);
   }
 
   void _setARModeParams(ARModeUnityParams arModeUnityParams) {
