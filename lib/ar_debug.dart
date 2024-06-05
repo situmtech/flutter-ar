@@ -324,18 +324,7 @@ class ARDebugUI {
       top: top,
       child: ElevatedButton(
         onPressed: () {
-          refresh.value = !refresh
-              .value; // Cambia el valor de refresh al presionar el botón
-
-          debugPrint("REfresh: ${refresh.value}");
-          if (refresh.value) {
-            ARModeDebugValues.debugVariables.value = "REFRESHING";
-            ARController._instance!.startRefreshing();
-            _controller?.send("MessageManager", "SendRefressData", '1');
-          } else {
-            ARModeDebugValues.debugVariables.value = "NO REFRESHING";
-            _controller?.send("MessageManager", "SendRefressData", '10000');
-          }
+          _controller?.send("MessageManager", "ForceReposition", "null");
         },
         child: Text(label),
       ),

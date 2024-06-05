@@ -27,10 +27,20 @@ class RefreshThreshold {
   }
 }
 
+double normalizeAngle(double angle) {
+  while (angle <= -pi) {
+    angle += 2 * pi;
+  }
+  while (angle > pi) {
+    angle -= 2 * pi;
+  }
+  return angle;
+}
+
 class LocationCoordinates {
   final double x;
   final double y;
-  final double yaw;
+  double yaw;
   final int timestamp;
 
   LocationCoordinates(this.x, this.y, this.yaw, this.timestamp);
@@ -52,14 +62,14 @@ class LocationCoordinates {
 
   double angularDistanceTo(LocationCoordinates other) {
     double angleDifference = yaw - other.yaw;
-    angleDifference = (angleDifference + pi / 2) % pi - pi / 2;
+    angleDifference = normalizeAngle(angleDifference);
     return angleDifference.abs();
   }
 
   double yawAdd(double angle) {
-    double newYaw = yaw + angle;
-    newYaw = (newYaw + pi / 2) % pi - pi / 2;
-    return newYaw;
+    double sum = yaw + angle;
+    sum = normalizeAngle(sum);
+    return sum;
   }
 
   @override
@@ -206,6 +216,7 @@ class _ARPosQualityState extends State<_ARPosQuality> {
 
   void updateArLocation(String message) {
     lastArLocation = createLocationCoordinatesFromARMessage(message);
+    lastArLocation.yaw = lastArLocation.yaw - (pi / 2);
   }
 
   void updateArLocationBuffer() {
@@ -298,12 +309,17 @@ class _ARPosQualityState extends State<_ARPosQuality> {
 
 ///////////////////////////////////////////
 
-  double computeAccumulatedDisplacement(List<LocationCoordinates> coordinates) {
+// from defines last n positions. if 0, is from origin
+  double computeAccumulatedDisplacement(
+      List<LocationCoordinates> coordinates, int from) {
     if (coordinates.length < 2) return 0.0;
 
     double totalDisplacement = 0.0;
-
-    for (int i = 0; i < coordinates.length - 1; i++) {
+    int i = 0;
+    if (from != 0) {
+      i = max(coordinates.length - from, 0);
+    }
+    for (i; i < coordinates.length - 1; i++) {
       totalDisplacement += coordinates[i].distanceTo(coordinates[i + 1]);
     }
 
@@ -361,14 +377,10 @@ class _ARPosQualityState extends State<_ARPosQuality> {
     return alignedTrajectory;
   }
 
+// Align at same origin and estimate distance between last positions
   OdometriesMatchResult estimateOdometriesMatch(
       List<LocationCoordinates> arLocations,
       List<LocationCoordinates> sdkLocations) {
-    // if (arLocations.length != sdkLocations.length) {
-    //   debugPrint('The lengths of the location arrays do not match.');
-    //   return OdometriesMatchResult(-1, -1);
-    // }
-
     // Transformar ambas trayectorias
     List<LocationCoordinates> transformedARLocations =
         transformTrajectory(arLocations);
@@ -386,11 +398,38 @@ class _ARPosQualityState extends State<_ARPosQuality> {
     debugPrint(
         "arlocation: ${transformedARLocations.last.toString()} , sdklocation: ${transformedSDKLocations.last.toString()}");
 
+    String arLocationsString = arLocations
+        .map((loc) => '>>,${loc.x}, ${loc.y}, ${loc.yaw}')
+        .join('\n ');
+    String arLocationsTransformedString = transformedARLocations
+        .map((loc) => '>>,${loc.x}, ${loc.y}, ${loc.yaw}')
+        .join('\n ');
+    String sdkLocationsString = sdkLocations
+        .map((loc) => '>>,${loc.x}, ${loc.y}, ${loc.yaw}')
+        .join('\n ');
+    String sdkLocationsTransformedString = transformedSDKLocations
+        .map((loc) => '>>,${loc.x}, ${loc.y}, ${loc.yaw}')
+        .join('\n ');
+    debugPrint(">>-------------------------------------");
+    debugPrint(">>AR LOCATIONS\n, $arLocationsString");
+    debugPrint(">>AR LOCATIONS TRansformed\n, $arLocationsTransformedString");
+    debugPrint(">>Situm Locations\n, $sdkLocationsString");
+    debugPrint(
+        ">>Situm Locations Transformed\n, $sdkLocationsTransformedString");
+    debugPrint(">>-------------------------------------");
     return OdometriesMatchResult(distance, angularDistance);
   }
 
   double odometriesDifferenceConf(double difference) {
     const diffThreshold = 10;
+    if (difference > diffThreshold) {
+      return 0;
+    }
+    return (1 - difference / diffThreshold);
+  }
+
+  double odometriesAngleDifferenceConf(double difference) {
+    const diffThreshold = 0.30;
     if (difference > diffThreshold) {
       return 0;
     }

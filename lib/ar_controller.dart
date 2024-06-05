@@ -120,7 +120,7 @@ class ARController {
   }
 
   void wakeup() {
-    startRefreshing();
+    startRefreshing(5);
     // Resume only if not already resumed or at the initial state.
     if (_resumed == null || _resumed == false) {
       _unityViewController?.resume();
@@ -165,12 +165,12 @@ class ARController {
     }
   }
 
-  void startRefreshing() {
+  void startRefreshing(int numRefresh) {
     //hasToRefresh = true;
     ARModeDebugValues.refresh.value = true;
     //_unityViewController?.send("MessageManager", "SendRefressData", '1');
     _unityViewController?.send("MessageManager", "ForceReposition", "null");
-    refreshingTimer = 3;
+    refreshingTimer = numRefresh;
     //_arPosQualityState!.clearBuffers();
   }
 
@@ -186,19 +186,7 @@ class ARController {
     _unityViewController?.send(
         "MessageManager", "SendLocation", jsonEncode(locationMap));
     _updateArPosQualityState(location);
-
     _updateRefreshing();
-
-    // if (areOdoSimilar! < 0.25) {
-    //   ARModeDebugValues.debugVariables.value =
-    //       "REFRESH!!\n ${areOdoSimilar.toString()}";
-    //   _unityViewController?.send("MessageManager", "SendRefressData", '1');
-    // } else {
-    //   ARModeDebugValues.debugVariables.value =
-    //       "NO REFRESH!!\n ${areOdoSimilar.toString()}";
-    //   _unityViewController?.send("MessageManager", "SendRefressData", '1000');
-    // }
-    //}
   }
 
   void _updateRefreshing() {
@@ -206,11 +194,14 @@ class ARController {
         _arPosQualityState!.sdkLocationCoordinates.isEmpty) {
       return;
     }
+    debugPrint(
+        "last situm location: ${_arPosQualityState!.sdkLocationCoordinates.last.toString()} / last ar location: ${_arPosQualityState!.arLocations.last.toString()}");
     // check similarity
-    var totalDisplacementSitum = _arPosQualityState?.computeTotalDisplacement(
-        _arPosQualityState!.sdkLocationCoordinates, 20);
-    var totalDisplacementAR = _arPosQualityState?.computeTotalDisplacement(
-        _arPosQualityState!.arLocations, 20);
+    var totalDisplacementSitum =
+        _arPosQualityState?.computeAccumulatedDisplacement(
+            _arPosQualityState!.sdkLocationCoordinates, 20);
+    var totalDisplacementAR = _arPosQualityState
+        ?.computeAccumulatedDisplacement(_arPosQualityState!.arLocations, 20);
 
     var areOdoSimilar = _arPosQualityState?.estimateOdometriesMatch(
         _arPosQualityState!.arLocations,
@@ -229,17 +220,29 @@ class ARController {
     double situmConf = _arPosQualityState!.estimateSitumConf();
     double displacementConf =
         _arPosQualityState!.totalDisplacementConf(totalDisplacementSitum!);
+    double displacementConfAR =
+        _arPosQualityState!.totalDisplacementConf(totalDisplacementAR!);
     double odometriesDistanceConf =
         _arPosQualityState!.odometriesDifferenceConf(areOdoSimilar.distance);
-    double qualityMetric =
-        arConf * situmConf * displacementConf * odometriesDistanceConf;
+    double odometriesAngleDifferenceConf = _arPosQualityState!
+        .odometriesAngleDifferenceConf(areOdoSimilar.angularDistance);
+    double qualityMetric = arConf *
+        situmConf *
+        displacementConf *
+        displacementConfAR *
+        odometriesDistanceConf; //TODO: Angle conf
 
     // check if has to refresh
     bool hasToRefresh =
         _arPosQualityState!.updateRefreshing(qualityMetric, arConf);
     if (hasToRefresh) {
-      startRefreshing();
+      int numRefresh = 1;
+      if (qualityMetric < 0.5) {
+        numRefresh = 5;
+      }
+      startRefreshing(numRefresh);
     } else if (refreshingTimer > 0) {
+      _unityViewController?.send("MessageManager", "ForceReposition", "null");
       refreshingTimer--;
       if (refreshingTimer == 0) {
         stopRefreshing();
@@ -274,17 +277,18 @@ class ARController {
       currentRefreshThreshold,
       qualityMetric) {
     String status = isRefreshing ? "REFRESHING" : "NOT REFRESHING";
+    double angularDistanceDegrees = areOdoSimilar.angularDistance * 180 / pi;
     return "$status\n"
-        "ar / Situm diff: ${areOdoSimilar.distance.toString()}\n"
-        "ar / situm angle diff: ${areOdoSimilar.angularDistance.toString()}\n"
-        "totalDisplacementSitum: $totalDisplacementSitum\n"
-        "totalDisplacementAR: $totalDisplacementAR\n"
+        "ar / Situm diff: ${areOdoSimilar.distance.toStringAsFixed(3)}  (${_arPosQualityState!.odometriesDifferenceConf(areOdoSimilar.distance).toStringAsFixed(3)})\n"
+        "ar / situm angle diff: ${areOdoSimilar.angularDistance.toStringAsFixed(3)} , ${angularDistanceDegrees.toStringAsFixed(1)} , conf (${_arPosQualityState!.odometriesAngleDifferenceConf(areOdoSimilar.angularDistance).toStringAsFixed(3)})\n"
+        "totalDisplacementSitum: ${totalDisplacementSitum.toStringAsFixed(3)}  (${_arPosQualityState!.totalDisplacementConf(totalDisplacementSitum!).toStringAsFixed(3)})\n"
+        "totalDisplacementAR: ${totalDisplacementAR.toStringAsFixed(3)}\n"
         "ar buffer size: $arBufferSize\n"
         "sdk buffer size: $sdkBufferSize\n"
         "arCore Conf: $arConf\n"
         "situm Conf: $situmConf\n"
-        "currentRefreshThreshold: $currentRefreshThreshold\n"
-        "quality: $qualityMetric\n";
+        "currentRefreshThreshold: ${currentRefreshThreshold.toStringAsFixed(3)}\n"
+        "quality: ${qualityMetric.toStringAsFixed(3)}\n";
   }
 
   void _updateArPosQualityState(location) {
@@ -337,8 +341,17 @@ class ARController {
       debugPrint("Situm> AR> Navigation> _onNavigationStart");
       _unityViewController?.send(
           "MessageManager", "SendRoute", jsonEncode(route.rawContent));
+      // _unityViewController?.send(
+      //     "MessageManager", "SendEnableArrowGuide", "null");
+      // _unityViewController?.send(
+      //     "MessageManager",
+      //     "SendArrowTarget",
+      //     jsonEncode({
+      //       "x": "136.11621011174475",
+      //       "y": "29.667527464716862",
+      //     }));
       _arPosQualityState?.forceResetRefreshTimers();
-      startRefreshing();
+      startRefreshing(5);
       _arModeManager?.updateWithNavigationStatus(NavigationStatus.started);
     } else {
       _navigationPendingAction = () => _onNavigationStart(route);
