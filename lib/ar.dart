@@ -13,6 +13,8 @@ import 'package:situm_flutter/sdk.dart';
 import 'package:situm_flutter/wayfinding.dart';
 import 'package:situm_flutter_unity/flutter_unity.dart';
 
+import 'route_utils.dart';
+
 part 'ar_debug.dart';
 
 part 'ar_mode.dart';

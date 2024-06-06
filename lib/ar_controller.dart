@@ -24,6 +24,7 @@ class ARController {
 
   //bool hasToRefresh = true;
   int refreshingTimer = 5;
+  String navigationLastCoordinates = "";
 
   ARController._() {
     _arModeManager = ARModeManager(arModeChanged);
@@ -189,13 +190,21 @@ class ARController {
     _updateRefreshing();
   }
 
+  int calculateNumRefresh(double conf) {
+    if (conf >= 0.8) {
+      return 1;
+    } else if (conf <= 0.3) {
+      return 5;
+    } else {
+      return (7.4 - 8 * conf).round();
+    }
+  }
+
   void _updateRefreshing() {
     if (_arPosQualityState!.arLocations.isEmpty ||
         _arPosQualityState!.sdkLocationCoordinates.isEmpty) {
       return;
     }
-    debugPrint(
-        "last situm location: ${_arPosQualityState!.sdkLocationCoordinates.last.toString()} / last ar location: ${_arPosQualityState!.arLocations.last.toString()}");
     // check similarity
     var totalDisplacementSitum =
         _arPosQualityState?.computeAccumulatedDisplacement(
@@ -206,15 +215,6 @@ class ARController {
     var areOdoSimilar = _arPosQualityState?.estimateOdometriesMatch(
         _arPosQualityState!.arLocations,
         _arPosQualityState!.sdkLocationCoordinates);
-    // debugPrint(
-    //     "odoMatch: ${areOdoSimilar!.distance},  ${areOdoSimilar.angularDistance}, hastorefresh: $hasToRefresh");
-
-    bool stable = areOdoSimilar!.distance <
-            ARModeDebugValues.odoDifferenceSensibility.value &&
-        // areOdoSimilar.angularDistance < 0.7 &&
-        //TODO: remove hardcoded thresholds
-        totalDisplacementAR! > 5 &&
-        totalDisplacementSitum! > 5;
 
     double arConf = _arPosQualityState!.estimateArConf();
     double situmConf = _arPosQualityState!.estimateSitumConf();
@@ -223,7 +223,7 @@ class ARController {
     double displacementConfAR =
         _arPosQualityState!.totalDisplacementConf(totalDisplacementAR!);
     double odometriesDistanceConf =
-        _arPosQualityState!.odometriesDifferenceConf(areOdoSimilar.distance);
+        _arPosQualityState!.odometriesDifferenceConf(areOdoSimilar!.distance);
     double odometriesAngleDifferenceConf = _arPosQualityState!
         .odometriesAngleDifferenceConf(areOdoSimilar.angularDistance);
     double qualityMetric = arConf *
@@ -236,10 +236,7 @@ class ARController {
     bool hasToRefresh =
         _arPosQualityState!.updateRefreshing(qualityMetric, arConf);
     if (hasToRefresh) {
-      int numRefresh = 1;
-      if (qualityMetric < 0.5) {
-        numRefresh = 5;
-      }
+      int numRefresh = calculateNumRefresh(qualityMetric);
       startRefreshing(numRefresh);
     } else if (refreshingTimer > 0) {
       _unityViewController?.send("MessageManager", "ForceReposition", "null");
@@ -253,7 +250,6 @@ class ARController {
     ARModeDebugValues.debugVariables.value = buildDebugMessage(
         ARModeDebugValues.refresh.value,
         areOdoSimilar,
-        stable,
         totalDisplacementSitum,
         totalDisplacementAR,
         _arPosQualityState!.arLocations.length,
@@ -267,7 +263,6 @@ class ARController {
   String buildDebugMessage(
       bool isRefreshing,
       areOdoSimilar,
-      stable,
       totalDisplacementSitum,
       totalDisplacementAR,
       arBufferSize,
@@ -331,25 +326,46 @@ class ARController {
     }
   }
 
+  void printLongLog(String message) {
+    const int chunkSize = 800; // Tamaño de cada fragmento
+    int start = 0;
+    while (start < message.length) {
+      int end = (start + chunkSize < message.length)
+          ? start + chunkSize
+          : message.length;
+      debugPrint("__navigation: ${message.substring(start, end)}");
+      start = end;
+    }
+  }
+
   void _onNavigationProgress(RouteProgress progress) {
+    //String prog = jsonEncode(progress.rawContent);
+    //printLongLog("__navigationProgress: ${prog}");
+    dynamic progressContent = jsonDecode(jsonEncode(progress.rawContent));
+
+    //List<String> nextCoordinates = findNextCoordinates(progressContent);
+    String nextCoordinates = findNextCoordinates(progressContent);
+    //debugPrint("nextCoordinates.first.toString(): ${nextCoordinates.first}");
+    if (navigationLastCoordinates != nextCoordinates) {
+      navigationLastCoordinates = nextCoordinates;
+      _unityViewController?.send(
+          "MessageManager", "SendArrowTarget", nextCoordinates);
+    }
+
     _unityViewController?.send(
         "MessageManager", "SendRouteProgress", jsonEncode(progress.rawContent));
   }
 
   void _onNavigationStart(SitumRoute route) {
+    //printLongLog("_navigationStart: ${jsonEncode(route.rawContent)}");
     if (_isReadyToReceiveMessages()) {
       debugPrint("Situm> AR> Navigation> _onNavigationStart");
       _unityViewController?.send(
+          "MessageManager", "SendHideRouteElements", "null");
+      _unityViewController?.send(
           "MessageManager", "SendRoute", jsonEncode(route.rawContent));
-      // _unityViewController?.send(
-      //     "MessageManager", "SendEnableArrowGuide", "null");
-      // _unityViewController?.send(
-      //     "MessageManager",
-      //     "SendArrowTarget",
-      //     jsonEncode({
-      //       "x": "136.11621011174475",
-      //       "y": "29.667527464716862",
-      //     }));
+      _unityViewController?.send(
+          "MessageManager", "SendEnableArrowGuide", "null");
       _arPosQualityState?.forceResetRefreshTimers();
       startRefreshing(5);
       _arModeManager?.updateWithNavigationStatus(NavigationStatus.started);

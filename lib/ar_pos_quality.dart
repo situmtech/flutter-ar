@@ -198,8 +198,6 @@ class _ARPosQualityState extends State<_ARPosQuality> {
 
   LocationCoordinates createLocationCoordinatesFromARMessage(String message) {
     var jsonData = jsonDecode(message);
-    debugPrint(
-        "set Ar location:  ${jsonData["eulerRotation"]["y"]}, set to: ${jsonData["eulerRotation"]["y"] * pi / 180}");
     return LocationCoordinates(
       jsonData["position"]["x"] ?? 0,
       jsonData["position"]["z"] ?? 0,
@@ -221,8 +219,6 @@ class _ARPosQualityState extends State<_ARPosQuality> {
 
   void updateArLocationBuffer() {
     arLocations.add(lastArLocation); // parse message to location
-
-    debugPrint("arlocation size: ${arLocations.length}");
     if (arLocations.length > LOCATION_BUFFER_SIZE) {
       arLocations.removeAt(0);
     }
@@ -264,9 +260,6 @@ class _ARPosQualityState extends State<_ARPosQuality> {
     for (int i = arLocations.length - 1;
         i >= max(arLocations.length - requiredPositions, 0);
         i--) {
-      debugPrint("i:$i, arLocationsLength: ${arLocations.length}");
-      debugPrint(
-          "arLocations[i].x: ${arLocations[i].x} , arLocations[i].y: ${arLocations[i].y}");
       // If no ar it freezes, we receive the last value again.
       if (arLocations[i].x == 0 && arLocations[i].y == 0 ||
           i < 1 ||
@@ -291,8 +284,6 @@ class _ARPosQualityState extends State<_ARPosQuality> {
     for (int i = sdkLocations.length - 1;
         i >= max(sdkLocations.length - requiredPositions, 0);
         i--) {
-      debugPrint(
-          "sdkLocations[i].accuracy: ${sdkLocations[i].accuracy} , sdkLocations[i].hasBearing: ${sdkLocations[i].hasBearing}");
       if (sdkLocations[i].accuracy > 5 &&
               !sdkLocations[i].hasBearing || //has bearing works?
           i < 0) {
@@ -303,7 +294,6 @@ class _ARPosQualityState extends State<_ARPosQuality> {
     }
 
     confidence = (numOkPositions / requiredPositions) * maxConfidence;
-    debugPrint("numOkPositions: $numOkPositions, conf: $confidence");
     return confidence;
   }
 
@@ -369,7 +359,7 @@ class _ARPosQualityState extends State<_ARPosQuality> {
     // Calcular el ángulo de rotación necesario
     LocationCoordinates firstVector = translatedTrajectory[index];
     double angle = atan2(firstVector.y, firstVector.x);
-    debugPrint("rotate substract angle ${angle}");
+    //debugPrint("rotate substract angle ${angle}");
     // Rotar la trayectoria para alinear con el eje x
     List<LocationCoordinates> alignedTrajectory =
         translatedTrajectory.map((loc) => loc.rotate(-angle)).toList();
@@ -391,32 +381,32 @@ class _ARPosQualityState extends State<_ARPosQuality> {
         transformedARLocations.last.distanceTo(transformedSDKLocations.last);
     var angularDistance = transformedARLocations.last
         .angularDistanceTo(transformedSDKLocations.last);
-    debugPrint(
-        "arlocation _ original: ${arLocations.last.toString()} , sdklocation original: ${sdkLocations.last.toString()}");
-    debugPrint(
-        "arlocation _ first: ${arLocations.first.toString()} , sdklocation original: ${sdkLocations.first.toString()}");
-    debugPrint(
-        "arlocation: ${transformedARLocations.last.toString()} , sdklocation: ${transformedSDKLocations.last.toString()}");
+    // debugPrint(
+    //     "arlocation _ original: ${arLocations.last.toString()} , sdklocation original: ${sdkLocations.last.toString()}");
+    // debugPrint(
+    //     "arlocation _ first: ${arLocations.first.toString()} , sdklocation original: ${sdkLocations.first.toString()}");
+    // debugPrint(
+    //     "arlocation: ${transformedARLocations.last.toString()} , sdklocation: ${transformedSDKLocations.last.toString()}");
 
-    String arLocationsString = arLocations
-        .map((loc) => '>>,${loc.x}, ${loc.y}, ${loc.yaw}')
-        .join('\n ');
-    String arLocationsTransformedString = transformedARLocations
-        .map((loc) => '>>,${loc.x}, ${loc.y}, ${loc.yaw}')
-        .join('\n ');
-    String sdkLocationsString = sdkLocations
-        .map((loc) => '>>,${loc.x}, ${loc.y}, ${loc.yaw}')
-        .join('\n ');
-    String sdkLocationsTransformedString = transformedSDKLocations
-        .map((loc) => '>>,${loc.x}, ${loc.y}, ${loc.yaw}')
-        .join('\n ');
-    debugPrint(">>-------------------------------------");
-    debugPrint(">>AR LOCATIONS\n, $arLocationsString");
-    debugPrint(">>AR LOCATIONS TRansformed\n, $arLocationsTransformedString");
-    debugPrint(">>Situm Locations\n, $sdkLocationsString");
-    debugPrint(
-        ">>Situm Locations Transformed\n, $sdkLocationsTransformedString");
-    debugPrint(">>-------------------------------------");
+    // String arLocationsString = arLocations
+    //     .map((loc) => '>>,${loc.x}, ${loc.y}, ${loc.yaw}')
+    //     .join('\n ');
+    // String arLocationsTransformedString = transformedARLocations
+    //     .map((loc) => '>>,${loc.x}, ${loc.y}, ${loc.yaw}')
+    //     .join('\n ');
+    // String sdkLocationsString = sdkLocations
+    //     .map((loc) => '>>,${loc.x}, ${loc.y}, ${loc.yaw}')
+    //     .join('\n ');
+    // String sdkLocationsTransformedString = transformedSDKLocations
+    //     .map((loc) => '>>,${loc.x}, ${loc.y}, ${loc.yaw}')
+    //     .join('\n ');
+    // debugPrint(">>-------------------------------------");
+    // debugPrint(">>AR LOCATIONS\n, $arLocationsString");
+    // debugPrint(">>AR LOCATIONS TRansformed\n, $arLocationsTransformedString");
+    // debugPrint(">>Situm Locations\n, $sdkLocationsString");
+    // debugPrint(
+    //     ">>Situm Locations Transformed\n, $sdkLocationsTransformedString");
+    // debugPrint(">>-------------------------------------");
     return OdometriesMatchResult(distance, angularDistance);
   }
 

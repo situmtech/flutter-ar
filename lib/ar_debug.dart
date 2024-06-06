@@ -30,6 +30,7 @@ const DYNAMIC_LOCATION_BUFFER_SIZE = 10;
 
 const REFRESH = true;
 const ODO_DIFFERENCE_SENSIBILITY = 4;
+const ARROW_DISTANCE_TO_SKIP_NODE = 7.0;
 
 enum DebugMode {
   deactivated,
@@ -98,10 +99,16 @@ class ARModeDebugValues {
       ValueNotifier<double>(NAVIGATION_CAMERA_LIMIT);
 
   static ValueNotifier<bool> refresh = ValueNotifier<bool>(REFRESH);
+
   static ValueNotifier<int> odoDifferenceSensibility =
       ValueNotifier<int>(ODO_DIFFERENCE_SENSIBILITY);
   static ValueNotifier<double> dynamicRefreshThreshold =
       ValueNotifier<double>(0);
+
+  static ValueNotifier<bool> showRouteElements = ValueNotifier<bool>(false);
+  static ValueNotifier<double> arrowDistanceToSkipNode =
+      ValueNotifier<double>(ARROW_DISTANCE_TO_SKIP_NODE);
+
   static set arMode(ARMode arMode) {
     arModeNotifier.value = arMode;
   }
@@ -331,12 +338,41 @@ class ARDebugUI {
     );
   }
 
+  Widget createButtonSwitchPath(ValueNotifier<bool> refresh, DebugMode mode,
+      String label, double left, double top, double size) {
+    return Positioned(
+      left: left,
+      top: top,
+      child: ElevatedButton(
+        onPressed: () {
+          ARModeDebugValues.showRouteElements.value =
+              !ARModeDebugValues.showRouteElements.value;
+          if (ARModeDebugValues.showRouteElements.value) {
+            _controller?.send(
+                "MessageManager", "SendShowRouteElements", "null");
+          } else {
+            //hide
+            _controller?.send(
+                "MessageManager", "SendHideRouteElements", "null");
+          }
+        },
+        child: Text(label),
+      ),
+    );
+  }
+
   List<Widget> createWidgetRefresh() {
     return [
       // createDebugButton(ARModeDebugValues.odoDifferenceSensibility,
       //     DebugMode.alertVisibilityParams, 'odometry difference', 1, 450, 5),
+      createButtonSwitchPath(ARModeDebugValues.refresh,
+          DebugMode.alertVisibilityParams, 'Show Route', 0, 500, 5),
       createButtonRefresh(ARModeDebugValues.refresh,
           DebugMode.alertVisibilityParams, 'Refresh', 0, 450, 5),
+      createDebugButton(ARModeDebugValues.arrowDistanceToSkipNode,
+          DebugMode.alertVisibilityParams, 'distance to skip node', 1, 400, 5),
+
+      //     DebugMode.alertVisibilityParams, 'Change POI', 0, 400, 5),
       ValueListenableBuilder<DebugMode>(
           valueListenable: ARModeDebugValues.debugMode,
           builder: (context, value, child) {
