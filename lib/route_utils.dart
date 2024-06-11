@@ -46,7 +46,6 @@ Map<String, dynamic> projectPointOnSegment(
   };
 }
 
-//TODO: Esta implementacion puede romper si hay diferentes segmentos en una planta, luego cambio de planta y se vuelve a la inicial.
 String findNextCoordinates(dynamic progress) {
   if (progress['segments'] == null ||
       progress['segments'][0] == null ||
@@ -54,15 +53,10 @@ String findNextCoordinates(dynamic progress) {
     debugPrint("findNextCoordinates: There are no segment points ");
     return "";
   }
-  dynamic points = progress['segments'][0]['points'];
+  dynamic points = progress['segments'][0]['points']; //points in current floor
   List<Map<String, dynamic>> segments = List<Map<String, dynamic>>.from(points);
   Map<String, dynamic> currentPosition = progress['closestLocationInRoute']
       ['position']; //TODO: Check if that is correct
-  String currentFloor = currentPosition['floorIdentifier'];
-
-  segments = segments
-      .where((segment) => segment['floorIdentifier'] == currentFloor)
-      .toList();
 
   // Initializing projectedPoint to a default value
   Map<String, dynamic> projectedPoint = segments[0];
@@ -70,8 +64,6 @@ String findNextCoordinates(dynamic progress) {
   int segmentIndex = -1;
 
   for (int i = 0; i < segments.length - 1; i++) {
-    //if (segments[i]['floorIdentifier'] != currentFloor) continue;
-
     Map<String, dynamic> A = segments[i];
     Map<String, dynamic> B = segments[i + 1];
     Map<String, dynamic> P = projectPointOnSegment(currentPosition, A, B);
@@ -85,14 +77,14 @@ String findNextCoordinates(dynamic progress) {
   }
 
   for (int i = segmentIndex + 1; i < segments.length; i++) {
-    // if (segments[i]['floorIdentifier'] != currentFloor) {
-    //   nextCoordinates.add(segments[i]);
-    //   break;
-    // }
-
     double distance = calculateDistance(projectedPoint, segments[i]);
-    if (distance > ARModeDebugValues.arrowDistanceToSkipNode.value ||
-        i == segments.length - 1) {
+    if (distance > ARModeDebugValues.arrowDistanceToSkipNode.value) {
+      return jsonEncode(segments[i]["cartesianCoordinate"]);
+    } else if (i == segments.length - 1 && progress['segments'].length > 1) {
+      // Last element in this floor
+      return "floorChange";
+    } else if (i == segments.length - 1) {
+      // Last element of the route
       return jsonEncode(segments[i]["cartesianCoordinate"]);
     }
   }

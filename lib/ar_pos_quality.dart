@@ -224,18 +224,13 @@ class _ARPosQualityState extends State<_ARPosQuality> {
     }
   }
 
-  void updateLocation(Location location) {
-//    sdkLocations.add(location);
-    //if (lastArLocation.x != 0 && lastArLocation.y != 0) {   //
-    //if (lastArLocation.timestamp != 0) {
-    updateArLocationBuffer();
+  void updateSdkLocationBuffer(Location location) {
     sdkLocations.add(location);
     sdkLocationCoordinates.add(LocationCoordinates(
         location.cartesianCoordinate.x,
         location.cartesianCoordinate.y,
         location.bearing!.radians,
         location.timestamp));
-    //}
 
     if (sdkLocations.length > LOCATION_BUFFER_SIZE) {
       sdkLocations.removeAt(0);
@@ -245,17 +240,22 @@ class _ARPosQualityState extends State<_ARPosQuality> {
     }
   }
 
+  void updateLocation(Location location) {
+    if (sdkLocations.isNotEmpty &&
+        location.floorIdentifier != sdkLocations.last.floorIdentifier) {
+      clearBuffers();
+      resetThreshold();
+    }
+    updateArLocationBuffer();
+    updateSdkLocationBuffer(location);
+  }
+
   double estimateArConf() {
     const int requiredPositions = 10;
     const double maxConfidence = 1.0;
-    // const double minConfidence = 0.0;
-
-    // if (arLocations.length < requiredPositions) {
-    //   return minConfidence;
-    // }
-
     int numOkPositions = 0;
-    // Verificar las últimas 10 posiciones
+
+    // check last 10 positions
     double confidence = maxConfidence;
     for (int i = arLocations.length - 1;
         i >= max(arLocations.length - requiredPositions, 0);
@@ -434,14 +434,18 @@ class _ARPosQualityState extends State<_ARPosQuality> {
     return (distance / minDistanceThreshold);
   }
 
-//TODO: Rename
-  bool updateRefreshing(double conf, double arConf) {
+  void resetThreshold() {
+    int currentTimestamp = DateTime.now().millisecondsSinceEpoch;
+    refreshThreshold.value = DEFAUL_REFRESH_THRESHOLD;
+    refreshThreshold.timestamp = currentTimestamp;
+    ARModeDebugValues.dynamicRefreshThreshold.value = refreshThreshold.value;
+  }
+
+  bool checkIfHasToRefreshAndUpdateThreshold(double conf, double arConf) {
     // conf threshold to force refresh
     int currentTimestamp = DateTime.now().millisecondsSinceEpoch;
     if (arConf < 0.8) {
-      refreshThreshold.value = DEFAUL_REFRESH_THRESHOLD;
-      refreshThreshold.timestamp = currentTimestamp;
-      ARModeDebugValues.dynamicRefreshThreshold.value = refreshThreshold.value;
+      resetThreshold();
       return true;
     } // if ar wrong, restart
     if (conf > refreshThreshold.value) {
@@ -450,7 +454,7 @@ class _ARPosQualityState extends State<_ARPosQuality> {
       refreshThreshold.timestamp = currentTimestamp;
       ARModeDebugValues.dynamicRefreshThreshold.value = refreshThreshold.value;
       return true;
-    } else if (currentTimestamp - refreshThreshold.timestamp > 10000) {
+    } else if (currentTimestamp - refreshThreshold.timestamp > 1000) {
       // if has passed more than n time, decrease threshld. TODO: Extract and adjust values, now, each 10s decrease 0.01.
       refreshThreshold.value = refreshThreshold.value - 0.01;
       refreshThreshold.timestamp = currentTimestamp;
@@ -518,8 +522,8 @@ class _ARPosQualityState extends State<_ARPosQuality> {
 
   void updateDynamicARParams(List<Location> locations) {
     if (locations.length < ARModeDebugValues.locationBufferSize.value ||
-        !this.allLocationsInSameFloor(locations)) {
-      this.refreshData = ARModeDebugValues.dynamicUnstableRefreshTime.value;
+        !allLocationsInSameFloor(locations)) {
+      refreshData = ARModeDebugValues.dynamicUnstableRefreshTime.value;
       distanceWalked = 0;
       return;
     }

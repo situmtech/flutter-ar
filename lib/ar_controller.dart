@@ -24,12 +24,13 @@ class ARController {
 
   //bool hasToRefresh = true;
   int refreshingTimer = 5;
+  int timestampLastRefresh = 0;
   String navigationLastCoordinates = "";
 
   ARController._() {
     _arModeManager = ARModeManager(arModeChanged);
     SitumSdk().internalSetMethodCallARDelegate(_methodCallHandler);
-    Timer.periodic(const Duration(milliseconds: 200), (timer) {
+    Timer.periodic(const Duration(milliseconds: 800), (timer) {
       _getOdometry();
     });
   }
@@ -166,17 +167,22 @@ class ARController {
     }
   }
 
+  void refresh() {
+    int currentTimestamp = DateTime.now().millisecondsSinceEpoch;
+    if (currentTimestamp > timestampLastRefresh + 5000) {
+      _unityViewController?.send("MessageManager", "ForceReposition", "null");
+      timestampLastRefresh = currentTimestamp;
+    }
+  }
+
   void startRefreshing(int numRefresh) {
-    //hasToRefresh = true;
     ARModeDebugValues.refresh.value = true;
-    //_unityViewController?.send("MessageManager", "SendRefressData", '1');
-    _unityViewController?.send("MessageManager", "ForceReposition", "null");
+    refresh();
     refreshingTimer = numRefresh;
     //_arPosQualityState!.clearBuffers();
   }
 
   void stopRefreshing() {
-    //hasToRefresh = true;
     ARModeDebugValues.refresh.value = false;
     _unityViewController?.send("MessageManager", "SendRefressData", '1000000');
   }
@@ -190,6 +196,7 @@ class ARController {
     _updateRefreshing();
   }
 
+//TODO: Check if needed or remove
   int calculateNumRefresh(double conf) {
     if (conf >= 0.8) {
       return 1;
@@ -224,8 +231,8 @@ class ARController {
         _arPosQualityState!.totalDisplacementConf(totalDisplacementAR!);
     double odometriesDistanceConf =
         _arPosQualityState!.odometriesDifferenceConf(areOdoSimilar!.distance);
-    double odometriesAngleDifferenceConf = _arPosQualityState!
-        .odometriesAngleDifferenceConf(areOdoSimilar.angularDistance);
+    // double odometriesAngleDifferenceConf = _arPosQualityState!
+    //     .odometriesAngleDifferenceConf(areOdoSimilar.angularDistance);
     double qualityMetric = arConf *
         situmConf *
         displacementConf *
@@ -233,13 +240,13 @@ class ARController {
         odometriesDistanceConf; //TODO: Angle conf
 
     // check if has to refresh
-    bool hasToRefresh =
-        _arPosQualityState!.updateRefreshing(qualityMetric, arConf);
+    bool hasToRefresh = _arPosQualityState!
+        .checkIfHasToRefreshAndUpdateThreshold(qualityMetric, arConf);
     if (hasToRefresh) {
       int numRefresh = calculateNumRefresh(qualityMetric);
       startRefreshing(numRefresh);
     } else if (refreshingTimer > 0) {
-      _unityViewController?.send("MessageManager", "ForceReposition", "null");
+      refresh();
       refreshingTimer--;
       if (refreshingTimer == 0) {
         stopRefreshing();
@@ -343,10 +350,20 @@ class ARController {
     //printLongLog("__navigationProgress: ${prog}");
     dynamic progressContent = jsonDecode(jsonEncode(progress.rawContent));
 
+    debugPrint(
+        "jsonEncode Nav Proghress raw: ${jsonEncode(progress.rawContent)}");
     //List<String> nextCoordinates = findNextCoordinates(progressContent);
     String nextCoordinates = findNextCoordinates(progressContent);
-    //debugPrint("nextCoordinates.first.toString(): ${nextCoordinates.first}");
-    if (navigationLastCoordinates != nextCoordinates) {
+    if (nextCoordinates == "floorChange") {
+      _unityViewController?.send(
+          "MessageManager", "SendDisableArrowGuide", "null");
+      navigationLastCoordinates = nextCoordinates;
+    } else if (navigationLastCoordinates != nextCoordinates) {
+      if (navigationLastCoordinates == "floorChange") {
+        // After floor change , enable arrow
+        _unityViewController?.send(
+            "MessageManager", "SendEnableArrowGuide", "null");
+      }
       navigationLastCoordinates = nextCoordinates;
       _unityViewController?.send(
           "MessageManager", "SendArrowTarget", nextCoordinates);

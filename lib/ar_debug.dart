@@ -30,7 +30,7 @@ const DYNAMIC_LOCATION_BUFFER_SIZE = 10;
 
 const REFRESH = true;
 const ODO_DIFFERENCE_SENSIBILITY = 4;
-const ARROW_DISTANCE_TO_SKIP_NODE = 7.0;
+const ARROW_DISTANCE_TO_SKIP_NODE = 12.0;
 
 enum DebugMode {
   deactivated,
@@ -338,6 +338,7 @@ class ARDebugUI {
     );
   }
 
+  String showElements = "arrow";
   Widget createButtonSwitchPath(ValueNotifier<bool> refresh, DebugMode mode,
       String label, double left, double top, double size) {
     return Positioned(
@@ -345,15 +346,28 @@ class ARDebugUI {
       top: top,
       child: ElevatedButton(
         onPressed: () {
-          ARModeDebugValues.showRouteElements.value =
-              !ARModeDebugValues.showRouteElements.value;
-          if (ARModeDebugValues.showRouteElements.value) {
+          if (showElements == "arrow") {
+            showElements = "route";
+            _controller?.send(
+                "MessageManager", "SendDisableArrowGuide", "null");
             _controller?.send(
                 "MessageManager", "SendShowRouteElements", "null");
-          } else {
-            //hide
+          } else if (showElements == "route") {
+            showElements = "route_and_arrow";
+            _controller?.send(
+                "MessageManager", "SendShowRouteElements", "null");
+            _controller?.send("MessageManager", "SendEnableArrowGuide", "null");
+          } else if (showElements == "route_and_arrow") {
+            showElements = "nothing";
             _controller?.send(
                 "MessageManager", "SendHideRouteElements", "null");
+            _controller?.send("MessageManager", "SendEnableArrowGuide", "null");
+          } else if (showElements == "nothing") {
+            showElements = "arrow";
+            _controller?.send(
+                "MessageManager", "SendHideRouteElements", "null");
+            _controller?.send(
+                "MessageManager", "SendDisableArrowGuide", "null");
           }
         },
         child: Text(label),
