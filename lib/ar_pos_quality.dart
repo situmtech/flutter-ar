@@ -441,10 +441,11 @@ class _ARPosQualityState extends State<_ARPosQuality> {
     ARModeDebugValues.dynamicRefreshThreshold.value = refreshThreshold.value;
   }
 
-  bool checkIfHasToRefreshAndUpdateThreshold(double conf, double arConf) {
+  bool checkIfHasToRefreshAndUpdateThreshold(
+      double conf, double arConf, double situmConf) {
     // conf threshold to force refresh
     int currentTimestamp = DateTime.now().millisecondsSinceEpoch;
-    if (arConf < 0.8) {
+    if (arConf < 0.8 || situmConf < 0.8) {
       resetThreshold();
       return true;
     } // if ar wrong, restart
@@ -454,7 +455,8 @@ class _ARPosQualityState extends State<_ARPosQuality> {
       refreshThreshold.timestamp = currentTimestamp;
       ARModeDebugValues.dynamicRefreshThreshold.value = refreshThreshold.value;
       return true;
-    } else if (currentTimestamp - refreshThreshold.timestamp > 1000) {
+    } else if (currentTimestamp - refreshThreshold.timestamp > 1000 &&
+        refreshThreshold.value > 0.20) {
       // if has passed more than n time, decrease threshld. TODO: Extract and adjust values, now, each 10s decrease 0.01.
       refreshThreshold.value = refreshThreshold.value - 0.01;
       refreshThreshold.timestamp = currentTimestamp;

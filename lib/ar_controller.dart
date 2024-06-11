@@ -241,7 +241,8 @@ class ARController {
 
     // check if has to refresh
     bool hasToRefresh = _arPosQualityState!
-        .checkIfHasToRefreshAndUpdateThreshold(qualityMetric, arConf);
+        .checkIfHasToRefreshAndUpdateThreshold(
+            qualityMetric, arConf, situmConf);
     if (hasToRefresh) {
       int numRefresh = calculateNumRefresh(qualityMetric);
       startRefreshing(numRefresh);

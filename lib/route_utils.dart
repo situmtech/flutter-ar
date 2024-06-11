@@ -4,6 +4,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:situm_flutter_ar/ar.dart';
 
+const distanceThresholdToFloorChange = 5;
+
 double calculateDistance(
     Map<String, dynamic> point1, Map<String, dynamic> point2) {
   double x1 = point1['cartesianCoordinate']['x'];
@@ -80,11 +82,12 @@ String findNextCoordinates(dynamic progress) {
     double distance = calculateDistance(projectedPoint, segments[i]);
     if (distance > ARModeDebugValues.arrowDistanceToSkipNode.value) {
       return jsonEncode(segments[i]["cartesianCoordinate"]);
-    } else if (i == segments.length - 1 && progress['segments'].length > 1) {
-      // Last element in this floor
+    } else if (i == segments.length - 1 && // last element
+        progress['segments'].length > 1 && // there are more floors
+        distance < distanceThresholdToFloorChange) {
+      //below distance threshold
       return "floorChange";
     } else if (i == segments.length - 1) {
-      // Last element of the route
       return jsonEncode(segments[i]["cartesianCoordinate"]);
     }
   }
