@@ -108,6 +108,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
             //...debugUI.createDynamicUnityParamsWidgets(),
             ...debugUI.createWidgetRefresh(),
             _ARPosQuality(onCreate: _onARPosQuality),
+            FloorChangeIcon(),
             // TODO: fix at Unity (message not being received):
             _createTempBackButton(() {
               arController.onArGone();

@@ -109,6 +109,10 @@ class ARModeDebugValues {
   static ValueNotifier<double> arrowDistanceToSkipNode =
       ValueNotifier<double>(ARROW_DISTANCE_TO_SKIP_NODE);
 
+  static ValueNotifier<bool> nextIndicationUp = ValueNotifier<bool>(false);
+  static ValueNotifier<bool> nextIndicationChangeFloor =
+      ValueNotifier<bool>(false);
+
   static set arMode(ARMode arMode) {
     arModeNotifier.value = arMode;
   }

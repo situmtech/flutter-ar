@@ -27,6 +27,73 @@ Widget _createTempBackButton(VoidCallback onPressed) {
       ));
 }
 
+class FloorChangeIcon extends StatefulWidget {
+  @override
+  _FloorChangeIconState createState() => _FloorChangeIconState();
+}
+
+class _FloorChangeIconState extends State<FloorChangeIcon>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _animation = Tween<double>(begin: -10, end: 10).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    ARModeDebugValues.nextIndicationUp.addListener(_updateState);
+    ARModeDebugValues.nextIndicationChangeFloor.addListener(_updateState);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    ARModeDebugValues.nextIndicationUp.removeListener(_updateState);
+    ARModeDebugValues.nextIndicationChangeFloor.removeListener(_updateState);
+    super.dispose();
+  }
+
+  void _updateState() {
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    bool isGoingUp = ARModeDebugValues.nextIndicationUp.value;
+    return Visibility(
+      visible: ARModeDebugValues.nextIndicationChangeFloor.value,
+      child: Center(
+        child: AnimatedBuilder(
+          animation: _animation,
+          builder: (context, child) {
+            return Transform.translate(
+              offset: Offset(0, _animation.value),
+              child: Icon(
+                isGoingUp
+                    ? Icons.arrow_circle_up_rounded
+                    : Icons.arrow_circle_down_rounded,
+                color: const Color.fromARGB(255, 40, 116, 252),
+                size: 100,
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
 Widget _createDebugModeSwitchButton(VoidCallback onPressed) {
   return Align(
     alignment: Alignment.bottomLeft,

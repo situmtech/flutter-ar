@@ -334,37 +334,40 @@ class ARController {
     }
   }
 
-  void printLongLog(String message) {
-    const int chunkSize = 800; // Tamaño de cada fragmento
-    int start = 0;
-    while (start < message.length) {
-      int end = (start + chunkSize < message.length)
-          ? start + chunkSize
-          : message.length;
-      debugPrint("__navigation: ${message.substring(start, end)}");
-      start = end;
+  bool getFloorChangeDirection(dynamic progressContent) {
+    if (progressContent["currentIndication"]["distanceToNextLevel"] < 0) {
+      return false;
+    } else if (progressContent["currentIndication"]["distanceToNextLevel"] >
+        0) {
+      return true;
+    } else if (progressContent["nextIndication"]["distanceToNextLevel"] < 0) {
+      return false;
+    } else if (progressContent["nextIndication"]["distanceToNextLevel"] > 0) {
+      return true;
     }
+    return false;
   }
 
   void _onNavigationProgress(RouteProgress progress) {
-    //String prog = jsonEncode(progress.rawContent);
-    //printLongLog("__navigationProgress: ${prog}");
     dynamic progressContent = jsonDecode(jsonEncode(progress.rawContent));
-
-    debugPrint(
-        "jsonEncode Nav Proghress raw: ${jsonEncode(progress.rawContent)}");
-    //List<String> nextCoordinates = findNextCoordinates(progressContent);
     String nextCoordinates = findNextCoordinates(progressContent);
+
     if (nextCoordinates == "floorChange") {
       _unityViewController?.send(
           "MessageManager", "SendDisableArrowGuide", "null");
       navigationLastCoordinates = nextCoordinates;
+
+      ARModeDebugValues.nextIndicationUp.value =
+          getFloorChangeDirection(progressContent);
+      ARModeDebugValues.nextIndicationChangeFloor.value = true;
     } else if (navigationLastCoordinates != nextCoordinates) {
       if (navigationLastCoordinates == "floorChange") {
         // After floor change , enable arrow
         _unityViewController?.send(
             "MessageManager", "SendEnableArrowGuide", "null");
+        ARModeDebugValues.nextIndicationChangeFloor.value = false;
       }
+
       navigationLastCoordinates = nextCoordinates;
       _unityViewController?.send(
           "MessageManager", "SendArrowTarget", nextCoordinates);
@@ -375,7 +378,6 @@ class ARController {
   }
 
   void _onNavigationStart(SitumRoute route) {
-    //printLongLog("_navigationStart: ${jsonEncode(route.rawContent)}");
     if (_isReadyToReceiveMessages()) {
       debugPrint("Situm> AR> Navigation> _onNavigationStart");
       _unityViewController?.send(
