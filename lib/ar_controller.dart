@@ -197,15 +197,15 @@ class ARController {
   }
 
 //TODO: Check if needed or remove
-  int calculateNumRefresh(double conf) {
-    if (conf >= 0.8) {
-      return 1;
-    } else if (conf <= 0.3) {
-      return 5;
-    } else {
-      return (7.4 - 8 * conf).round();
-    }
-  }
+  // int calculateNumRefresh(double conf) {
+  //   if (conf >= 0.8) {
+  //     return 1;
+  //   } else if (conf <= 0.3) {
+  //     return 5;
+  //   } else {
+  //     return (7.4 - 8 * conf).round();
+  //   }
+  // }
 
   void _updateRefreshing() {
     if (_arPosQualityState!.arLocations.isEmpty ||
@@ -213,11 +213,10 @@ class ARController {
       return;
     }
     // check similarity
-    var totalDisplacementSitum =
-        _arPosQualityState?.computeAccumulatedDisplacement(
-            _arPosQualityState!.sdkLocationCoordinates, 20);
-    var totalDisplacementAR = _arPosQualityState
-        ?.computeAccumulatedDisplacement(_arPosQualityState!.arLocations, 20);
+    var totalDisplacementSitum = _arPosQualityState?.computeTotalDisplacement(
+        _arPosQualityState!.sdkLocationCoordinates, 20);
+    var totalDisplacementAR = _arPosQualityState?.computeTotalDisplacement(
+        _arPosQualityState!.arLocations, 20);
 
     var areOdoSimilar = _arPosQualityState?.estimateOdometriesMatch(
         _arPosQualityState!.arLocations,
@@ -244,7 +243,8 @@ class ARController {
         .checkIfHasToRefreshAndUpdateThreshold(
             qualityMetric, arConf, situmConf);
     if (hasToRefresh) {
-      int numRefresh = calculateNumRefresh(qualityMetric);
+      int numRefresh = 1;
+      //calculateNumRefresh(qualityMetric);
       startRefreshing(numRefresh);
     } else if (refreshingTimer > 0) {
       refresh();
@@ -254,7 +254,7 @@ class ARController {
       }
     }
 
-    // update  debug info
+    // update debug info
     ARModeDebugValues.debugVariables.value = buildDebugMessage(
         ARModeDebugValues.refresh.value,
         areOdoSimilar,
@@ -334,21 +334,7 @@ class ARController {
     }
   }
 
-  bool getFloorChangeDirection(dynamic progressContent) {
-    if (progressContent["currentIndication"]["distanceToNextLevel"] < 0) {
-      return false;
-    } else if (progressContent["currentIndication"]["distanceToNextLevel"] >
-        0) {
-      return true;
-    } else if (progressContent["nextIndication"]["distanceToNextLevel"] < 0) {
-      return false;
-    } else if (progressContent["nextIndication"]["distanceToNextLevel"] > 0) {
-      return true;
-    }
-    return false;
-  }
-
-  void _onNavigationProgress(RouteProgress progress) {
+  void updateArArrowGuide(RouteProgress progress) {
     dynamic progressContent = jsonDecode(jsonEncode(progress.rawContent));
     String nextCoordinates = findNextCoordinates(progressContent);
 
@@ -372,7 +358,10 @@ class ARController {
       _unityViewController?.send(
           "MessageManager", "SendArrowTarget", nextCoordinates);
     }
+  }
 
+  void _onNavigationProgress(RouteProgress progress) {
+    updateArArrowGuide(progress);
     _unityViewController?.send(
         "MessageManager", "SendRouteProgress", jsonEncode(progress.rawContent));
   }
@@ -384,11 +373,11 @@ class ARController {
           "MessageManager", "SendHideRouteElements", "null");
       _unityViewController?.send(
           "MessageManager", "SendRoute", jsonEncode(route.rawContent));
-      _unityViewController?.send(
-          "MessageManager", "SendEnableArrowGuide", "null");
       _arPosQualityState?.forceResetRefreshTimers();
       startRefreshing(5);
       _arModeManager?.updateWithNavigationStatus(NavigationStatus.started);
+      _unityViewController?.send(
+          "MessageManager", "SendEnableArrowGuide", "null");
     } else {
       _navigationPendingAction = () => _onNavigationStart(route);
     }

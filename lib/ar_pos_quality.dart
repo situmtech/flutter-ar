@@ -112,9 +112,10 @@ class _ARPosQualityState extends State<_ARPosQuality> {
   double yawDiffStd = 0;
 
   LocationCoordinates lastArLocation = LocationCoordinates(0, 0, 0, 0);
-  RefreshThreshold refreshThreshold =
+  RefreshThreshold currentRefreshThreshold =
       RefreshThreshold(DEFAUL_REFRESH_THRESHOLD, 0);
-
+  RefreshThreshold lastRefreshThreshold = // last time and value of refresh
+      RefreshThreshold(DEFAUL_REFRESH_THRESHOLD, 0);
   @override
   void initState() {
     super.initState();
@@ -436,9 +437,10 @@ class _ARPosQualityState extends State<_ARPosQuality> {
 
   void resetThreshold() {
     int currentTimestamp = DateTime.now().millisecondsSinceEpoch;
-    refreshThreshold.value = DEFAUL_REFRESH_THRESHOLD;
-    refreshThreshold.timestamp = currentTimestamp;
-    ARModeDebugValues.dynamicRefreshThreshold.value = refreshThreshold.value;
+    currentRefreshThreshold.value = DEFAUL_REFRESH_THRESHOLD;
+    currentRefreshThreshold.timestamp = currentTimestamp;
+    ARModeDebugValues.dynamicRefreshThreshold.value =
+        currentRefreshThreshold.value;
   }
 
   bool checkIfHasToRefreshAndUpdateThreshold(
@@ -449,21 +451,28 @@ class _ARPosQualityState extends State<_ARPosQuality> {
       resetThreshold();
       return true;
     } // if ar wrong, restart
-    if (conf > refreshThreshold.value) {
+
+    if (conf > currentRefreshThreshold.value + 0.2) {
+      // only update if above 0.2 + its value
       // To state refresh and update refresh threshold
-      refreshThreshold.value = conf;
-      refreshThreshold.timestamp = currentTimestamp;
-      ARModeDebugValues.dynamicRefreshThreshold.value = refreshThreshold.value;
+      currentRefreshThreshold.value = conf;
+      currentRefreshThreshold.timestamp = currentTimestamp;
+      ARModeDebugValues.dynamicRefreshThreshold.value =
+          currentRefreshThreshold.value;
       return true;
-    } else if (currentTimestamp - refreshThreshold.timestamp > 1000 &&
-        refreshThreshold.value > 0.20) {
-      // if has passed more than n time, decrease threshld. TODO: Extract and adjust values, now, each 10s decrease 0.01.
-      refreshThreshold.value = refreshThreshold.value - 0.01;
-      refreshThreshold.timestamp = currentTimestamp;
-      ARModeDebugValues.dynamicRefreshThreshold.value = refreshThreshold.value;
+    } else if ((conf < currentRefreshThreshold.value) &&
+        currentTimestamp - currentRefreshThreshold.timestamp > 1000 &&
+        currentRefreshThreshold.value > 0.20) {
+      // if has passed more than n time, decrease threshold. TODO: Extract and adjust values, now, each 10s decrease 0.01.
+      currentRefreshThreshold.value = currentRefreshThreshold.value - 0.01;
+      currentRefreshThreshold.timestamp = currentTimestamp;
+      ARModeDebugValues.dynamicRefreshThreshold.value =
+          currentRefreshThreshold.value;
     }
     return false;
   }
+
+  // refresh if has
 
   // void updateLocation(Location location) {
   //   sdkLocations.add(location);

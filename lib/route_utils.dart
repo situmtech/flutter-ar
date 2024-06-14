@@ -4,7 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:situm_flutter_ar/ar.dart';
 
-const distanceThresholdToFloorChange = 5;
+const distanceThresholdToFloorChange = 10;
 
 double calculateDistance(
     Map<String, dynamic> point1, Map<String, dynamic> point2) {
@@ -93,4 +93,17 @@ String findNextCoordinates(dynamic progress) {
   }
 
   return "";
+}
+
+bool getFloorChangeDirection(dynamic progressContent) {
+  if (progressContent["currentIndication"]["distanceToNextLevel"] < 0) {
+    return false;
+  } else if (progressContent["currentIndication"]["distanceToNextLevel"] > 0) {
+    return true;
+  } else if (progressContent["nextIndication"]["distanceToNextLevel"] < 0) {
+    return false;
+  } else if (progressContent["nextIndication"]["distanceToNextLevel"] > 0) {
+    return true;
+  }
+  return false;
 }
