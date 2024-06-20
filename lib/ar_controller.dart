@@ -310,7 +310,6 @@ class ARController {
     if (_isReadyToReceiveMessages()) {
       _unityViewController?.send("MessageManager", "CancelRoute", "null");
       _arModeManager?.updateWithNavigationStatus(NavigationStatus.finished);
-      onArGone();
     } else {
       _navigationPendingAction = () => _onNavigationCancelled();
     }
@@ -319,6 +318,8 @@ class ARController {
   void _onNavigationDestinationReached() {
     if (_isReadyToReceiveMessages()) {
       _unityViewController?.send("MessageManager", "SendRouteEnd", "null");
+      _unityViewController?.send(
+          "MessageManager", "SendDisableArrowGuide", "null");
       _arModeManager?.updateWithNavigationStatus(NavigationStatus.finished);
       onArGone();
     } else {
@@ -357,6 +358,8 @@ class ARController {
       navigationLastCoordinates = nextCoordinates;
       _unityViewController?.send(
           "MessageManager", "SendArrowTarget", nextCoordinates);
+      _unityViewController?.send(
+          "MessageManager", "SendEnableArrowGuide", "null");
     }
   }
 
@@ -376,8 +379,6 @@ class ARController {
       _arPosQualityState?.forceResetRefreshTimers();
       startRefreshing(5);
       _arModeManager?.updateWithNavigationStatus(NavigationStatus.started);
-      _unityViewController?.send(
-          "MessageManager", "SendEnableArrowGuide", "null");
     } else {
       _navigationPendingAction = () => _onNavigationStart(route);
     }

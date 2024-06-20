@@ -1,7 +1,7 @@
 part of 'ar.dart';
 
-const LOCATION_BUFFER_SIZE = 30;
-const DEFAUL_REFRESH_THRESHOLD = 0.2;
+const LOCATION_BUFFER_SIZE = 15;
+const DEFAULT_REFRESH_THRESHOLD = 0.2;
 
 class _ARPosQuality extends StatefulWidget {
   final Function(_ARPosQualityState) onCreate;
@@ -113,9 +113,9 @@ class _ARPosQualityState extends State<_ARPosQuality> {
 
   LocationCoordinates lastArLocation = LocationCoordinates(0, 0, 0, 0);
   RefreshThreshold currentRefreshThreshold =
-      RefreshThreshold(DEFAUL_REFRESH_THRESHOLD, 0);
+      RefreshThreshold(DEFAULT_REFRESH_THRESHOLD, 0);
   RefreshThreshold lastRefreshThreshold = // last time and value of refresh
-      RefreshThreshold(DEFAUL_REFRESH_THRESHOLD, 0);
+      RefreshThreshold(DEFAULT_REFRESH_THRESHOLD, 0);
   @override
   void initState() {
     super.initState();
@@ -437,7 +437,7 @@ class _ARPosQualityState extends State<_ARPosQuality> {
 
   void resetThreshold() {
     int currentTimestamp = DateTime.now().millisecondsSinceEpoch;
-    currentRefreshThreshold.value = DEFAUL_REFRESH_THRESHOLD;
+    currentRefreshThreshold.value = DEFAULT_REFRESH_THRESHOLD;
     currentRefreshThreshold.timestamp = currentTimestamp;
     ARModeDebugValues.dynamicRefreshThreshold.value =
         currentRefreshThreshold.value;
