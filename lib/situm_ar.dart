@@ -103,10 +103,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
             // loading even when it is not visible.
             unityView,
             // TODO: fix this:
-            //...debugUI.createAlertVisibilityParamsDebugWidgets(),
-            //...debugUI.createUnityParamsDebugWidgets(),
-            //...debugUI.createDynamicUnityParamsWidgets(),
-            ...debugUI.createWidgetRefresh(),
+            //...debugUI.createWidgetRefresh(),
             _ARPosQuality(onCreate: _onARPosQuality),
             FloorChangeIcon(),
             // TODO: fix at Unity (message not being received):

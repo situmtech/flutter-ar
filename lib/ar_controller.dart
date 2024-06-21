@@ -338,7 +338,6 @@ class ARController {
   void updateArArrowGuide(RouteProgress progress) {
     dynamic progressContent = jsonDecode(jsonEncode(progress.rawContent));
     String nextCoordinates = findNextCoordinates(progressContent);
-
     if (nextCoordinates == "floorChange") {
       _unityViewController?.send(
           "MessageManager", "SendDisableArrowGuide", "null");
@@ -347,7 +346,8 @@ class ARController {
       ARModeDebugValues.nextIndicationUp.value =
           getFloorChangeDirection(progressContent);
       ARModeDebugValues.nextIndicationChangeFloor.value = true;
-    } else if (navigationLastCoordinates != nextCoordinates) {
+    } else if (navigationLastCoordinates != nextCoordinates &&
+        nextCoordinates != "") {
       if (navigationLastCoordinates == "floorChange") {
         // After floor change , enable arrow
         _unityViewController?.send(
