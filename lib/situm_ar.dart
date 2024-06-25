@@ -314,9 +314,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
 
   void _updateStatusAmbienceSelected(int ambienceCode) {
     if (widget.enable3DAmbiences && isArVisible) {
-      var message = ambienceCode != 0 // TODO: apply here a better design!
-          ? "Enjoy ${_AmbienceSelectorState._ambiences3DNames[ambienceCode]}!"
-          : "Exiting 3D ambience.";
+      var message = "Please be conscious of other people while navigating";
       _showToast(context, message, const Duration(seconds: 3));
     }
   }
