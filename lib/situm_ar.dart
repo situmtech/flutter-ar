@@ -247,7 +247,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
           String updatedMessage = jsonEncode(jsonData);
 
           var sdk = SitumSdk();
-          sdk.setArOdometry(updatedMessage);
+          sdk.addExternalArData(updatedMessage);
           arController._arPosQualityState?.updateArLocation(updatedMessage);
         } else {
           debugPrint(
