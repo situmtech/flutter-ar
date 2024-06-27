@@ -381,16 +381,12 @@ class ARDebugUI {
 
   List<Widget> createWidgetRefresh() {
     return [
-      // createDebugButton(ARModeDebugValues.odoDifferenceSensibility,
-      //     DebugMode.alertVisibilityParams, 'odometry difference', 1, 450, 5),
       createButtonSwitchPath(ARModeDebugValues.refresh,
           DebugMode.alertVisibilityParams, 'Show Route', 0, 500, 5),
       createButtonRefresh(ARModeDebugValues.refresh,
           DebugMode.alertVisibilityParams, 'Refresh', 0, 450, 5),
       createDebugButton(ARModeDebugValues.arrowDistanceToSkipNode,
           DebugMode.alertVisibilityParams, 'distance to skip node', 1, 400, 5),
-
-      //     DebugMode.alertVisibilityParams, 'Change POI', 0, 400, 5),
       ValueListenableBuilder<DebugMode>(
           valueListenable: ARModeDebugValues.debugMode,
           builder: (context, value, child) {

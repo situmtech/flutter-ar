@@ -61,8 +61,6 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
   static const Duration animationDurationWithDelay =
       Duration(milliseconds: animationMillis + 100);
 
-  late String sessionId;
-
   @override
   void initState() {
     super.initState();
@@ -74,7 +72,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
       situmSdk.init();
       situmSdk.internalEnableGeofenceListening();
     }
-    sessionId = DateFormat('yyyyMMddHHmmss').format(DateTime.now());
+
     ARController()._onARWidgetState(this);
   }
 

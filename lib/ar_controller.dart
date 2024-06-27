@@ -22,7 +22,7 @@ class ARController {
   // as it seems to be freezing the AR module on iOS.
   bool? _resumed;
 
-  //bool hasToRefresh = true;
+  Timer? _timer;
   int refreshingTimer = 5;
   int timestampLastRefresh = 0;
   String navigationLastCoordinates = "";
@@ -30,9 +30,6 @@ class ARController {
   ARController._() {
     _arModeManager = ARModeManager(arModeChanged);
     SitumSdk().internalSetMethodCallARDelegate(_methodCallHandler);
-    Timer.periodic(const Duration(milliseconds: 800), (timer) {
-      _getOdometry();
-    });
   }
 
   factory ARController() {
@@ -113,15 +110,26 @@ class ARController {
     _widgetState?.widget.onARVisibilityChanged?.call(ARVisibility.gone);
   }
 
+  void _cancelTimer() {
+    if (_timer != null) {
+      _timer!.cancel();
+      _timer = null;
+    }
+  }
+
   void sleep() {
     // Pause only if not already paused or at the initial state.
     if (_resumed == null || _resumed == true) {
+      _cancelTimer();
       _unityViewController?.pause();
       _resumed = false;
     }
   }
 
   void wakeup() {
+    _timer = Timer.periodic(const Duration(milliseconds: 800), (timer) {
+      _getOdometry();
+    });
     startRefreshing(5);
     // Resume only if not already resumed or at the initial state.
     if (_resumed == null || _resumed == false) {
@@ -179,7 +187,6 @@ class ARController {
     ARModeDebugValues.refresh.value = true;
     refresh();
     refreshingTimer = numRefresh;
-    //_arPosQualityState!.clearBuffers();
   }
 
   void stopRefreshing() {
@@ -195,17 +202,6 @@ class ARController {
     _updateArPosQualityState(location);
     _updateRefreshing();
   }
-
-//TODO: Check if needed or remove
-  // int calculateNumRefresh(double conf) {
-  //   if (conf >= 0.8) {
-  //     return 1;
-  //   } else if (conf <= 0.3) {
-  //     return 5;
-  //   } else {
-  //     return (7.4 - 8 * conf).round();
-  //   }
-  // }
 
   void _updateRefreshing() {
     if (_arPosQualityState!.arLocations.isEmpty ||
@@ -244,7 +240,6 @@ class ARController {
             qualityMetric, arConf, situmConf);
     if (hasToRefresh) {
       int numRefresh = 1;
-      //calculateNumRefresh(qualityMetric);
       startRefreshing(numRefresh);
     } else if (refreshingTimer > 0) {
       refresh();
@@ -296,14 +291,6 @@ class ARController {
 
   void _updateArPosQualityState(location) {
     _arPosQualityState?.updateLocation(location);
-    if (_arModeManager?.arMode == ARMode.dynamicRefreshRate &&
-        _arPosQualityState != null) {
-      ARModeUnityParams dynamicParams =
-          _arPosQualityState!.getDynamicARParams();
-      if (_lastSetARModeUnityParams != dynamicParams) {
-        //_setARModeParams(dynamicParams);
-      }
-    }
   }
 
   void _onNavigationCancelled() {
@@ -428,7 +415,7 @@ class ARController {
   void updateUnityModeParams(ARMode arMode) {
     ARModeUnityParams unityParams =
         ARModeDebugValues.getUnityParamsForMode(arMode);
-    //_setARModeParams(unityParams);
+    //_setARModeParams(unityParams);    //TODO: Check
   }
 
   void _setARModeParams(ARModeUnityParams arModeUnityParams) {
