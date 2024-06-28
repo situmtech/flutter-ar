@@ -45,15 +45,16 @@ class _NavigationBaseState extends State<NavigationBase> {
   void startPositioning() async {
     await requestPermissions();
     SitumSdk().requestLocationUpdates(LocationRequest(
-        // Copy config.dart.example if you haven't already.
-        buildingIdentifier: buildingIdentifier,
-        useDeadReckoning: false,
-        useForegroundService: true,
-        foregroundServiceNotificationOptions:
-            ForegroundServiceNotificationOptions(
-          showStopAction: true,
-        ),
-        motionMode: MotionMode.byFootVisualOdometry));
+      // Copy config.dart.example if you haven't already.
+      buildingIdentifier: buildingIdentifier,
+      useDeadReckoning: false,
+      useForegroundService: true,
+      foregroundServiceNotificationOptions:
+          ForegroundServiceNotificationOptions(
+        showStopAction: true,
+      ),
+      motionMode: MotionMode.byFootVisualOdometry,
+    ));
   }
 
   @override
@@ -120,7 +121,7 @@ class _NavigationBaseState extends State<NavigationBase> {
       permissions.addAll([
         Permission.storage,
         Permission.bluetoothConnect,
-        Permission.bluetoothScan
+        Permission.bluetoothScan,
       ]);
     }
     Map<Permission, PermissionStatus> statuses = await permissions.request();
