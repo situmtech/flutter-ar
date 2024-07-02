@@ -413,12 +413,10 @@ class ARController {
   void updateUnityModeParams(ARMode arMode) {
     ARModeUnityParams unityParams =
         ARModeDebugValues.getUnityParamsForMode(arMode);
-    //_setARModeParams(unityParams);    //TODO: Check
+    _setARModeParams(unityParams);
   }
 
   void _setARModeParams(ARModeUnityParams arModeUnityParams) {
-    debugPrint("UPDATE AR PARAMS: $arModeUnityParams");
-    _lastSetARModeUnityParams = arModeUnityParams;
     _unityViewController?.send("MessageManager", "SendRefressData",
         arModeUnityParams.refreshData.toString());
     _unityViewController?.send("MessageManager", "SendDistanceLimitData",
