@@ -447,6 +447,81 @@ class _ARPosQualityState extends State<_ARPosQuality> {
     return false;
   }
 
+  bool checkIfHasToRefreshForAndroid() {
+    if (arLocations.isEmpty || sdkLocationCoordinates.isEmpty) {
+      return true;
+    }
+    // check similarity
+
+    var totalDisplacementSitum =
+        computeTotalDisplacement(sdkLocationCoordinates, 20);
+
+    var totalDisplacementAR = computeTotalDisplacement(arLocations, 20);
+    var areOdoSimilar =
+        estimateOdometriesMatch(arLocations, sdkLocationCoordinates);
+
+    double arConf = estimateArConf();
+    double situmConf = estimateSitumConf();
+    double displacementConf = totalDisplacementConf(totalDisplacementSitum);
+    double displacementConfAR = totalDisplacementConf(totalDisplacementAR);
+    double odometriesDistanceConf =
+        odometriesDifferenceConf(areOdoSimilar.distance);
+    // double odometriesAngleDifferenceConf = _arPosQualityState!
+    //     .odometriesAngleDifferenceConf(areOdoSimilar.angularDistance);
+    double qualityMetric = arConf *
+        situmConf *
+        displacementConf *
+        displacementConfAR *
+        odometriesDistanceConf; //TODO: Angle conf
+
+    // update debug info
+    ARModeDebugValues.debugVariables.value = buildDebugMessage(
+        ARModeDebugValues.refresh.value,
+        areOdoSimilar,
+        totalDisplacementSitum,
+        totalDisplacementAR,
+        arLocations.length,
+        sdkLocationCoordinates.length,
+        arConf,
+        situmConf,
+        ARModeDebugValues.dynamicRefreshThreshold.value,
+        qualityMetric);
+
+    // check if has to refresh
+    return checkIfHasToRefreshAndUpdateThreshold(
+        qualityMetric, arConf, situmConf);
+  }
+
+  bool checkIfHasToRefreshForIOS() {
+    if (sdkLocationCoordinates.isEmpty) {
+      return true;
+    }
+    // check similarity
+
+    var totalDisplacementSitum =
+        computeTotalDisplacement(sdkLocationCoordinates, 20);
+
+    double situmConf = estimateSitumConf();
+    double displacementConf = totalDisplacementConf(totalDisplacementSitum);
+    double qualityMetric = situmConf * displacementConf;
+
+    // update debug info
+    ARModeDebugValues.debugVariables.value = buildDebugMessage(
+        ARModeDebugValues.refresh.value,
+        0,
+        totalDisplacementSitum,
+        0,
+        arLocations.length,
+        sdkLocationCoordinates.length,
+        0,
+        situmConf,
+        ARModeDebugValues.dynamicRefreshThreshold.value,
+        qualityMetric);
+
+    // check if has to refresh
+    return checkIfHasToRefreshAndUpdateThreshold(qualityMetric, 1, situmConf);
+  }
+
   double angleDifference(double angle1, double angle2) {
     double difference = angle1 - angle2;
     if (difference > pi) {
@@ -472,6 +547,32 @@ class _ARPosQualityState extends State<_ARPosQuality> {
     }
 
     return true;
+  }
+
+  String buildDebugMessage(
+      bool isRefreshing,
+      areOdoSimilar,
+      totalDisplacementSitum,
+      totalDisplacementAR,
+      arBufferSize,
+      sdkBufferSize,
+      arConf,
+      situmConf,
+      currentRefreshThreshold,
+      qualityMetric) {
+    String status = isRefreshing ? "REFRESHING" : "NOT REFRESHING";
+    double angularDistanceDegrees = areOdoSimilar.angularDistance * 180 / pi;
+    return "$status\n"
+        "ar / Situm diff: ${areOdoSimilar.distance.toStringAsFixed(3)}  (${odometriesDifferenceConf(areOdoSimilar.distance).toStringAsFixed(3)})\n"
+        "ar / situm angle diff: ${areOdoSimilar.angularDistance.toStringAsFixed(3)} , ${angularDistanceDegrees.toStringAsFixed(1)} , conf (${odometriesAngleDifferenceConf(areOdoSimilar.angularDistance).toStringAsFixed(3)})\n"
+        "totalDisplacementSitum: ${totalDisplacementSitum.toStringAsFixed(3)}  (${totalDisplacementConf(totalDisplacementSitum!).toStringAsFixed(3)})\n"
+        "totalDisplacementAR: ${totalDisplacementAR.toStringAsFixed(3)}\n"
+        "ar buffer size: $arBufferSize\n"
+        "sdk buffer size: $sdkBufferSize\n"
+        "arCore Conf: $arConf\n"
+        "situm Conf: $situmConf\n"
+        "currentRefreshThreshold: ${currentRefreshThreshold.toStringAsFixed(3)}\n"
+        "quality: ${qualityMetric.toStringAsFixed(3)}\n";
   }
 
   ARModeUnityParams getDynamicARParams() {

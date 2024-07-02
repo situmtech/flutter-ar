@@ -126,9 +126,11 @@ class ARController {
   }
 
   void wakeup() {
-    _timer = Timer.periodic(const Duration(milliseconds: 800), (timer) {
-      _getOdometry();
-    });
+    if (Platform.isAndroid) {
+      _timer = Timer.periodic(const Duration(milliseconds: 800), (timer) {
+        _getOdometry();
+      });
+    }
     startRefreshing(5);
     // Resume only if not already resumed or at the initial state.
     if (_resumed == null || _resumed == false) {
@@ -203,40 +205,13 @@ class ARController {
   }
 
   void _updateRefreshing() {
-    if (_arPosQualityState!.arLocations.isEmpty ||
-        _arPosQualityState!.sdkLocationCoordinates.isEmpty) {
-      return;
+    bool hasToRefresh = true;
+    if (Platform.isAndroid) {
+      hasToRefresh = _arPosQualityState!.checkIfHasToRefreshForAndroid();
+    } else if (Platform.isIOS) {
+      hasToRefresh = _arPosQualityState!.checkIfHasToRefreshForIOS();
     }
-    // check similarity
-    var totalDisplacementSitum = _arPosQualityState?.computeTotalDisplacement(
-        _arPosQualityState!.sdkLocationCoordinates, 20);
-    var totalDisplacementAR = _arPosQualityState?.computeTotalDisplacement(
-        _arPosQualityState!.arLocations, 20);
 
-    var areOdoSimilar = _arPosQualityState?.estimateOdometriesMatch(
-        _arPosQualityState!.arLocations,
-        _arPosQualityState!.sdkLocationCoordinates);
-
-    double arConf = _arPosQualityState!.estimateArConf();
-    double situmConf = _arPosQualityState!.estimateSitumConf();
-    double displacementConf =
-        _arPosQualityState!.totalDisplacementConf(totalDisplacementSitum!);
-    double displacementConfAR =
-        _arPosQualityState!.totalDisplacementConf(totalDisplacementAR!);
-    double odometriesDistanceConf =
-        _arPosQualityState!.odometriesDifferenceConf(areOdoSimilar!.distance);
-    // double odometriesAngleDifferenceConf = _arPosQualityState!
-    //     .odometriesAngleDifferenceConf(areOdoSimilar.angularDistance);
-    double qualityMetric = arConf *
-        situmConf *
-        displacementConf *
-        displacementConfAR *
-        odometriesDistanceConf; //TODO: Angle conf
-
-    // check if has to refresh
-    bool hasToRefresh = _arPosQualityState!
-        .checkIfHasToRefreshAndUpdateThreshold(
-            qualityMetric, arConf, situmConf);
     if (hasToRefresh) {
       int numRefresh = 1;
       startRefreshing(numRefresh);
@@ -247,45 +222,6 @@ class ARController {
         stopRefreshing();
       }
     }
-
-    // update debug info
-    ARModeDebugValues.debugVariables.value = buildDebugMessage(
-        ARModeDebugValues.refresh.value,
-        areOdoSimilar,
-        totalDisplacementSitum,
-        totalDisplacementAR,
-        _arPosQualityState!.arLocations.length,
-        _arPosQualityState!.sdkLocationCoordinates.length,
-        arConf,
-        situmConf,
-        ARModeDebugValues.dynamicRefreshThreshold.value,
-        qualityMetric);
-  }
-
-  String buildDebugMessage(
-      bool isRefreshing,
-      areOdoSimilar,
-      totalDisplacementSitum,
-      totalDisplacementAR,
-      arBufferSize,
-      sdkBufferSize,
-      arConf,
-      situmConf,
-      currentRefreshThreshold,
-      qualityMetric) {
-    String status = isRefreshing ? "REFRESHING" : "NOT REFRESHING";
-    double angularDistanceDegrees = areOdoSimilar.angularDistance * 180 / pi;
-    return "$status\n"
-        "ar / Situm diff: ${areOdoSimilar.distance.toStringAsFixed(3)}  (${_arPosQualityState!.odometriesDifferenceConf(areOdoSimilar.distance).toStringAsFixed(3)})\n"
-        "ar / situm angle diff: ${areOdoSimilar.angularDistance.toStringAsFixed(3)} , ${angularDistanceDegrees.toStringAsFixed(1)} , conf (${_arPosQualityState!.odometriesAngleDifferenceConf(areOdoSimilar.angularDistance).toStringAsFixed(3)})\n"
-        "totalDisplacementSitum: ${totalDisplacementSitum.toStringAsFixed(3)}  (${_arPosQualityState!.totalDisplacementConf(totalDisplacementSitum!).toStringAsFixed(3)})\n"
-        "totalDisplacementAR: ${totalDisplacementAR.toStringAsFixed(3)}\n"
-        "ar buffer size: $arBufferSize\n"
-        "sdk buffer size: $sdkBufferSize\n"
-        "arCore Conf: $arConf\n"
-        "situm Conf: $situmConf\n"
-        "currentRefreshThreshold: ${currentRefreshThreshold.toStringAsFixed(3)}\n"
-        "quality: ${qualityMetric.toStringAsFixed(3)}\n";
   }
 
   void _updateArPosQualityState(location) {
