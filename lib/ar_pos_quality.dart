@@ -587,15 +587,10 @@ class _ARPosQualityState extends State<_ARPosQuality> {
       currentRefreshThreshold,
       qualityMetric) {
     String status = isRefreshing ? "REFRESHING" : "NOT REFRESHING";
-    double angularDistanceDegrees = 0;
     return "$status\n"
-        "ar / Situm diff: ${areOdoSimilar.distance.toStringAsFixed(3)}  (${odometriesDifferenceConf(areOdoSimilar.distance).toStringAsFixed(3)})\n"
-        "ar / situm angle diff: ${areOdoSimilar.angularDistance.toStringAsFixed(3)} , ${angularDistanceDegrees.toStringAsFixed(1)} , conf (${odometriesAngleDifferenceConf(areOdoSimilar.angularDistance).toStringAsFixed(3)})\n"
         "totalDisplacementSitum: ${totalDisplacementSitum.toStringAsFixed(3)}  (${totalDisplacementConf(totalDisplacementSitum!).toStringAsFixed(3)})\n"
-        "totalDisplacementAR: ${totalDisplacementAR.toStringAsFixed(3)}\n"
         "ar buffer size: $arBufferSize\n"
         "sdk buffer size: $sdkBufferSize\n"
-        "arCore Conf: $arConf\n"
         "situm Conf: $situmConf\n"
         "currentRefreshThreshold: ${currentRefreshThreshold.toStringAsFixed(3)}\n"
         "quality: ${qualityMetric.toStringAsFixed(3)}\n";
