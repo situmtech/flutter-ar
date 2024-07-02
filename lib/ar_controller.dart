@@ -8,7 +8,6 @@ class ARController {
   UnityViewController? _unityViewController;
   MapViewController? _mapViewController;
   ARModeManager? _arModeManager;
-  ARModeUnityParams? _lastSetARModeUnityParams;
   final ValueNotifier<int> _current3DAmbience = ValueNotifier<int>(0);
 
   // The UnityView may be constantly created/disposed. On the disposed state,
@@ -363,7 +362,6 @@ class ARController {
           "MessageManager", "SendHideRouteElements", "null");
       _unityViewController?.send(
           "MessageManager", "SendRoute", jsonEncode(route.rawContent));
-      _arPosQualityState?.forceResetRefreshTimers();
       startRefreshing(5);
       _arModeManager?.updateWithNavigationStatus(NavigationStatus.started);
     } else {

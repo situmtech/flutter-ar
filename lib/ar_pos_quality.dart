@@ -337,14 +337,14 @@ class _ARPosQualityState extends State<_ARPosQuality> {
       List<LocationCoordinates> trajectory) {
     if (trajectory.isEmpty) return [];
 
-    // Trasladar la trayectoria para que comience en el origen
+    // Translate trajectory to origin
     LocationCoordinates origin = trajectory[0];
     List<LocationCoordinates> translatedTrajectory =
         trajectory.map((loc) => loc - origin).toList();
 
     if (translatedTrajectory.length == 1) return translatedTrajectory;
 
-    // Buscar un vector con desplazamiento mayor a 2 metros
+    // Search for minimum displacement
     double distance = 0;
     int index = 1;
     while (index < translatedTrajectory.length) {
@@ -355,13 +355,13 @@ class _ARPosQualityState extends State<_ARPosQuality> {
     }
     if (index >= translatedTrajectory.length) {
       return translatedTrajectory;
-    } // No se encontró un vector con desplazamiento suficiente}
+    }
 
-    // Calcular el ángulo de rotación necesario
+    // Calculate rotation
     LocationCoordinates firstVector = translatedTrajectory[index];
     double angle = atan2(firstVector.y, firstVector.x);
-    //debugPrint("rotate substract angle ${angle}");
-    // Rotar la trayectoria para alinear con el eje x
+
+    // Rotate
     List<LocationCoordinates> alignedTrajectory =
         translatedTrajectory.map((loc) => loc.rotate(-angle)).toList();
 
@@ -382,32 +382,7 @@ class _ARPosQualityState extends State<_ARPosQuality> {
         transformedARLocations.last.distanceTo(transformedSDKLocations.last);
     var angularDistance = transformedARLocations.last
         .angularDistanceTo(transformedSDKLocations.last);
-    // debugPrint(
-    //     "arlocation _ original: ${arLocations.last.toString()} , sdklocation original: ${sdkLocations.last.toString()}");
-    // debugPrint(
-    //     "arlocation _ first: ${arLocations.first.toString()} , sdklocation original: ${sdkLocations.first.toString()}");
-    // debugPrint(
-    //     "arlocation: ${transformedARLocations.last.toString()} , sdklocation: ${transformedSDKLocations.last.toString()}");
 
-    // String arLocationsString = arLocations
-    //     .map((loc) => '>>,${loc.x}, ${loc.y}, ${loc.yaw}')
-    //     .join('\n ');
-    // String arLocationsTransformedString = transformedARLocations
-    //     .map((loc) => '>>,${loc.x}, ${loc.y}, ${loc.yaw}')
-    //     .join('\n ');
-    // String sdkLocationsString = sdkLocations
-    //     .map((loc) => '>>,${loc.x}, ${loc.y}, ${loc.yaw}')
-    //     .join('\n ');
-    // String sdkLocationsTransformedString = transformedSDKLocations
-    //     .map((loc) => '>>,${loc.x}, ${loc.y}, ${loc.yaw}')
-    //     .join('\n ');
-    // debugPrint(">>-------------------------------------");
-    // debugPrint(">>AR LOCATIONS\n, $arLocationsString");
-    // debugPrint(">>AR LOCATIONS TRansformed\n, $arLocationsTransformedString");
-    // debugPrint(">>Situm Locations\n, $sdkLocationsString");
-    // debugPrint(
-    //     ">>Situm Locations Transformed\n, $sdkLocationsTransformedString");
-    // debugPrint(">>-------------------------------------");
     return OdometriesMatchResult(distance, angularDistance);
   }
 
@@ -472,183 +447,6 @@ class _ARPosQualityState extends State<_ARPosQuality> {
     return false;
   }
 
-  // refresh if has
-
-  // void updateLocation(Location location) {
-  //   sdkLocations.add(location);
-  //   if (sdkLocations.length > LOCATION_BUFFER_SIZE) {
-  //     sdkLocations.removeAt(0);
-  //   }
-
-  //   var converged = false;
-  //   var hasWalked = false;
-
-  //   if (sdkLocations.length == LOCATION_BUFFER_SIZE) {
-  //     converged = _enoughARQuality(sdkLocations);
-  //     hasWalked = _enoughARMovement(sdkLocations);
-  //   }
-
-  //   updateDynamicARParams(sdkLocations);
-
-  //   if (!converged) {
-  //     userNeedsToWalk = true;
-  //   }
-
-  //   var goodARQuality = converged;
-
-  //   if (userNeedsToWalk) {
-  //     goodARQuality = converged && hasWalked;
-  //     if (goodARQuality) {
-  //       // No need to walk if converged and already walked
-  //       userNeedsToWalk = false;
-  //     }
-  //   }
-
-  //   setState(() {
-  //     showARAlertWidget = !goodARQuality;
-  //   });
-
-  //   var locationMap = location.toMap();
-  //   locationMap["timestamp"] = -1;
-
-  //   ARModeDebugValues.debugVariables.value = """
-  //       Locations Number: ${sdkLocations.length}
-  //       Walked: ${distanceWalked.toStringAsFixed(1)} Th: ${ARModeDebugValues.walkedThreshold.value.toStringAsFixed(1)}
-  //       ----
-  //       yawDiffStd: $yawDiffStd,
-  //       Dynamic params:
-  //        refreshData: $refreshData,
-  //        distanceLimitData: ${ARModeDebugValues.navigationDistanceLimitData.value},
-  //        hasToRefresh: $hasToRefresh,
-  //        waitToRefreshTimer: $waitToRefreshTimer,
-  //        keepRefreshingTimer: $keepRefreshingTimer,
-  //       ---
-  //       accuracyLimitData: ${ARModeDebugValues.navigationAccuracyLimitDada.value}
-  //       ---
-  //       converged: $converged
-  //       hasWalked: $hasWalked
-  //       goodARQuality: $goodARQuality
-  //       """;
-  // }
-
-  void updateDynamicARParams(List<Location> locations) {
-    if (locations.length < ARModeDebugValues.locationBufferSize.value ||
-        !allLocationsInSameFloor(locations)) {
-      refreshData = ARModeDebugValues.dynamicUnstableRefreshTime.value;
-      distanceWalked = 0;
-      return;
-    }
-
-    bool hasWalked = _enoughARMovement(locations);
-    bool isYawStable = _isYawStable(locations);
-
-    if (!isYawStable) {
-      hasToRefresh = true;
-    }
-    updateKeepRefreshingTimer(isYawStable && hasWalked);
-    updateWaitToRefreshTimer();
-    updateRefreshRate(isYawStable && hasWalked);
-  }
-
-  bool _isYawStable(sdkLocations) {
-    // Check yaw std
-    yawDiffStd = calculateAngleDifferencesStandardDeviation(sdkLocations);
-    yawDiffStd = yawDiffStd * 180 / pi;
-    if (yawDiffStd < (ARModeDebugValues.dynamicYawDiffStdThreshold.value)) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  bool isRefreshing() {
-    return this.refreshData ==
-        ARModeDebugValues.dynamicUnstableRefreshTime.value;
-  }
-
-  void updateWaitToRefreshTimer() {
-    if (hasToRefresh &&
-        waitToRefreshTimer < ARModeDebugValues.dynamicTimeToRefresh.value &&
-        !isRefreshing()) {
-      waitToRefreshTimer++;
-    }
-  }
-
-  void updateKeepRefreshingTimer(bool isStable) {
-    if (!isStable) {
-      keepRefreshingTimer = 0;
-    } else if (isRefreshing() &&
-        keepRefreshingTimer <
-            ARModeDebugValues.dynamicTimeToKeepRefreshing.value) {
-      keepRefreshingTimer++;
-    }
-  }
-
-  updateRefreshRate(bool isStable) {
-    if (isStable &&
-        isRefreshing() &&
-        keepRefreshingTimer ==
-            ARModeDebugValues.dynamicTimeToKeepRefreshing.value) {
-      this.refreshData = ARModeDebugValues.dynamicStableRefreshTime.value;
-      keepRefreshingTimer = 0;
-      hasToRefresh = false;
-    } else if (hasToRefresh &&
-        waitToRefreshTimer == ARModeDebugValues.dynamicTimeToRefresh.value) {
-      this.refreshData = ARModeDebugValues.dynamicUnstableRefreshTime.value;
-      waitToRefreshTimer = 0;
-      hasToRefresh = false;
-    }
-  }
-
-  void forceResetRefreshTimers() {
-    this.refreshData = ARModeDebugValues.dynamicUnstableRefreshTime.value;
-    keepRefreshingTimer = 0;
-    hasToRefresh = true;
-  }
-
-  bool _enoughARQuality(List<Location> locations) {
-    if (locations.isEmpty) return false;
-    avgLocAccuracy = 0;
-    countNoHasBearings = 0;
-    for (Location location in locations) {
-      avgLocAccuracy += location.accuracy;
-      if (!location.hasBearing) countNoHasBearings += 1;
-    }
-    avgLocAccuracy /= locations.length;
-    return avgLocAccuracy < ARModeDebugValues.accuracyThreshold.value &&
-        countNoHasBearings < ARModeDebugValues.noHasBearingThreshold.value;
-  }
-
-  bool _enoughARMovement(List<Location> locations) {
-    double accumulatedDistance = 0.0;
-    biggestJump = 0;
-
-    for (var i = 0; i < locations.length - 1; i++) {
-      double stepDistance = _euclideanDistance(locations[i], locations[i + 1]);
-      biggestJump = max(stepDistance, biggestJump);
-      if (stepDistance < ARModeDebugValues.jumpThreshold.value) {
-        accumulatedDistance += stepDistance;
-      }
-    }
-
-    distanceWalked = accumulatedDistance;
-    if (accumulatedDistance < ARModeDebugValues.walkedThreshold.value) {
-      return false;
-    } else if (biggestJump > ARModeDebugValues.jumpThreshold.value) {
-      return false;
-    } else {
-      return true;
-    }
-  }
-
-  double _euclideanDistance(Location origin, Location destination) {
-    var dx = pow(
-        destination.cartesianCoordinate.x - origin.cartesianCoordinate.x, 2);
-    var dy = pow(
-        destination.cartesianCoordinate.y - origin.cartesianCoordinate.y, 2);
-    return sqrt(dx + dy);
-  }
-
   double angleDifference(double angle1, double angle2) {
     double difference = angle1 - angle2;
     if (difference > pi) {
@@ -658,37 +456,6 @@ class _ARPosQualityState extends State<_ARPosQuality> {
     }
 
     return difference;
-  }
-
-  double calculateAngleDifferencesStandardDeviation(List<Location> locations) {
-    List<double> differences = [];
-
-    for (int i = 1; i < locations.length; i++) {
-      double angle1 = locations[i - 1].bearing?.radians ?? 0.0;
-      double angle2 = locations[i].bearing?.radians ?? 0.0;
-      differences.add(angleDifference(angle1, angle2));
-    }
-    // Ajuste para manejar diferencias alrededor de los límites de 0 y 2π
-    differences = differences
-        .map((diff) => diff.abs() > pi ? diff - (2 * pi * diff.sign) : diff)
-        .toList();
-
-    return calculateStandardDeviation(differences);
-  }
-
-  double calculateStandardDeviation(List<double> data) {
-    if (data.isEmpty) {
-      throw ArgumentError("Data list cannot be empty");
-    }
-
-    double mean =
-        data.reduce((value, element) => value + element) / data.length;
-    double variance = data
-            .map((x) => pow(x - mean, 2))
-            .reduce((value, element) => value + element) /
-        data.length;
-
-    return sqrt(variance);
   }
 
   bool allLocationsInSameFloor(List<Location> locations) {
