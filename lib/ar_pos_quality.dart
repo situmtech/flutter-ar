@@ -506,7 +506,7 @@ class _ARPosQualityState extends State<_ARPosQuality> {
     double qualityMetric = situmConf * displacementConf;
 
     // update debug info
-    ARModeDebugValues.debugVariables.value = buildDebugMessage(
+    ARModeDebugValues.debugVariables.value = buildDebugMessageForIOS(
         ARModeDebugValues.refresh.value,
         0,
         totalDisplacementSitum,
@@ -562,6 +562,32 @@ class _ARPosQualityState extends State<_ARPosQuality> {
       qualityMetric) {
     String status = isRefreshing ? "REFRESHING" : "NOT REFRESHING";
     double angularDistanceDegrees = areOdoSimilar.angularDistance * 180 / pi;
+    return "$status\n"
+        "ar / Situm diff: ${areOdoSimilar.distance.toStringAsFixed(3)}  (${odometriesDifferenceConf(areOdoSimilar.distance).toStringAsFixed(3)})\n"
+        "ar / situm angle diff: ${areOdoSimilar.angularDistance.toStringAsFixed(3)} , ${angularDistanceDegrees.toStringAsFixed(1)} , conf (${odometriesAngleDifferenceConf(areOdoSimilar.angularDistance).toStringAsFixed(3)})\n"
+        "totalDisplacementSitum: ${totalDisplacementSitum.toStringAsFixed(3)}  (${totalDisplacementConf(totalDisplacementSitum!).toStringAsFixed(3)})\n"
+        "totalDisplacementAR: ${totalDisplacementAR.toStringAsFixed(3)}\n"
+        "ar buffer size: $arBufferSize\n"
+        "sdk buffer size: $sdkBufferSize\n"
+        "arCore Conf: $arConf\n"
+        "situm Conf: $situmConf\n"
+        "currentRefreshThreshold: ${currentRefreshThreshold.toStringAsFixed(3)}\n"
+        "quality: ${qualityMetric.toStringAsFixed(3)}\n";
+  }
+
+  String buildDebugMessageForIOS(
+      bool isRefreshing,
+      areOdoSimilar,
+      totalDisplacementSitum,
+      totalDisplacementAR,
+      arBufferSize,
+      sdkBufferSize,
+      arConf,
+      situmConf,
+      currentRefreshThreshold,
+      qualityMetric) {
+    String status = isRefreshing ? "REFRESHING" : "NOT REFRESHING";
+    double angularDistanceDegrees = 0;
     return "$status\n"
         "ar / Situm diff: ${areOdoSimilar.distance.toStringAsFixed(3)}  (${odometriesDifferenceConf(areOdoSimilar.distance).toStringAsFixed(3)})\n"
         "ar / situm angle diff: ${areOdoSimilar.angularDistance.toStringAsFixed(3)} , ${angularDistanceDegrees.toStringAsFixed(1)} , conf (${odometriesAngleDifferenceConf(areOdoSimilar.angularDistance).toStringAsFixed(3)})\n"
