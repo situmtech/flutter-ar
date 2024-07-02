@@ -118,7 +118,8 @@ class ARController {
 
   void sleep() {
     // Pause only if not already paused or at the initial state.
-    if (_resumed == null || _resumed == true) {
+    if ((_resumed == null || _resumed == true) &&
+        _unityViewController != null) {
       _cancelTimer();
       _unityViewController?.pause();
       _resumed = false;
@@ -133,7 +134,8 @@ class ARController {
     }
     startRefreshing(5);
     // Resume only if not already resumed or at the initial state.
-    if (_resumed == null || _resumed == false) {
+    if ((_resumed == null || _resumed == false) &&
+        _unityViewController != null) {
       _unityViewController?.resume();
       _resumed = true;
     }
