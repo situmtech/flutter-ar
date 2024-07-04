@@ -492,36 +492,6 @@ class _ARPosQualityState extends State<_ARPosQuality> {
         qualityMetric, arConf, situmConf);
   }
 
-  bool checkIfHasToRefreshForIOS() {
-    if (sdkLocationCoordinates.isEmpty) {
-      return true;
-    }
-    // check similarity
-
-    var totalDisplacementSitum =
-        computeTotalDisplacement(sdkLocationCoordinates, 20);
-
-    double situmConf = estimateSitumConf();
-    double displacementConf = totalDisplacementConf(totalDisplacementSitum);
-    double qualityMetric = situmConf * displacementConf;
-
-    // update debug info
-    ARModeDebugValues.debugVariables.value = buildDebugMessageForIOS(
-        ARModeDebugValues.refresh.value,
-        0,
-        totalDisplacementSitum,
-        0,
-        arLocations.length,
-        sdkLocationCoordinates.length,
-        0,
-        situmConf,
-        ARModeDebugValues.dynamicRefreshThreshold.value,
-        qualityMetric);
-
-    // check if has to refresh
-    return checkIfHasToRefreshAndUpdateThreshold(qualityMetric, 1, situmConf);
-  }
-
   double angleDifference(double angle1, double angle2) {
     double difference = angle1 - angle2;
     if (difference > pi) {

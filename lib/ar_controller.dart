@@ -127,11 +127,9 @@ class ARController {
   }
 
   void wakeup() {
-    if (Platform.isAndroid) {
-      _timer = Timer.periodic(const Duration(milliseconds: 800), (timer) {
-        _getOdometry();
-      });
-    }
+    _timer = Timer.periodic(const Duration(milliseconds: 800), (timer) {
+      _getOdometry();
+    });
     startRefreshing(5);
     // Resume only if not already resumed or at the initial state.
     if ((_resumed == null || _resumed == false) &&
@@ -208,11 +206,7 @@ class ARController {
 
   void _updateRefreshing() {
     bool hasToRefresh = true;
-    if (Platform.isAndroid) {
-      hasToRefresh = _arPosQualityState!.checkIfHasToRefreshForAndroid();
-    } else if (Platform.isIOS) {
-      hasToRefresh = _arPosQualityState!.checkIfHasToRefreshForIOS();
-    }
+    hasToRefresh = _arPosQualityState!.checkIfHasToRefreshForAndroid();
 
     if (hasToRefresh) {
       int numRefresh = 1;
