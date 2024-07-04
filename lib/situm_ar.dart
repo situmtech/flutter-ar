@@ -74,6 +74,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
       situmSdk.init();
       situmSdk.internalEnableGeofenceListening();
     }
+
     ARController()._onARWidgetState(this);
   }
 
@@ -102,10 +103,9 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
             // loading even when it is not visible.
             unityView,
             // TODO: fix this:
-            //...debugUI.createAlertVisibilityParamsDebugWidgets(),
-            //...debugUI.createUnityParamsDebugWidgets(),
-            //...debugUI.createDynamicUnityParamsWidgets(),
+            //...debugUI.createWidgetRefresh(),
             _ARPosQuality(onCreate: _onARPosQuality),
+            FloorChangeIcon(),
             // TODO: fix at Unity (message not being received):
             _createTempBackButton(() {
               arController.onArGone();
@@ -218,7 +218,6 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
     });
     arController._onUnityViewController(controller);
     debugUI.controller = controller;
-    arController.updateUnityModeParams(DEFAULT_AR_MODE);
     // Resume Unity Player if there is a MapView. Otherwise the AR Widget will
     // be hidden.
     if (widget.mapView == null) {
@@ -235,8 +234,29 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
 
   void onUnityViewMessage(UnityViewController? controller, String? message) {
     debugPrint("Situm> AR> MESSAGE! $message");
+
     if (message == "BackButtonTouched") {
       arController.onArGone();
+    } else {
+      try {
+        var jsonData = jsonDecode(message!);
+
+        if (jsonData.containsKey('position') &&
+            jsonData.containsKey('eulerRotation')) {
+          int timestamp = DateTime.now().millisecondsSinceEpoch;
+          jsonData['timestamp'] = timestamp;
+          String updatedMessage = jsonEncode(jsonData);
+
+          var sdk = SitumSdk();
+          sdk.addExternalArData(updatedMessage);
+          arController._arPosQualityState?.updateArLocation(updatedMessage);
+        } else {
+          debugPrint(
+              "Situm> AR> Invalid JSON: Missing `position` or `rotation` fields.");
+        }
+      } catch (e) {
+        debugPrint("Situm> AR> Error parsing JSON: $e");
+      }
     }
   }
 
@@ -314,9 +334,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
 
   void _updateStatusAmbienceSelected(int ambienceCode) {
     if (widget.enable3DAmbiences && isArVisible) {
-      var message = ambienceCode != 0 // TODO: apply here a better design!
-          ? "Enjoy ${_AmbienceSelectorState._ambiences3DNames[ambienceCode]}!"
-          : "Exiting 3D ambience.";
+      var message = "Please be conscious of other people while navigating";
       _showToast(context, message, const Duration(seconds: 3));
     }
   }

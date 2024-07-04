@@ -53,6 +53,7 @@ class _NavigationBaseState extends State<NavigationBase> {
           ForegroundServiceNotificationOptions(
         showStopAction: true,
       ),
+      motionMode: MotionMode.byFootVisualOdometry,
     ));
   }
 
