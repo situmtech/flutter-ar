@@ -1,3 +1,9 @@
+## 0.0.13 - May 04, 2024
+
+- Integrated AR odometry into the positioning system to enhance accuracy.
+- Enhanced the algorithm for deciding when to refresh the world, improving stability.
+- A directional arrow is now displayed to indicate the route direction.
+
 ## 0.0.12 - May 21, 2024
 
 - Added a new "AR Loading" UI widget.
@@ -54,7 +60,7 @@
   ```
    <key>UIViewControllerBasedStatusBarAppearance</key>
    <false/>
-   ```
+  ```
 - Update `situm_flutter_unity` to version 0.0.3 to similarly prevent changes to the window mode on
   Android.
 - Updated Situm Flutter SDK to
@@ -104,9 +110,11 @@
   animations and 3D objects. The activation of each environment is based on the entry/exit on
   Geofences, which must be configured in the dashboard through the "ar_metadata" custom field.
   Example:
-   ```
-    ar_metadata: {"ambience": "ambience_name"}
+
   ```
+   ar_metadata: {"ambience": "ambience_name"}
+  ```
+
   To enable 3D ambiences for your venue, contact [Situm support](mailto:support@situm.com).
 
 - Added new parameters `occlusionAndroid`, `occlusionIOS` to enable or disable 3D model occlusion.
@@ -114,9 +122,9 @@
 ## 0.0.3 - January 26, 2024
 
 - Improved MapView integration by introducing a combined AR-MapView view.
-    - The combined view automatically centers the user position and disables user events for the
-      map.
-    - A new button completely hides the MapView for a full screen AR experience.
+  - The combined view automatically centers the user position and disables user events for the
+    map.
+  - A new button completely hides the MapView for a full screen AR experience.
 - Enhanced the plugin to exit the AR view when navigation concludes, accommodating cancellations or
   reaching the destination.
 
