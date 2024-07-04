@@ -21,12 +21,16 @@ const NAVIGATION_ANGLE_LIMIT_DATA = 30;
 const NAVIGATION_ACCURACY_LIMIT_DATA = 6;
 const NAVIGATION_CAMERA_LIMIT = 20.0;
 
-const DYNAMIC_STABLE_REFRESH_TIME = 15;
-const DYNAMIC_UNSTABLE_REFRESH_TIME = 15;
+const DYNAMIC_STABLE_REFRESH_TIME = 30;
+const DYNAMIC_UNSTABLE_REFRESH_TIME = 5; //30;
 const DYNAMIC_YAW_DIFF_STD_THRESHOLD = 15.0;
 const DYNAMIC_TIME_TO_REFRESH = 3;
 const DYNAMIC_TIME_TO_KEEP_REFRESHING = 10;
 const DYNAMIC_LOCATION_BUFFER_SIZE = 10;
+
+const REFRESH = true;
+const ODO_DIFFERENCE_SENSIBILITY = 4;
+const ARROW_DISTANCE_TO_SKIP_NODE = 12.0;
 
 enum DebugMode {
   deactivated,
@@ -93,6 +97,21 @@ class ARModeDebugValues {
       ValueNotifier<int>(NAVIGATION_ACCURACY_LIMIT_DATA);
   static ValueNotifier<double> navigationCameraLimit =
       ValueNotifier<double>(NAVIGATION_CAMERA_LIMIT);
+
+  static ValueNotifier<bool> refresh = ValueNotifier<bool>(REFRESH);
+
+  static ValueNotifier<int> odoDifferenceSensibility =
+      ValueNotifier<int>(ODO_DIFFERENCE_SENSIBILITY);
+  static ValueNotifier<double> dynamicRefreshThreshold =
+      ValueNotifier<double>(0);
+
+  static ValueNotifier<bool> showRouteElements = ValueNotifier<bool>(false);
+  static ValueNotifier<double> arrowDistanceToSkipNode =
+      ValueNotifier<double>(ARROW_DISTANCE_TO_SKIP_NODE);
+
+  static ValueNotifier<bool> nextIndicationUp = ValueNotifier<bool>(false);
+  static ValueNotifier<bool> nextIndicationChangeFloor =
+      ValueNotifier<bool>(false);
 
   static set arMode(ARMode arMode) {
     arModeNotifier.value = arMode;
@@ -307,6 +326,92 @@ class ARDebugUI {
     );
 
     return widgets;
+  }
+
+  Widget createButtonRefresh(ValueNotifier<bool> refresh, DebugMode mode,
+      String label, double left, double top, double size) {
+    return Positioned(
+      left: left,
+      top: top,
+      child: ElevatedButton(
+        onPressed: () {
+          _controller?.send("MessageManager", "ForceReposition", "null");
+        },
+        child: Text(label),
+      ),
+    );
+  }
+
+  String showElements = "arrow";
+  Widget createButtonSwitchPath(ValueNotifier<bool> refresh, DebugMode mode,
+      String label, double left, double top, double size) {
+    return Positioned(
+      left: left,
+      top: top,
+      child: ElevatedButton(
+        onPressed: () {
+          if (showElements == "arrow") {
+            showElements = "route";
+            _controller?.send(
+                "MessageManager", "SendDisableArrowGuide", "null");
+            _controller?.send(
+                "MessageManager", "SendShowRouteElements", "null");
+          } else if (showElements == "route") {
+            showElements = "route_and_arrow";
+            _controller?.send(
+                "MessageManager", "SendShowRouteElements", "null");
+            _controller?.send("MessageManager", "SendEnableArrowGuide", "null");
+          } else if (showElements == "route_and_arrow") {
+            showElements = "nothing";
+            _controller?.send(
+                "MessageManager", "SendHideRouteElements", "null");
+            _controller?.send("MessageManager", "SendEnableArrowGuide", "null");
+          } else if (showElements == "nothing") {
+            showElements = "arrow";
+            _controller?.send(
+                "MessageManager", "SendHideRouteElements", "null");
+            _controller?.send(
+                "MessageManager", "SendDisableArrowGuide", "null");
+          }
+        },
+        child: Text(label),
+      ),
+    );
+  }
+
+  List<Widget> createWidgetRefresh() {
+    return [
+      createButtonSwitchPath(ARModeDebugValues.refresh,
+          DebugMode.alertVisibilityParams, 'Show Route', 0, 500, 5),
+      createButtonRefresh(ARModeDebugValues.refresh,
+          DebugMode.alertVisibilityParams, 'Refresh', 0, 450, 5),
+      createDebugButton(ARModeDebugValues.arrowDistanceToSkipNode,
+          DebugMode.alertVisibilityParams, 'distance to skip node', 1, 400, 5),
+      ValueListenableBuilder<DebugMode>(
+          valueListenable: ARModeDebugValues.debugMode,
+          builder: (context, value, child) {
+            return Visibility(
+                visible: (value == DebugMode.alertVisibilityParams),
+                child: Positioned(
+                  //bottom: 10,
+                  top: 100,
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color.fromARGB(77, 255, 255, 255),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: ValueListenableBuilder(
+                      valueListenable: ARModeDebugValues.debugVariables,
+                      builder: (context, value, child) => Text(
+                        value,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ),
+                ));
+          }),
+    ];
   }
 
   List<Widget> createDynamicUnityParamsWidgets() {
