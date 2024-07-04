@@ -1,4 +1,4 @@
-## 0.0.13 - May 04, 2024
+## 0.0.13 - July 04, 2024
 
 - Integrated AR odometry into the positioning system to enhance accuracy.
 - Enhanced the algorithm for deciding when to refresh the world, improving stability.
