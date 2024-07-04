@@ -5,14 +5,14 @@ Widget _createTempBackButton(VoidCallback onPressed) {
       top: Platform.isAndroid ? 31.0 : 28.0,
       left: 8.0,
       child: Container(
-        width: 42.0, // Tamaño del botón
+        width: 42.0,
         height: 42.0,
         decoration: BoxDecoration(
-          color: Colors.grey, // Color de fondo
-          borderRadius: BorderRadius.circular(10.0), // Bordes redondeados
+          color: Colors.grey,
+          borderRadius: BorderRadius.circular(10.0),
           border: Border.all(
-            color: Colors.white, // Color del borde
-            width: 3.0, // Grosor del borde
+            color: Colors.white,
+            width: 3.0,
           ),
         ),
         child: InkWell(
@@ -248,7 +248,7 @@ class _AmbienceSelectorState extends State<_AmbienceSelector> {
   }
 }
 
-void _showToast(BuildContext context, String message) {
+void _showToast(BuildContext context, String message, Duration duration) {
   final scaffold = ScaffoldMessenger.of(context);
   scaffold.showSnackBar(
     SnackBar(
@@ -265,7 +265,7 @@ void _showToast(BuildContext context, String message) {
           ),
         ),
       ),
-      duration: const Duration(seconds: 3),
+      duration: duration,
       padding: EdgeInsets.zero,
       behavior: SnackBarBehavior.floating,
       shape: const RoundedRectangleBorder(
@@ -273,4 +273,38 @@ void _showToast(BuildContext context, String message) {
       ),
     ),
   );
+}
+
+class ARLoadingWidget extends StatelessWidget {
+  const ARLoadingWidget({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsetsDirectional.fromSTEB(8, 120, 8, 8),
+      decoration: BoxDecoration(
+        color: Colors.grey,
+        borderRadius: BorderRadius.circular(10.0),
+        border: Border.all(
+          color: Colors.white,
+          width: 3.0,
+        ),
+      ),
+      child: const ListTile(
+        leading: Icon(Icons.view_in_ar, color: Colors.white),
+        trailing: SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(
+            strokeWidth: 1,
+            color: Colors.white,
+          ),
+        ),
+        title: Text(
+          "AR Loading",
+          style: TextStyle(color: Colors.white),
+        ),
+      ),
+    );
+  }
 }
