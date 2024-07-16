@@ -206,6 +206,9 @@ class ARController {
 
   void _updateRefreshing() {
     bool hasToRefresh = true;
+    if (_arPosQualityState == null) {
+      return;
+    }
     hasToRefresh = _arPosQualityState!.checkIfHasToRefreshForAndroid();
 
     if (hasToRefresh) {
