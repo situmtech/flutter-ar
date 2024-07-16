@@ -5,7 +5,7 @@ class ARController {
 
   _ARWidgetState? _widgetState;
   _ARPosQualityState? _arPosQualityState;
-  UnityViewController? _unityViewController;
+  //UnityViewController? _unityViewController;
   MapViewController? _mapViewController;
   ARModeManager? _arModeManager;
   final ValueNotifier<int> _current3DAmbience = ValueNotifier<int>(0);
@@ -37,9 +37,9 @@ class ARController {
   }
 
   /// Let this ARController be up to date with the latest UnityViewController.
-  void _onUnityViewController(UnityViewController? controller) {
-    _unityViewController = controller;
-  }
+//   void _onUnityViewController(UnityViewController? controller) {
+//     _unityViewController = controller;
+//   }
 
   /// Update this ARController with the ARPosQuality state so it can notify
   /// location updates and determine the alert visibility by itself.
@@ -118,10 +118,9 @@ class ARController {
 
   void sleep() {
     // Pause only if not already paused or at the initial state.
-    if ((_resumed == null || _resumed == true) &&
-        _unityViewController != null) {
+    if ((_resumed == null || _resumed == true)) {
       _cancelTimer();
-      _unityViewController?.pause();
+      //_unityViewController?.pause();
       _resumed = false;
     }
   }
@@ -132,15 +131,14 @@ class ARController {
     });
     startRefreshing(5);
     // Resume only if not already resumed or at the initial state.
-    if ((_resumed == null || _resumed == false) &&
-        _unityViewController != null) {
-      _unityViewController?.resume();
+    if ((_resumed == null || _resumed == false)) {
+      //_unityViewController?.resume();
       _resumed = true;
     }
   }
 
   bool _isReadyToReceiveMessages() {
-    return _unityViewController != null && _resumed == true;
+    return false;//_unityViewController != null && _resumed == true;
   }
 
   // === Set of methods to keep the AR module updated regarding position and navigation.
@@ -179,7 +177,7 @@ class ARController {
   void refresh() {
     int currentTimestamp = DateTime.now().millisecondsSinceEpoch;
     if (currentTimestamp > timestampLastRefresh + 5000) {
-      _unityViewController?.send("MessageManager", "ForceReposition", "null");
+      //_unityViewController?.send("MessageManager", "ForceReposition", "null");
       timestampLastRefresh = currentTimestamp;
     }
   }
@@ -192,14 +190,14 @@ class ARController {
 
   void stopRefreshing() {
     ARModeDebugValues.refresh.value = false;
-    _unityViewController?.send("MessageManager", "SendRefressData", '1000000');
+    //_unityViewController?.send("MessageManager", "SendRefressData", '1000000');
   }
 
   void _onLocationChanged(Location location) {
     var locationMap = location.toMap();
     locationMap['timestamp'] = 0;
-    _unityViewController?.send(
-        "MessageManager", "SendLocation", jsonEncode(locationMap));
+//     _unityViewController?.send(
+//         "MessageManager", "SendLocation", jsonEncode(locationMap));
     _updateArPosQualityState(location);
     _updateRefreshing();
   }
@@ -226,7 +224,7 @@ class ARController {
 
   void _onNavigationCancelled() {
     if (_isReadyToReceiveMessages()) {
-      _unityViewController?.send("MessageManager", "CancelRoute", "null");
+      //_unityViewController?.send("MessageManager", "CancelRoute", "null");
       _arModeManager?.updateWithNavigationStatus(NavigationStatus.finished);
     } else {
       _navigationPendingAction = () => _onNavigationCancelled();
@@ -235,9 +233,9 @@ class ARController {
 
   void _onNavigationDestinationReached() {
     if (_isReadyToReceiveMessages()) {
-      _unityViewController?.send("MessageManager", "SendRouteEnd", "null");
-      _unityViewController?.send(
-          "MessageManager", "SendDisableArrowGuide", "null");
+//       _unityViewController?.send("MessageManager", "SendRouteEnd", "null");
+//       _unityViewController?.send(
+//           "MessageManager", "SendDisableArrowGuide", "null");
       _arModeManager?.updateWithNavigationStatus(NavigationStatus.finished);
       onArGone();
     } else {
@@ -247,7 +245,7 @@ class ARController {
 
   void _onNavigationOutOfRoute() {
     if (_isReadyToReceiveMessages()) {
-      _unityViewController?.send("MessageManager", "SendRouteUserOut", "null");
+//       _unityViewController?.send("MessageManager", "SendRouteUserOut", "null");
     } else {
       _navigationPendingAction = () => _onNavigationOutOfRoute();
     }
@@ -257,8 +255,8 @@ class ARController {
     dynamic progressContent = jsonDecode(jsonEncode(progress.rawContent));
     String nextCoordinates = findNextCoordinates(progressContent);
     if (nextCoordinates == "floorChange") {
-      _unityViewController?.send(
-          "MessageManager", "SendDisableArrowGuide", "null");
+//       _unityViewController?.send(
+//           "MessageManager", "SendDisableArrowGuide", "null");
       navigationLastCoordinates = nextCoordinates;
 
       ARModeDebugValues.nextIndicationUp.value =
@@ -268,32 +266,32 @@ class ARController {
         nextCoordinates != "") {
       if (navigationLastCoordinates == "floorChange") {
         // After floor change , enable arrow
-        _unityViewController?.send(
-            "MessageManager", "SendEnableArrowGuide", "null");
+//         _unityViewController?.send(
+//             "MessageManager", "SendEnableArrowGuide", "null");
         ARModeDebugValues.nextIndicationChangeFloor.value = false;
       }
 
       navigationLastCoordinates = nextCoordinates;
-      _unityViewController?.send(
-          "MessageManager", "SendArrowTarget", nextCoordinates);
-      _unityViewController?.send(
-          "MessageManager", "SendEnableArrowGuide", "null");
+//       _unityViewController?.send(
+//           "MessageManager", "SendArrowTarget", nextCoordinates);
+//       _unityViewController?.send(
+//           "MessageManager", "SendEnableArrowGuide", "null");
     }
   }
 
   void _onNavigationProgress(RouteProgress progress) {
     updateArArrowGuide(progress);
-    _unityViewController?.send(
-        "MessageManager", "SendRouteProgress", jsonEncode(progress.rawContent));
+//     _unityViewController?.send(
+//         "MessageManager", "SendRouteProgress", jsonEncode(progress.rawContent));
   }
 
   void _onNavigationStart(SitumRoute route) {
     if (_isReadyToReceiveMessages()) {
       debugPrint("Situm> AR> Navigation> _onNavigationStart");
-      _unityViewController?.send(
-          "MessageManager", "SendHideRouteElements", "null");
-      _unityViewController?.send(
-          "MessageManager", "SendRoute", jsonEncode(route.rawContent));
+//       _unityViewController?.send(
+//           "MessageManager", "SendHideRouteElements", "null");
+//       _unityViewController?.send(
+//           "MessageManager", "SendRoute", jsonEncode(route.rawContent));
       startRefreshing(5);
       _arModeManager?.updateWithNavigationStatus(NavigationStatus.started);
     } else {
@@ -332,8 +330,8 @@ class ARController {
   }
 
   void setSelectedPoi(Poi poi) {
-    _unityViewController?.send(
-        "MessageManager", "SendLastSelectedPOI", jsonEncode(poi.toMap()));
+//     _unityViewController?.send(
+//         "MessageManager", "SendLastSelectedPOI", jsonEncode(poi.toMap()));
   }
 
   //Callback called when the arMode has changed
@@ -349,39 +347,39 @@ class ARController {
   }
 
   void _setARModeParams(ARModeUnityParams arModeUnityParams) {
-    _unityViewController?.send("MessageManager", "SendRefressData",
-        arModeUnityParams.refreshData.toString());
-    _unityViewController?.send("MessageManager", "SendDistanceLimitData",
-        arModeUnityParams.distanceLimit.toString());
-    _unityViewController?.send("MessageManager", "SendAngleLimitData",
-        arModeUnityParams.angleLimit.toString());
-    _unityViewController?.send("MessageManager", "SendAccurancyLimitData",
-        arModeUnityParams.accuracyLimit.toString());
-    _unityViewController?.send("MessageManager", "SendCameraLimit",
-        arModeUnityParams.cameraLimit.toInt().toString());
+//     _unityViewController?.send("MessageManager", "SendRefressData",
+//         arModeUnityParams.refreshData.toString());
+//     _unityViewController?.send("MessageManager", "SendDistanceLimitData",
+//         arModeUnityParams.distanceLimit.toString());
+//     _unityViewController?.send("MessageManager", "SendAngleLimitData",
+//         arModeUnityParams.angleLimit.toString());
+//     _unityViewController?.send("MessageManager", "SendAccurancyLimitData",
+//         arModeUnityParams.accuracyLimit.toString());
+//     _unityViewController?.send("MessageManager", "SendCameraLimit",
+//         arModeUnityParams.cameraLimit.toInt().toString());
   }
 
   /// Change the AR ambience (private by now).
   void _selectAmbience(int ambienceCode) {
-    _unityViewController?.send(
-        "MessageManager", "SendOnAmbienceZoneEnter", "$ambienceCode");
+//     _unityViewController?.send(
+//         "MessageManager", "SendOnAmbienceZoneEnter", "$ambienceCode");
     _widgetState?._updateStatusAmbienceSelected(ambienceCode);
     debugPrint("Situm> AR> Ambiences> Selected $ambienceCode");
   }
 
   void _setEnjoyMode(bool enjoySelected) {
     if (enjoySelected) {
-      _unityViewController?.send(
-          "MessageManager", "SendHideRouteElements", "null");
+//       _unityViewController?.send(
+//           "MessageManager", "SendHideRouteElements", "null");
       _arModeManager?.setARMode(ARMode.enjoy);
     } else {
-      _unityViewController?.send(
-          "MessageManager", "SendShowRouteElements", "null");
+//       _unityViewController?.send(
+//           "MessageManager", "SendShowRouteElements", "null");
       _arModeManager?.switchToPreviousMode();
     }
   }
 
   void _getOdometry() {
-    _unityViewController?.send("MessageManager", "GetOdometryData", "null");
+//     _unityViewController?.send("MessageManager", "GetOdometryData", "null");
   }
 }

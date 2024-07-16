@@ -27,5 +27,5 @@ plugins {
 }
 
 include ":app"
-include ':unityExport'
-include ':unityExport:xrmanifest.androidlib'
+//include ':unityExport'
+//include ':unityExport:xrmanifest.androidlib'

@@ -184,33 +184,33 @@ class ARModeUnityParams {
 }
 
 class ARDebugUI {
-  UnityViewController? _controller;
-
-  set controller(UnityViewController? controller) {
-    _controller = controller;
-    //Adding listeners than will only send their modified data to Unity if we are in the proper ARMode(exploration or navigation)
-    addUnityParamsListener(ARModeDebugValues.explorationRefreshData,
-        "SendRefressData", ARMode.relaxed);
-    addUnityParamsListener(ARModeDebugValues.explorationDistanceLimitData,
-        "SendDistanceLimitData", ARMode.relaxed);
-    addUnityParamsListener(ARModeDebugValues.explorationAngleLimitData,
-        "SendAngleLimitData", ARMode.relaxed);
-    addUnityParamsListener(ARModeDebugValues.explorationAccuracyLimitDada,
-        "SendAccurancyLimitData", ARMode.relaxed);
-    addUnityParamsListener(ARModeDebugValues.explorationCameraLimit,
-        "SendCameraLimit", ARMode.relaxed);
-
-    addUnityParamsListener(ARModeDebugValues.navigationRefreshData,
-        "SendRefressData", ARMode.strict);
-    addUnityParamsListener(ARModeDebugValues.navigationDistanceLimitData,
-        "SendDistanceLimitData", ARMode.strict);
-    addUnityParamsListener(ARModeDebugValues.navigationAngleLimitData,
-        "SendAngleLimitData", ARMode.strict);
-    addUnityParamsListener(ARModeDebugValues.navigationAccuracyLimitDada,
-        "SendAccurancyLimitData", ARMode.strict);
-    addUnityParamsListener(ARModeDebugValues.navigationCameraLimit,
-        "SendCameraLimit", ARMode.strict);
-  }
+//   UnityViewController? _controller;
+//
+//   set controller(UnityViewController? controller) {
+//     _controller = controller;
+//     //Adding listeners than will only send their modified data to Unity if we are in the proper ARMode(exploration or navigation)
+//     addUnityParamsListener(ARModeDebugValues.explorationRefreshData,
+//         "SendRefressData", ARMode.relaxed);
+//     addUnityParamsListener(ARModeDebugValues.explorationDistanceLimitData,
+//         "SendDistanceLimitData", ARMode.relaxed);
+//     addUnityParamsListener(ARModeDebugValues.explorationAngleLimitData,
+//         "SendAngleLimitData", ARMode.relaxed);
+//     addUnityParamsListener(ARModeDebugValues.explorationAccuracyLimitDada,
+//         "SendAccurancyLimitData", ARMode.relaxed);
+//     addUnityParamsListener(ARModeDebugValues.explorationCameraLimit,
+//         "SendCameraLimit", ARMode.relaxed);
+//
+//     addUnityParamsListener(ARModeDebugValues.navigationRefreshData,
+//         "SendRefressData", ARMode.strict);
+//     addUnityParamsListener(ARModeDebugValues.navigationDistanceLimitData,
+//         "SendDistanceLimitData", ARMode.strict);
+//     addUnityParamsListener(ARModeDebugValues.navigationAngleLimitData,
+//         "SendAngleLimitData", ARMode.strict);
+//     addUnityParamsListener(ARModeDebugValues.navigationAccuracyLimitDada,
+//         "SendAccurancyLimitData", ARMode.strict);
+//     addUnityParamsListener(ARModeDebugValues.navigationCameraLimit,
+//         "SendCameraLimit", ARMode.strict);
+//   }
 
   //
   //CREATE DEBUG WINDOWS
@@ -335,7 +335,7 @@ class ARDebugUI {
       top: top,
       child: ElevatedButton(
         onPressed: () {
-          _controller?.send("MessageManager", "ForceReposition", "null");
+          //_controller?.send("MessageManager", "ForceReposition", "null");
         },
         child: Text(label),
       ),
@@ -352,26 +352,26 @@ class ARDebugUI {
         onPressed: () {
           if (showElements == "arrow") {
             showElements = "route";
-            _controller?.send(
-                "MessageManager", "SendDisableArrowGuide", "null");
-            _controller?.send(
-                "MessageManager", "SendShowRouteElements", "null");
+//             _controller?.send(
+//                 "MessageManager", "SendDisableArrowGuide", "null");
+//             _controller?.send(
+//                 "MessageManager", "SendShowRouteElements", "null");
           } else if (showElements == "route") {
             showElements = "route_and_arrow";
-            _controller?.send(
-                "MessageManager", "SendShowRouteElements", "null");
-            _controller?.send("MessageManager", "SendEnableArrowGuide", "null");
+//             _controller?.send(
+//                 "MessageManager", "SendShowRouteElements", "null");
+//             _controller?.send("MessageManager", "SendEnableArrowGuide", "null");
           } else if (showElements == "route_and_arrow") {
             showElements = "nothing";
-            _controller?.send(
-                "MessageManager", "SendHideRouteElements", "null");
-            _controller?.send("MessageManager", "SendEnableArrowGuide", "null");
+//             _controller?.send(
+//                 "MessageManager", "SendHideRouteElements", "null");
+//             _controller?.send("MessageManager", "SendEnableArrowGuide", "null");
           } else if (showElements == "nothing") {
             showElements = "arrow";
-            _controller?.send(
-                "MessageManager", "SendHideRouteElements", "null");
-            _controller?.send(
-                "MessageManager", "SendDisableArrowGuide", "null");
+//             _controller?.send(
+//                 "MessageManager", "SendHideRouteElements", "null");
+//             _controller?.send(
+//                 "MessageManager", "SendDisableArrowGuide", "null");
           }
         },
         child: Text(label),
@@ -546,7 +546,7 @@ class ARDebugUI {
           ARModeDebugValues.arModeNotifier.value != arModeToSendMessage) {
         return;
       }
-      _controller?.send("MessageManager", unityMessage, param.value.toString());
+//       _controller?.send("MessageManager", unityMessage, param.value.toString());
     });
   }
 }

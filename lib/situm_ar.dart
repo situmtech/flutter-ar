@@ -50,7 +50,8 @@ class ARWidget extends StatefulWidget {
 
 class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
   late String apiDomain;
-  ARController arController = ARController();
+//   ARController arController = ARController();
+  ARViewWidget arViewWidget = ARViewWidget();
   bool isArVisible = false;
   bool isMapCollapsed = false;
   bool loadingArMessage = false;
@@ -75,22 +76,22 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
       situmSdk.internalEnableGeofenceListening();
     }
 
-    ARController()._onARWidgetState(this);
+//     ARController()._onARWidgetState(this);
   }
 
   @override
   Widget build(BuildContext context) {
     // Create the AR widget:
-    var unityView = UnityView(
-      onCreated: (controller) => onUnityViewCreated(context, controller),
-      onReattached: onUnityViewReattached,
-      onMessage: onUnityViewMessage,
-    );
+//     var unityView = UnityView(
+//       onCreated: (controller) => onUnityViewCreated(context, controller),
+//       onReattached: onUnityViewReattached,
+//       onMessage: onUnityViewMessage,
+//     );
 
     // If there is not a MapView, return it immediately:
-    if (widget.mapView == null) {
-      return unityView;
-    }
+//     if (widget.mapView == null) {
+//       return unityView;
+//     }
     // Else integrate AR and MapView:
     assert(widget.arHeightRatio >= 0 && widget.arHeightRatio <= 1,
         'arHeightRatio must be a value between 0 and 1');
@@ -101,14 +102,17 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
           children: [
             // Add the AR Widget at the bottom of the stack. It will start
             // loading even when it is not visible.
-            unityView,
+            // unityView,
+            MaterialApp(
+              home: ARViewWidget(),
+            ),
             // TODO: fix this:
             //...debugUI.createWidgetRefresh(),
             _ARPosQuality(onCreate: _onARPosQuality),
             FloorChangeIcon(),
             // TODO: fix at Unity (message not being received):
             _createTempBackButton(() {
-              arController.onArGone();
+//               arController.onArGone();
             }),
             if (widget.enable3DAmbiences)
               _AmbienceSelector(
@@ -183,90 +187,90 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
             ),
           ),
         ),
-        widget.debugMode
-            ? _createDebugModeSwitchButton(() {
-                isArVisible
-                    ? arController.onArGone()
-                    : arController.onArRequested();
-              })
-            : const SizedBox(),
+//         widget.debugMode
+//             ? _createDebugModeSwitchButton(() {
+//                 isArVisible
+//                     ? arController.onArGone()
+//                     : arController.onArRequested();
+//               })
+//             : const SizedBox(),
       ],
     );
   }
 
-  void onUnityViewCreated(
-      BuildContext context, UnityViewController? controller) {
-    debugPrint("Situm> AR> onUnityViewCreated");
-    if ((Platform.isAndroid && widget.occlusionAndroid) ||
-        (Platform.isIOS && widget.occlusionIOS)) {
-      controller?.send("MessageManager", "SendActivateOcclusion ", "null");
-    } else {
-      controller?.send("MessageManager", "SendDeactivateOcclusion ", "null");
-    }
-    var sdk = SitumSdk();
-    sdk.fetchBuildingInfo(widget.buildingIdentifier).then((buildingInfo) {
-      controller?.send("MessageManager", "SendContentUrl", apiDomain);
-      var buildingInfoMap = buildingInfo.toMap();
-      controller?.send(
-          "MessageManager", "SendBuildingInfo", jsonEncode(buildingInfoMap));
-      debugPrint("Situm> AR> BuildingInfo has been sent.");
-      var poisMap = buildingInfoMap["indoorPOIs"];
-      controller?.send("MessageManager", "SendPOIs", jsonEncode(poisMap));
-      debugPrint(
-          "Situm> AR> indoorPOIs array has been sent. API DOMAIN IS $apiDomain");
-      widget.onPopulated.call();
-    });
-    arController._onUnityViewController(controller);
-    debugUI.controller = controller;
-    // Resume Unity Player if there is a MapView. Otherwise the AR Widget will
-    // be hidden.
-    if (widget.mapView == null) {
-      arController.wakeup();
-    } else {
-      arController.sleep();
-    }
-    widget.onCreated.call();
-  }
-
-  void onUnityViewReattached(UnityViewController controller) {
-    debugPrint("Situm> AR> REATTACHED!");
-  }
-
-  void onUnityViewMessage(UnityViewController? controller, String? message) {
-    debugPrint("Situm> AR> MESSAGE! $message");
-
-    if (message == "BackButtonTouched") {
-      arController.onArGone();
-    } else {
-      try {
-        var jsonData = jsonDecode(message!);
-
-        if (jsonData.containsKey('position') &&
-            jsonData.containsKey('eulerRotation')) {
-          int timestamp = DateTime.now().millisecondsSinceEpoch;
-          jsonData['timestamp'] = timestamp;
-          String updatedMessage = jsonEncode(jsonData);
-
-          var sdk = SitumSdk();
-          sdk.addExternalArData(updatedMessage);
-          arController._arPosQualityState?.updateArLocation(updatedMessage);
-        } else {
-          debugPrint(
-              "Situm> AR> Invalid JSON: Missing `position` or `rotation` fields.");
-        }
-      } catch (e) {
-        debugPrint("Situm> AR> Error parsing JSON: $e");
-      }
-    }
-  }
+//   void onUnityViewCreated(
+//       BuildContext context, UnityViewController? controller) {
+//     debugPrint("Situm> AR> onUnityViewCreated");
+//     if ((Platform.isAndroid && widget.occlusionAndroid) ||
+//         (Platform.isIOS && widget.occlusionIOS)) {
+//       controller?.send("MessageManager", "SendActivateOcclusion ", "null");
+//     } else {
+//       controller?.send("MessageManager", "SendDeactivateOcclusion ", "null");
+//     }
+//     var sdk = SitumSdk();
+//     sdk.fetchBuildingInfo(widget.buildingIdentifier).then((buildingInfo) {
+//       controller?.send("MessageManager", "SendContentUrl", apiDomain);
+//       var buildingInfoMap = buildingInfo.toMap();
+//       controller?.send(
+//           "MessageManager", "SendBuildingInfo", jsonEncode(buildingInfoMap));
+//       debugPrint("Situm> AR> BuildingInfo has been sent.");
+//       var poisMap = buildingInfoMap["indoorPOIs"];
+//       controller?.send("MessageManager", "SendPOIs", jsonEncode(poisMap));
+//       debugPrint(
+//           "Situm> AR> indoorPOIs array has been sent. API DOMAIN IS $apiDomain");
+//       widget.onPopulated.call();
+//     });
+//     arController._onUnityViewController(controller);
+//     debugUI.controller = controller;
+//     // Resume Unity Player if there is a MapView. Otherwise the AR Widget will
+//     // be hidden.
+//     if (widget.mapView == null) {
+//       arController.wakeup();
+//     } else {
+//       arController.sleep();
+//     }
+//     widget.onCreated.call();
+//   }
+//
+//   void onUnityViewReattached(UnityViewController controller) {
+//     debugPrint("Situm> AR> REATTACHED!");
+//   }
+//
+//   void onUnityViewMessage(UnityViewController? controller, String? message) {
+//     debugPrint("Situm> AR> MESSAGE! $message");
+//
+//     if (message == "BackButtonTouched") {
+//       arController.onArGone();
+//     } else {
+//       try {
+//         var jsonData = jsonDecode(message!);
+//
+//         if (jsonData.containsKey('position') &&
+//             jsonData.containsKey('eulerRotation')) {
+//           int timestamp = DateTime.now().millisecondsSinceEpoch;
+//           jsonData['timestamp'] = timestamp;
+//           String updatedMessage = jsonEncode(jsonData);
+//
+//           var sdk = SitumSdk();
+//           sdk.addExternalArData(updatedMessage);
+//           arController._arPosQualityState?.updateArLocation(updatedMessage);
+//         } else {
+//           debugPrint(
+//               "Situm> AR> Invalid JSON: Missing `position` or `rotation` fields.");
+//         }
+//       } catch (e) {
+//         debugPrint("Situm> AR> Error parsing JSON: $e");
+//       }
+//     }
+//   }
 
   @override
   void dispose() {
     super.dispose();
-    arController._onARPosQualityState(null);
-    arController._onUnityViewController(null);
-    arController._onARWidgetState(null);
-    arController._onARWidgetDispose();
+//     arController._onARPosQualityState(null);
+//     arController._onUnityViewController(null);
+//     arController._onARWidgetState(null);
+//     arController._onARWidgetDispose();
     WidgetsBinding.instance.removeObserver(this);
   }
 
@@ -282,7 +286,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
         break;
       case AppLifecycleState.inactive:
         debugPrint("Situm> AR> LIFECYCLE> INACTIVE --> PAUSE AR");
-        arController.onArGone();
+//         arController.onArGone();
         break;
     }
   }
@@ -340,6 +344,6 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
   }
 
   _onARPosQuality(_ARPosQualityState state) {
-    arController._onARPosQualityState(state);
+//     arController._onARPosQualityState(state);
   }
 }
