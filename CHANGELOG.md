@@ -1,3 +1,7 @@
+## 0.0.14 - July 16, 2024
+
+- Fix. Check that the ar widget has been initialized before sending messages.
+
 ## 0.0.13 - July 04, 2024
 
 - Integrated AR odometry into the positioning system to enhance accuracy.
