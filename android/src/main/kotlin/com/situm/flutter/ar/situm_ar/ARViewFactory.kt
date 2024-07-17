@@ -10,18 +10,9 @@ import io.flutter.plugin.platform.PlatformViewsController
 import io.flutter.plugin.common.StandardMessageCodec
 
 class ARViewFactory : PlatformViewFactory(StandardMessageCodec.INSTANCE) {
-    override fun create(context: Context?, id: Int, args: Any?): PlatformView {
-        return ARPlatformView(context)
+    override fun create(context: Context, id: Int, args: Any?): PlatformView {
+        val creationParams = args as Map<String?, Any?>?
+
+        return ARNativeView(context, id, creationParams)
     }
-}
-
-class ARPlatformView(context: Context?) : PlatformView {
-
-    private val arView: ARView = LayoutInflater.from(context).inflate(R.layout.view_ar, null) as ARView
-
-    override fun getView(): View {
-        return arView
-    }
-
-    override fun dispose() {}
 }

@@ -87,7 +87,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
 //       onReattached: onUnityViewReattached,
 //       onMessage: onUnityViewMessage,
 //     );
-
+    var arView = ARViewWidget();
     // If there is not a MapView, return it immediately:
 //     if (widget.mapView == null) {
 //       return unityView;
@@ -104,7 +104,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
             // loading even when it is not visible.
             // unityView,
             MaterialApp(
-              home: ARViewWidget(),
+              home: arView,
             ),
             // TODO: fix this:
             //...debugUI.createWidgetRefresh(),
