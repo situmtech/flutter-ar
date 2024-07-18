@@ -24,7 +24,7 @@ class SitumArPlugin: FlutterPlugin, MethodCallHandler {
   override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
     channel = MethodChannel(flutterPluginBinding.binaryMessenger, "situm_ar")
     channel.setMethodCallHandler(this)
-
+    //val lifecycle = FlutterLifecycleAdapter.getActivityLifecycle(this)
     flutterPluginBinding.getPlatformViewRegistry().registerViewFactory("ARView", ARViewFactory())
 
   }

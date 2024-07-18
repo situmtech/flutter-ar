@@ -14,10 +14,27 @@ class NavigationBarApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    requestPermissions();
     return MaterialApp(
       theme: ThemeData(useMaterial3: true),
       home: const NavigationBase(),
     );
+  }
+
+  Future<bool> requestPermissions() async {
+    var permissions = <Permission>[
+      Permission.locationWhenInUse,
+      Permission.camera,
+    ];
+    if (Platform.isAndroid) {
+      permissions.addAll([
+        //Permission.storage,
+        Permission.bluetoothConnect,
+        Permission.bluetoothScan,
+      ]);
+    }
+    Map<Permission, PermissionStatus> statuses = await permissions.request();
+    return statuses.values.every((status) => status.isGranted);
   }
 }
 
@@ -119,7 +136,7 @@ class _NavigationBaseState extends State<NavigationBase> {
     ];
     if (Platform.isAndroid) {
       permissions.addAll([
-        Permission.storage,
+        //Permission.storage,
         Permission.bluetoothConnect,
         Permission.bluetoothScan,
       ]);

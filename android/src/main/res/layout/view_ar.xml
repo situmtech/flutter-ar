@@ -6,24 +6,26 @@
     <io.github.sceneview.ar.ARSceneView
         android:id="@+id/sceneView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-
-    <FrameLayout
-        android:id="@+id/loadingView"
-        android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#40000000"
-        android:visibility="gone">
-        
+        android:visibility="visible"
+         />
 
-<!--        <com.google.android.material.progressindicator.CircularProgressIndicator-->
-<!--            android:layout_width="wrap_content"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:layout_gravity="center"-->
-<!--            android:indeterminate="true"/>-->
-<!--&lt;!&ndash;            app:indicatorSize="64dp"&ndash;&gt;-->
-<!--&lt;!&ndash;            app:trackColor="#3FFFFFFF" />&ndash;&gt;-->
-    </FrameLayout>
+<!--    <FrameLayout-->
+<!--        android:id="@+id/loadingView"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="50dp"-->
+<!--        android:background="#f2300500"-->
+<!--        android:visibility="visible">-->
+<!--        -->
+
+<!--&lt;!&ndash;        <com.google.android.material.progressindicator.CircularProgressIndicator&ndash;&gt;-->
+<!--&lt;!&ndash;            android:layout_width="wrap_content"&ndash;&gt;-->
+<!--&lt;!&ndash;            android:layout_height="wrap_content"&ndash;&gt;-->
+<!--&lt;!&ndash;            android:layout_gravity="center"&ndash;&gt;-->
+<!--&lt;!&ndash;            android:indeterminate="true"/>&ndash;&gt;-->
+<!--&lt;!&ndash;&lt;!&ndash;            app:indicatorSize="64dp"&ndash;&gt;&ndash;&gt;-->
+<!--&lt;!&ndash;&lt;!&ndash;            app:trackColor="#3FFFFFFF" />&ndash;&gt;&ndash;&gt;-->
+<!--    </FrameLayout>-->
 
     <TextView
         android:id="@+id/instructionText"

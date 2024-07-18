@@ -3,31 +3,42 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:permission_handler/permission_handler.dart';
 
-class ARViewWidget extends StatelessWidget {
-  // @override
-  // Widget build(BuildContext context) {
-  //   return Scaffold(
-  //     appBar: AppBar(
-  //       title: Text("ARView Example"),
-  //     ),
-  //     body: Center(
-  //       child: AndroidView(
-  //         viewType: 'ARView',
-  //         layoutDirection: TextDirection.ltr,
-  //         creationParams: <String, dynamic>{},
-  //         creationParamsCodec: const StandardMessageCodec(),
-  //       ),
-  //     ),
-  //   );
-  // }
+class ARViewWidget extends StatefulWidget {
+  @override
+  _ARViewWidgetState createState() => _ARViewWidgetState();
+}
 
+class _ARViewWidgetState extends State<ARViewWidget> {
+  @override
+  void initState() {
+    super.initState();
+    // Lógica cuando el widget se active
+    debugPrint(">>ARViewWidget se ha activado");
+    _requestPermissions();
+  }
+
+  Future<void> _requestPermissions() async {
+    var status = await Permission.camera.status;
+    if (!status.isGranted) {
+      await Permission.camera.request();
+    }
+  }
+
+  @override
+  void dispose() {
+    // Lógica cuando el widget se detenga
+    debugPrint(">>ARViewWidget se ha detenido");
+    // Puedes agregar más lógica aquí
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // This is used in the platform side to register the view.
     const String viewType = 'ARView';
-    // Pass parameters to the platform side.
     const Map<String, dynamic> creationParams = <String, dynamic>{};
-
+    debugPrint(">>ARViewWidget build");
     return PlatformViewLink(
       viewType: viewType,
       surfaceFactory: (context, controller) {

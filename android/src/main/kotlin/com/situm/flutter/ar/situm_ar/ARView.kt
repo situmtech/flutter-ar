@@ -25,20 +25,23 @@ import io.github.sceneview.math.Position
 import io.github.sceneview.node.ModelNode
 import io.github.sceneview.utils.getResourceUri
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 
 class ARView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr) {
 
     private val sceneView: ARSceneView
-    private val loadingView: View
+    //private val loadingView: View
     private val instructionText: TextView
     private var arrowNode: ModelNode? = null
+    private val coroutineScope = CoroutineScope(Dispatchers.Main)
 
     private var isLoading = false
         set(value) {
             field = value
-            loadingView.isGone = !value
+            //loadingView.isGone = !value
         }
 
     private var anchorNode: AnchorNode? = null
@@ -62,17 +65,19 @@ class ARView @JvmOverloads constructor(
 
         sceneView = findViewById(R.id.sceneView)
         instructionText = findViewById(R.id.instructionText)
-        loadingView = findViewById(R.id.loadingView)
+        //loadingView = findViewById(R.id.loadingView)
 
         setupSceneView()
     }
 
     private fun setupSceneView() {
-        (context as? LifecycleOwner)?.lifecycle?.let { lifecycle ->
-            sceneView.lifecycle = lifecycle
-        }
+        //(context as? LifecycleOwner)?.lifecycle?.let { lifecycle ->         // TODO: AQui no entra.
+        //    sceneView.lifecycle = lifecycle
+        //}
 
         sceneView.apply {
+            Log.d("ARView", "setp scene view")
+
             planeRenderer.isEnabled = true
             configureSession { session, config ->
                 config.depthMode = when (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
@@ -96,9 +101,13 @@ class ARView @JvmOverloads constructor(
             onTrackingFailureChanged = { reason ->
                 this@ARView.trackingFailureReason = reason
             }
+            Log.d("ARView", "setp scene view 2")
         }
 
-        (context as? LifecycleOwner)?.lifecycleScope?.launch {
+        //(context as? LifecycleOwner)?.lifecycleScope?.launch {
+        coroutineScope.launch{
+            Log.d("ARView", "buildAndAddArrowNode 3")
+
             isLoading = true
             buildAndAddArrowNode()
             isLoading = false
@@ -153,7 +162,8 @@ class ARView @JvmOverloads constructor(
         sceneView.addChildNode(
             AnchorNode(sceneView.engine, anchor).apply {
                 isEditable = true
-                (context as? LifecycleOwner)?.lifecycleScope?.launch {
+                //(context as? LifecycleOwner)?.lifecycleScope?.launch {
+                coroutineScope.launch {
                     isLoading = true
                     buildModelNode()?.let { addChildNode(it) }
                     isLoading = false
@@ -176,6 +186,8 @@ class ARView @JvmOverloads constructor(
     }
 
     private suspend fun buildAndAddArrowNode() {
+        Log.d("ARView", "buildAndAddArrowNode 1")
+
         val arrowModel = sceneView.modelLoader.loadModelInstance(context.getResourceUri(R.raw.arrow_rotated_center))
         val arrowPosition = Position(x = 0.0f, y = -1.0f, z = -6.0f)
         arrowModel?.let { modelInstance ->

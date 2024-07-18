@@ -138,7 +138,7 @@ class ARController {
   }
 
   bool _isReadyToReceiveMessages() {
-    return false;//_unityViewController != null && _resumed == true;
+    return false; //_unityViewController != null && _resumed == true;
   }
 
   // === Set of methods to keep the AR module updated regarding position and navigation.

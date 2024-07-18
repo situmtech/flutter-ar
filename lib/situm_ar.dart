@@ -50,7 +50,7 @@ class ARWidget extends StatefulWidget {
 
 class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
   late String apiDomain;
-//   ARController arController = ARController();
+  ARController arController = ARController();
   ARViewWidget arViewWidget = ARViewWidget();
   bool isArVisible = false;
   bool isMapCollapsed = false;
@@ -76,7 +76,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
       situmSdk.internalEnableGeofenceListening();
     }
 
-//     ARController()._onARWidgetState(this);
+    ARController()._onARWidgetState(this);
   }
 
   @override
@@ -87,11 +87,19 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
 //       onReattached: onUnityViewReattached,
 //       onMessage: onUnityViewMessage,
 //     );
-    var arView = ARViewWidget();
+    // var arView = ARViewWidget().build(context);
     // If there is not a MapView, return it immediately:
-//     if (widget.mapView == null) {
-//       return unityView;
-//     }
+
+    var arView = ARViewWidget(
+        // onCreated: (controller) => onARViewCreated(context, controller),
+        // onReattached: onUnityViewReattached,
+        // onMessage: onUnityViewMessage,
+        );
+
+    return arView;
+    if (widget.mapView == null) {
+      return arView;
+    }
     // Else integrate AR and MapView:
     assert(widget.arHeightRatio >= 0 && widget.arHeightRatio <= 1,
         'arHeightRatio must be a value between 0 and 1');
@@ -103,9 +111,10 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
             // Add the AR Widget at the bottom of the stack. It will start
             // loading even when it is not visible.
             // unityView,
-            MaterialApp(
-              home: arView,
-            ),
+            // MaterialApp(
+            //   home: arView,
+            // ),
+            arView,
             // TODO: fix this:
             //...debugUI.createWidgetRefresh(),
             _ARPosQuality(onCreate: _onARPosQuality),
@@ -264,6 +273,39 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
 //     }
 //   }
 
+  // void onARViewCreated(BuildContext context, UnityViewController? controller) {
+  //   debugPrint("Situm> AR> onUnityViewCreated");
+  //   if ((Platform.isAndroid && widget.occlusionAndroid) ||
+  //       (Platform.isIOS && widget.occlusionIOS)) {
+  //     controller?.send("MessageManager", "SendActivateOcclusion ", "null");
+  //   } else {
+  //     controller?.send("MessageManager", "SendDeactivateOcclusion ", "null");
+  //   }
+  //   var sdk = SitumSdk();
+  //   sdk.fetchBuildingInfo(widget.buildingIdentifier).then((buildingInfo) {
+  //     controller?.send("MessageManager", "SendContentUrl", apiDomain);
+  //     var buildingInfoMap = buildingInfo.toMap();
+  //     controller?.send(
+  //         "MessageManager", "SendBuildingInfo", jsonEncode(buildingInfoMap));
+  //     debugPrint("Situm> AR> BuildingInfo has been sent.");
+  //     var poisMap = buildingInfoMap["indoorPOIs"];
+  //     controller?.send("MessageManager", "SendPOIs", jsonEncode(poisMap));
+  //     debugPrint(
+  //         "Situm> AR> indoorPOIs array has been sent. API DOMAIN IS $apiDomain");
+  //     widget.onPopulated.call();
+  //   });
+  //   arController._onUnityViewController(controller);
+  //   debugUI.controller = controller;
+  //   // Resume Unity Player if there is a MapView. Otherwise the AR Widget will
+  //   // be hidden.
+  //   if (widget.mapView == null) {
+  //     arController.wakeup();
+  //   } else {
+  //     arController.sleep();
+  //   }
+  //   widget.onCreated.call();
+  // }
+
   @override
   void dispose() {
     super.dispose();
@@ -271,6 +313,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
 //     arController._onUnityViewController(null);
 //     arController._onARWidgetState(null);
 //     arController._onARWidgetDispose();
+
     WidgetsBinding.instance.removeObserver(this);
   }
 
