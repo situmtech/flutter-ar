@@ -2,26 +2,40 @@ PODS:
   - Flutter (1.0.0)
   - integration_test (0.0.1):
     - Flutter
-  - permission_handler_apple (9.1.1):
+  - mapbox_maps_flutter (0.5.1):
     - Flutter
-  - Protobuf (3.26.1)
-  - situm_flutter (3.13.0):
+    - MapboxMaps (~> 10.13.1)
+  - MapboxCommon (23.5.0)
+  - MapboxCoreMaps (10.13.1):
+    - MapboxCommon (~> 23.5)
+  - MapboxMaps (10.13.1):
+    - MapboxCommon (= 23.5.0)
+    - MapboxCoreMaps (= 10.13.1)
+    - MapboxMobileEvents (= 1.0.10)
+    - Turf (~> 2.0)
+  - MapboxMobileEvents (1.0.10)
+  - permission_handler_apple (9.3.0):
     - Flutter
-    - SitumSDK (~> 3.10.0)
-  - situm_flutter_ar (0.0.4):
+  - Protobuf (3.27.2)
+  - situm_flutter (3.16.7):
+    - Flutter
+    - SitumSDK (~> 3.15.0)
+  - situm_flutter_ar (0.0.14):
     - Flutter
   - situm_flutter_unity (0.0.1):
     - Flutter
-  - SitumSDK (3.10.0):
+  - SitumSDK (3.15.0):
     - Protobuf (~> 3.7)
     - SSZipArchive (~> 2.4)
   - SSZipArchive (2.4.3)
+  - Turf (2.8.0)
   - webview_flutter_wkwebview (0.0.1):
     - Flutter
 
 DEPENDENCIES:
   - Flutter (from `Flutter`)
   - integration_test (from `.symlinks/plugins/integration_test/ios`)
+  - mapbox_maps_flutter (from `.symlinks/plugins/mapbox_maps_flutter/ios`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
   - situm_flutter (from `.symlinks/plugins/situm_flutter/ios`)
   - situm_flutter_ar (from `.symlinks/plugins/situm_flutter_ar/ios`)
@@ -30,15 +44,22 @@ DEPENDENCIES:
 
 SPEC REPOS:
   trunk:
+    - MapboxCommon
+    - MapboxCoreMaps
+    - MapboxMaps
+    - MapboxMobileEvents
     - Protobuf
     - SitumSDK
     - SSZipArchive
+    - Turf
 
 EXTERNAL SOURCES:
   Flutter:
     :path: Flutter
   integration_test:
     :path: ".symlinks/plugins/integration_test/ios"
+  mapbox_maps_flutter:
+    :path: ".symlinks/plugins/mapbox_maps_flutter/ios"
   permission_handler_apple:
     :path: ".symlinks/plugins/permission_handler_apple/ios"
   situm_flutter:
@@ -51,17 +72,23 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/webview_flutter_wkwebview/ios"
 
 SPEC CHECKSUMS:
-  Flutter: f04841e97a9d0b0a8025694d0796dd46242b2854
-  integration_test: 13825b8a9334a850581300559b8839134b124670
-  permission_handler_apple: e76247795d700c14ea09e3a2d8855d41ee80a2e6
-  Protobuf: a53f5173a603075b3522a5c50be63a67a5f3353a
-  situm_flutter: f32a8a840b6cbc254702a25444b68a3e22a2e937
-  situm_flutter_ar: ed98d7e000e6fb77ef645b6f93d7d7439a65f499
+  Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
+  integration_test: ce0a3ffa1de96d1a89ca0ac26fca7ea18a749ef4
+  mapbox_maps_flutter: efaafab8a2b4ae99d7b8b5074ed4949a82e1683f
+  MapboxCommon: fdf7fd31c90b7b607cd9c63e37797f023c01d860
+  MapboxCoreMaps: 24270c7c6b8cb71819fc2f3c549db9620ee4d019
+  MapboxMaps: cb76511b98d3b95c74b0771ed105bc69f30ace6b
+  MapboxMobileEvents: de50b3a4de180dd129c326e09cd12c8adaaa46d6
+  permission_handler_apple: 9878588469a2b0d0fc1e048d9f43605f92e6cec2
+  Protobuf: fb2c13674723f76ff6eede14f78847a776455fa2
+  situm_flutter: db88c525596f1598e54c2896fc753131dd8912e9
+  situm_flutter_ar: cd43a7524e65c8051a64a865dd13aeb47ad9ce74
   situm_flutter_unity: 99318030326e66563eddea5036fcc4e25e9ad6fd
-  SitumSDK: 462cb3f36a67739f2907f41997f0d187246f1468
+  SitumSDK: c8cd36171ea37e87f74108b81b9771c1ac63e0ac
   SSZipArchive: fe6a26b2a54d5a0890f2567b5cc6de5caa600aef
-  webview_flutter_wkwebview: 2e2d318f21a5e036e2c3f26171342e95908bd60a
+  Turf: aa2ede4298009639d10db36aba1a7ebaad072a5e
+  webview_flutter_wkwebview: 4f3e50f7273d31e5500066ed267e3ae4309c5ae4
 
-PODFILE CHECKSUM: 8985b4f69e77cea0222eeb889ce6f84b017a4e2f
+PODFILE CHECKSUM: f4a29ca49b8906324510beb39945b1ca02d64aed
 
 COCOAPODS: 1.15.2

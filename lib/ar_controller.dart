@@ -26,6 +26,8 @@ class ARController {
   int timestampLastRefresh = 0;
   String navigationLastCoordinates = "";
 
+  mapbox.MapboxMap? _mapboxMapController;
+
   ARController._() {
     _arModeManager = ARModeManager(arModeChanged);
     SitumSdk().internalSetMethodCallARDelegate(_methodCallHandler);
@@ -202,6 +204,28 @@ class ARController {
         "MessageManager", "SendLocation", jsonEncode(locationMap));
     _updateArPosQualityState(location);
     _updateRefreshing();
+    _updateMapboxMap(location);
+  }
+
+  void _updateMapboxMap(Location location) async {
+    if (_mapboxMapController == null) {
+      return;
+    }
+    var cameraOptions = mapbox.CameraOptions(
+      zoom: 15,
+      center: geojson.Point(
+        coordinates: mapbox.Position(
+          location.coordinate.longitude,
+          location.coordinate.latitude,
+        ),
+      ).toJson(),
+      bearing: location.bearing?.degrees ?? 0,
+    );
+    _mapboxMapController!.easeTo(
+        cameraOptions,
+        mapbox.MapAnimationOptions(
+          duration: 200,
+        ));
   }
 
   void _updateRefreshing() {
@@ -386,5 +410,9 @@ class ARController {
 
   void _getOdometry() {
     _unityViewController?.send("MessageManager", "GetOdometryData", "null");
+  }
+
+  void _onMapboxMapCreated(mapbox.MapboxMap controller) {
+    this._mapboxMapController = controller;
   }
 }

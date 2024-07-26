@@ -22,7 +22,8 @@ dependencies:
 
   situm_flutter_unity: ^0.0.3
 
-  situm_flutter: ^3.16.3
+  situm_flutter: ^3.16.7
+  mapbox_maps_flutter: ^0.5.0
 
   io: ^1.0.4
 

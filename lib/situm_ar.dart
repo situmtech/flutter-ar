@@ -1,8 +1,30 @@
 part of 'ar.dart';
 
+int calculatePrimes(int n) {
+  int count = 0;
+  for (int i = 2; i < n; i++) {
+    if (isPrime(i)) {
+      count++;
+      debugPrint("Calculate primes $count");
+    }
+  }
+  return count;
+}
+
+bool isPrime(int number) {
+  if (number < 2) return false;
+  for (int i = 2; i <= number / 2; i++) {
+    if (number % i == 0) {
+      return false;
+    }
+  }
+  return true;
+}
+
 class ARWidget extends StatefulWidget {
   final String buildingIdentifier;
   final String apiDomain;
+  final String mapboxAccessToken;
   final Function() onCreated;
   final Function() onPopulated;
   final Function onDisposed;
@@ -34,6 +56,7 @@ class ARWidget extends StatefulWidget {
     required this.onCreated,
     required this.onPopulated,
     required this.onDisposed,
+    required this.mapboxAccessToken,
     this.onARVisibilityChanged,
     this.mapView,
     this.arHeightRatio = 2 / 3,
@@ -52,7 +75,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
   late String apiDomain;
   ARController arController = ARController();
   bool isArVisible = false;
-  bool isMapCollapsed = false;
+  bool isMapCollapsed = true;
   bool loadingArMessage = false;
   Timer? loadingArMessageTimer;
   ARDebugUI debugUI = ARDebugUI();
@@ -76,6 +99,28 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
     }
 
     ARController()._onARWidgetState(this);
+    //_startCPULoad();
+  }
+
+  bool _isLoading = false;
+
+  void _startCPULoad() {
+    Timer.periodic(const Duration(seconds: 3), (Timer timer) {
+      _runCPULoad();
+    });
+  }
+
+  Future<void> _runCPULoad() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    // Perform CPU-intensive task
+    await compute(calculatePrimes, 1000000);
+
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   @override
@@ -114,8 +159,47 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
               _AmbienceSelector(
                 debugMode: widget.debugMode,
               ),
-            if (loadingArMessage) const ARLoadingWidget()
+            if (loadingArMessage) const ARLoadingWidget(),
+            // const Align(
+            //   alignment: Alignment.topCenter,
+            //   child: SizedBox(
+            //     height: 500,
+            //     width: 256,
+            //     child: UiKitView(viewType: "<my-lag-progress-view>"),
+            //   )
+            // )
           ],
+        ),
+        Align(
+          alignment: Alignment.topCenter,
+          child: LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+            return SizedBox(
+                height: 200,
+                width: constraints.maxWidth,
+                child: Stack(
+                  children: [
+                    mapbox.MapWidget(
+                      key: const ValueKey("mapWidget"),
+                      styleUri: mapbox.MapboxStyles.MAPBOX_STREETS,
+                      onMapCreated: _onMapboxMapCreated,
+                      cameraOptions: mapbox.CameraOptions(
+                        zoom: 8.0,
+                      ),
+                      resourceOptions: mapbox.ResourceOptions(
+                        accessToken: widget.mapboxAccessToken,
+                      ),
+                    ),
+                    const Align(
+                      alignment: Alignment.center,
+                      child: Icon(
+                        Icons.arrow_circle_up,
+                        color: Colors.blue,
+                      ),
+                    )
+                  ],
+                ));
+          }),
         ),
         // ============== MapView ==============================================
         Align(
@@ -192,6 +276,14 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
             : const SizedBox(),
       ],
     );
+  }
+
+  void _onMapboxMapCreated(mapbox.MapboxMap controller) {
+    controller.style.addSource(
+      mapbox.ImageSource(id: "arrow"),
+    );
+
+    arController._onMapboxMapCreated(controller);
   }
 
   void onUnityViewCreated(

@@ -63,6 +63,7 @@ class _NavigationBaseState extends State<NavigationBase> {
       body: SafeArea(
         child: ARWidget(
           buildingIdentifier: buildingIdentifier,
+          mapboxAccessToken: mapboxAccessToken,
           apiDomain: apiDomain,
           onCreated: onUnityViewCreated,
           onPopulated: onUnityViewPopulated,
