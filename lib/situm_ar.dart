@@ -223,6 +223,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
                   duration: animationDuration,
                   curve: Curves.decelerate,
                   height: visibleMapHeight,
+                  width: 300,
                   child: SingleChildScrollView(
                     // Add ScrollView to center the map: TODO fix MapView resizing on iOS.
                     controller: scrollController,
