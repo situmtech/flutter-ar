@@ -51,7 +51,7 @@ class ARWidget extends StatefulWidget {
 class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
   late String apiDomain;
   ARController arController = ARController();
-  ARViewWidget arViewWidget = ARViewWidget();
+  ARView arViewWidget = ARView();
   bool isArVisible = false;
   bool isMapCollapsed = false;
   bool loadingArMessage = false;
@@ -104,11 +104,11 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
     // var arView = ARViewWidget().build(context);
     // If there is not a MapView, return it immediately:
 
-    var arView = ARViewWidget(
-        // onCreated: (controller) => onARViewCreated(context, controller),
-        // onReattached: onUnityViewReattached,
-        // onMessage: onUnityViewMessage,
-        );
+    var arView = ARView(
+      onCreated: (controller) => onARViewCreated(context, controller),
+      onReattached: onARViewReattached,
+      onMessage: onARViewMessage,
+    );
 
     return arView;
 
@@ -220,6 +220,18 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
     );
   }
 
+  void onUnityViewCreated(BuildContext context, ARViewController? controller) {}
+  void onARViewMessage(ARViewController? controller, String? message) {
+    debugPrint("Situm> AR> MESSAGE! $message");
+  }
+
+  void onARViewCreated(BuildContext context, ARViewController? controller) {
+    debugPrint("Situm> AR> onUnityViewCreated");
+  }
+
+  void onARViewReattached(ARViewController controller) {
+    debugPrint("Situm> AR> REATTACHED!");
+  }
 //   void onUnityViewCreated(
 //       BuildContext context, UnityViewController? controller) {
 //     debugPrint("Situm> AR> onUnityViewCreated");
@@ -258,6 +270,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
 //     debugPrint("Situm> AR> REATTACHED!");
 //   }
 //
+
 //   void onUnityViewMessage(UnityViewController? controller, String? message) {
 //     debugPrint("Situm> AR> MESSAGE! $message");
 //
