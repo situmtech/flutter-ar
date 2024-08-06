@@ -85,7 +85,17 @@ import io.github.sceneview.model.ModelInstance
     override fun dispose() {}
 
     init {
-        sceneView = ARSceneView(context, sharedLifecycle = lifecycle)
+        sceneView = ARSceneView(context, 
+            sharedLifecycle = lifecycle,
+            sessionConfiguration = { session, config ->
+            config.depthMode = if (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
+                Config.DepthMode.AUTOMATIC
+            } else {
+                Config.DepthMode.DISABLED
+            }
+            config.instantPlacementMode = Config.InstantPlacementMode.DISABLED
+            config.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR}
+        )
 
     
         setupSceneView();
@@ -100,15 +110,6 @@ import io.github.sceneview.model.ModelInstance
 
             planeRenderer.isEnabled = true
             
-            configureSession { session, config ->
-                config.depthMode = if (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
-                    Config.DepthMode.AUTOMATIC
-                } else {
-                    Config.DepthMode.DISABLED
-                }
-                config.instantPlacementMode = Config.InstantPlacementMode.DISABLED
-                config.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
-            }
 
             onSessionResumed = { session ->
                 Log.i(TAG, "onSessionCreated")
