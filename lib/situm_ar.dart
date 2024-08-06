@@ -79,6 +79,20 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
     ARController()._onARWidgetState(this);
   }
 
+  // @override
+  // Widget build(BuildContext context) {
+  //   return Scaffold(
+  //     appBar: AppBar(
+  //       backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+  //       title: const Text(''),
+  //     ),
+  //     //Step 3 - Showing the building cartography using the MapView
+  //     body: Center(
+  //         //MapView widget will visualize the building cartography
+  //         child: ARViewWidget()),
+  //   );
+  // }
+
   @override
   Widget build(BuildContext context) {
     // Create the AR widget:
@@ -97,6 +111,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
         );
 
     return arView;
+
     if (widget.mapView == null) {
       return arView;
     }
@@ -111,9 +126,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
             // Add the AR Widget at the bottom of the stack. It will start
             // loading even when it is not visible.
             // unityView,
-            // MaterialApp(
-            //   home: arView,
-            // ),
+
             arView,
             // TODO: fix this:
             //...debugUI.createWidgetRefresh(),

@@ -93,39 +93,8 @@ import io.github.sceneview.model.ModelInstance
     }
 
 
-    // sceneView.apply {
-           
-    //     sceneView.layoutParams = FrameLayout.LayoutParams(
-    //         FrameLayout.LayoutParams.MATCH_PARENT,
-    //         FrameLayout.LayoutParams.MATCH_PARENT
-    //     )
-    //     sceneView.keepScreenOn = true
-
-    private fun setupSceneView2() {
-        sceneView.apply {
-            planeRenderer.isEnabled = true
-            configureSession { session, config ->
-                config.depthMode = if (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
-                    Config.DepthMode.AUTOMATIC
-                } else {
-                    Config.DepthMode.DISABLED
-                }
-                config.instantPlacementMode = Config.InstantPlacementMode.DISABLED
-                config.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
-                //config.lightEstimationMode = Config.LightEstimationMode.DISABLED
-            }
-            onSessionResumed = { session -> Log.i("ARNativeView", "onSessionResumed") }
-            onSessionFailed = { exception -> Log.e("ARNativeView", "onSessionFailed: $exception") }
-            onSessionCreated = { session -> Log.i("ARNativeView", "onSessionCreated") }
-            onTrackingFailureChanged = { reason -> Log.i("ARNativeView", "onTrackingFailureChanged: $reason") }
-        }
-    }
 
     private fun setupSceneView() {
-        //(context as? LifecycleOwner)?.lifecycle?.let { lifecycle ->         // TODO: AQui no entra.
-        //    sceneView.lifecycle = lifecycle
-        //}
-
         sceneView.apply {
             Log.d("ARView", "setp scene view")
 
@@ -176,11 +145,10 @@ import io.github.sceneview.model.ModelInstance
            
         }
         (activity as? LifecycleOwner)?.lifecycleScope?.launch {
-            //lifecycle.launch{
                 Log.d("ARView", "buildAndAddArrowNode 3")
         
             if ((activity as LifecycleOwner).lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
-                    // Actualiza el nodo en cada frame
+                // Actualiza el nodo en cada frame
         
         
                 isLoading = true
