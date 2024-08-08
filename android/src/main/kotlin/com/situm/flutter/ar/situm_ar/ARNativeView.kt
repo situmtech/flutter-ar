@@ -22,10 +22,19 @@ import io.github.sceneview.ar.ARSceneView
 import io.github.sceneview.ar.arcore.getUpdatedPlanes
 import io.github.sceneview.ar.getDescription
 import io.github.sceneview.ar.node.AnchorNode
+import io.github.sceneview.node.Node
+
 import io.github.sceneview.collision.Vector3
 import io.github.sceneview.math.Position
 import io.github.sceneview.node.ModelNode
 import io.github.sceneview.utils.getResourceUri
+
+
+import com.google.ar.sceneform.rendering.ViewRenderable
+import io.github.sceneview.node.ViewNode
+import io.github.sceneview.SceneView
+import com.google.ar.sceneform.rendering.ViewAttachmentManager
+
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -38,6 +47,7 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.github.sceneview.model.ModelInstance
+import io.github.sceneview.node.RenderableNode
 
 //internal class ARNativeView(context: Context, id: Int, creationParams: Map<String?, Any?>?) : PlatformView {
     class ARNativeView(
@@ -47,10 +57,9 @@ import io.github.sceneview.model.ModelInstance
         messenger: BinaryMessenger,
         id: Int,
     ) : PlatformView, MethodCallHandler {
-        
+
     private val TAG = "ARNativeView"
     private val sceneView: ARSceneView
-    private val _mainScope = CoroutineScope(Dispatchers.Main)
     private val _channel = MethodChannel(messenger, "ARView")
 
     // private val instructionText: TextView
@@ -82,10 +91,10 @@ import io.github.sceneview.model.ModelInstance
         return sceneView
     }
 
-    override fun dispose() {}
+    override fun dispose() {sceneView.destroy();}
 
     init {
-        sceneView = ARSceneView(context, 
+        sceneView = ARSceneView(context,
             sharedLifecycle = lifecycle,
             sessionConfiguration = { session, config ->
             config.depthMode = if (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
@@ -94,10 +103,11 @@ import io.github.sceneview.model.ModelInstance
                 Config.DepthMode.DISABLED
             }
             config.instantPlacementMode = Config.InstantPlacementMode.DISABLED
-            config.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR}
+            config.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR},
+
         )
 
-    
+
         setupSceneView();
         _channel.setMethodCallHandler(this)
     }
@@ -109,7 +119,7 @@ import io.github.sceneview.model.ModelInstance
             Log.d("ARView", "setp scene view")
 
             planeRenderer.isEnabled = true
-            
+
 
             onSessionResumed = { session ->
                 Log.i(TAG, "onSessionCreated")
@@ -130,6 +140,9 @@ import io.github.sceneview.model.ModelInstance
                          .firstOrNull { it.type == Plane.Type.HORIZONTAL_UPWARD_FACING }
                          ?.let { plane ->
                              addAnchorNode(plane.createAnchor(plane.centerPose))
+                             // prueba nodo
+                             //addAnchorTextNode(plane.createAnchor(plane.centerPose))
+                            //
                          }
                  }
             }
@@ -143,15 +156,15 @@ import io.github.sceneview.model.ModelInstance
             //     intensity = 1.0f
             //     type = Light.Type.DIRECTIONAL
             // }
-           
+
         }
         (activity as? LifecycleOwner)?.lifecycleScope?.launch {
                 Log.d("ARView", "buildAndAddArrowNode 3")
-        
+
             if ((activity as LifecycleOwner).lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
                 // Actualiza el nodo en cada frame
-        
-        
+
+
                 isLoading = true
                 buildAndAddArrowNode()
                 isLoading = false
@@ -171,7 +184,7 @@ import io.github.sceneview.model.ModelInstance
                  }
             }
        }
-        
+
 
     }
 
@@ -211,20 +224,93 @@ import io.github.sceneview.model.ModelInstance
     }
 
     private fun addAnchorNode(anchor: Anchor) {
-        sceneView.addChildNode(
-            AnchorNode(sceneView.engine, anchor).apply {
+        val currentAnchor =  AnchorNode(sceneView.engine, anchor).apply {
                 isEditable = true
-                  (activity as? LifecycleOwner)?.lifecycleScope?.launch {
+                (activity as? LifecycleOwner)?.lifecycleScope?.launch {
                     isLoading = true
                     buildModelNode()?.let { addChildNode(it) }
                     isLoading = false
                 }
-                anchorNode = this
-            }
-        )
-    }
+        }
+//        val textView = TextView(context).apply {
+//            text = "Hola, AR!"
+//            textSize = 100f//20f // Ajustar tamaño del texto
+//            setTextColor(Color.RED)
+//            setBackgroundColor(Color.BLACK) // Fondo transparente
+//        }
 
-    private suspend fun buildModelNode(): ModelNode? {
+        val transformableNode = Node(sceneView.engine)
+        transformableNode.position = Position(0f, 0.2f, -0.2f)
+        transformableNode.parent = currentAnchor
+        transformableNode.isVisible = true
+
+        val viewAttachmentManager = ViewAttachmentManager(context, sceneView)
+        val textWrittenOverBadgeNode = ViewNode(sceneView.engine,sceneView.modelLoader,viewAttachmentManager);
+        textWrittenOverBadgeNode.loadView(context,R.layout.text_poi_layout)
+        textWrittenOverBadgeNode.isVisible = true
+
+        textWrittenOverBadgeNode.worldPosition = Position(0f,0f,0f)
+        //currentAnchor.addChildNode(textWrittenOverBadgeNode)
+        sceneView.addChildNode(textWrittenOverBadgeNode)
+//        ViewRenderable.builder().setView(context, R.layout.text_poi_layout)
+//            .build(sceneView.engine)
+//            .thenAccept {
+//
+//                Log.w("Situm>> ", "Creando ViewRenderable")
+//                //textWrittenOverBadgeNode.setRenderable(it)
+//                textWrittenOverBadgeNode.loadView(context,R.layout.text_poi_layout)
+//                textWrittenOverBadgeNode.parent = transformableNode
+//
+//                //it.renderPriority = 0
+//                currentAnchor.addChildNode(textWrittenOverBadgeNode)
+//            }
+
+
+        anchorNode = currentAnchor
+
+        sceneView.addChildNode(
+            currentAnchor
+        )
+
+        Log.w(TAG,textWrittenOverBadgeNode.parent)
+
+     }
+
+// private fun addAnchorTextNode(anchor: Anchor) {
+//     // Crear un TextView con el texto que quieres mostrar
+//     val textView = TextView(context).apply {
+//         text = "Hola, AR!"
+//         textSize = 2000f
+//         setTextColor(Color.WHITE)
+//         setBackgroundColor(Color.TRANSPARENT) // Fondo transparente
+//     }
+//     val viewAttachmentManager = ViewAttachmentManager(context, sceneView)
+//     // Crear una instancia de ViewRenderable usando el TextView
+//     ViewRenderable.builder()
+//         .setView(context, textView)
+//         .build(sceneView.engine)
+//         .thenAccept { renderable ->
+//             val viewNode = ViewNode(sceneView.engine, sceneView.modelLoader, viewAttachmentManager).apply {
+//                 setRenderable(renderable)
+//             }
+
+//             // Crear un AnchorNode y añadir el ViewNode como hijo
+//             val anchorNode = AnchorNode(sceneView.engine, anchor).apply {
+//                 isEditable = true
+//                 addChildNode(viewNode)
+//             }
+
+//             // Añadir el AnchorNode a la escena
+//             sceneView.addChildNode(anchorNode)
+//         }
+//         .exceptionally { throwable ->
+//             // Manejar errores al construir el renderable
+//             Log.e("ViewNode", "Error al crear ViewRenderable", throwable)
+//             null
+//         }
+// }
+
+  private suspend fun buildModelNode(): ModelNode? {
         return sceneView.modelLoader.loadModelInstance(context.getResourceUri(R.raw.eren_hiphop_dance))?.let { modelInstance ->
             ModelNode(
                 modelInstance = modelInstance,
