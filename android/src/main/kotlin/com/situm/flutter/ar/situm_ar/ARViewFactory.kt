@@ -30,6 +30,6 @@ class ARViewFactory(
 ) : PlatformViewFactory(StandardMessageCodec.INSTANCE) {
     override fun create(context: Context, viewId: Int, args: Any?): PlatformView {
         Log.d("Factory", "Creating new view instance")
-        return ARNativeView(context, activity, lifecycle, messenger, viewId);
+        return ARNativeView(context, activity, lifecycle, messenger);
     }
 }

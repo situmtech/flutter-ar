@@ -1,57 +1,54 @@
 package com.situm.flutter.ar.situm_ar
 
+//import com.google.ar.core.Config
+import android.app.Activity
 import android.content.Context
-import android.graphics.Color
-import android.view.View
-import android.widget.TextView
-import io.flutter.plugin.platform.PlatformView
-import android.util.AttributeSet
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
-import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import android.widget.FrameLayout
-import androidx.core.view.isGone
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.google.ar.core.Anchor
 import com.google.ar.core.Config
 import com.google.ar.core.Plane
-import com.google.ar.core.Pose
 import com.google.ar.core.TrackingFailureReason
 import dev.romainguy.kotlin.math.Quaternion
+import io.flutter.plugin.common.BinaryMessenger
+import io.flutter.plugin.common.MethodCall
+import io.flutter.plugin.common.MethodChannel
+import io.flutter.plugin.common.MethodChannel.MethodCallHandler
+import io.flutter.plugin.platform.PlatformView
 import io.github.sceneview.ar.ARSceneView
 import io.github.sceneview.ar.arcore.getUpdatedPlanes
-import io.github.sceneview.ar.getDescription
 import io.github.sceneview.ar.node.AnchorNode
 import io.github.sceneview.collision.Vector3
 import io.github.sceneview.math.Position
 import io.github.sceneview.node.ModelNode
 import io.github.sceneview.utils.getResourceUri
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
-import android.app.Activity
-import androidx.lifecycle.Lifecycle
-//import com.google.ar.core.Config
-import io.flutter.plugin.common.BinaryMessenger
-import io.flutter.plugin.common.MethodCall
-import io.flutter.plugin.common.MethodChannel
-import io.flutter.plugin.common.MethodChannel.MethodCallHandler
-import io.github.sceneview.model.ModelInstance
 
-//internal class ARNativeView(context: Context, id: Int, creationParams: Map<String?, Any?>?) : PlatformView {
-    class ARNativeView(
-        private val context: Context,
-        private val activity: Activity,
-        lifecycle: Lifecycle,
-        messenger: BinaryMessenger,
-        id: Int,
-    ) : PlatformView, MethodCallHandler {
-        
+class ARNativeView(
+    private val context: Context,
+    private val activity: Activity,
+    private val lifecycle: Lifecycle,
+    messenger: BinaryMessenger,
+) : PlatformView, MethodCallHandler {
+
     private val TAG = "ARNativeView"
-    private val sceneView: ARSceneView
+    private var sceneView: ARSceneView? = null
+    private val rootView = createFullSizeFrameLayout(context)
+
+
     private val _mainScope = CoroutineScope(Dispatchers.Main)
-    private val _channel = MethodChannel(messenger, "ARView")
+    private val handler = Handler(Looper.getMainLooper())
+    private val _channel = MethodChannel(messenger, Constants.CHANNEL_ID)
 
     // private val instructionText: TextView
     private var arrowNode: ModelNode? = null
@@ -71,45 +68,41 @@ import io.github.sceneview.model.ModelInstance
             }
         }
 
-         private var isLoading = false
+    private var isLoading = false
         set(value) {
             field = value
             //loadingView.isGone = !value
         }
 
+    private fun createFullSizeFrameLayout(context: Context): FrameLayout {
+        val frameLayout = FrameLayout(context)
+        val layoutParams = FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT
+        )
+        frameLayout.layoutParams = layoutParams
+        return frameLayout
+    }
 
     override fun getView(): View {
-        return sceneView
+        return rootView;
     }
 
     override fun dispose() {}
 
     init {
-        sceneView = ARSceneView(context, 
-            sharedLifecycle = lifecycle,
-            sessionConfiguration = { session, config ->
-            config.depthMode = if (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
-                Config.DepthMode.AUTOMATIC
-            } else {
-                Config.DepthMode.DISABLED
-            }
-            config.instantPlacementMode = Config.InstantPlacementMode.DISABLED
-            config.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR}
-        )
-
-    
-        setupSceneView();
         _channel.setMethodCallHandler(this)
     }
 
-
-
     private fun setupSceneView() {
-        sceneView.apply {
+        if (sceneView == null) {
+            throw RuntimeException("Calling sceneView before initialization.")
+        }
+        sceneView?.apply {
             Log.d("ARView", "setp scene view")
 
             planeRenderer.isEnabled = true
-            
+
 
             onSessionResumed = { session ->
                 Log.i(TAG, "onSessionCreated")
@@ -125,13 +118,13 @@ import io.github.sceneview.model.ModelInstance
             }
 
             onSessionUpdated = { _, frame ->
-                 if (anchorNode == null) {
-                     frame.getUpdatedPlanes()
-                         .firstOrNull { it.type == Plane.Type.HORIZONTAL_UPWARD_FACING }
-                         ?.let { plane ->
-                             addAnchorNode(plane.createAnchor(plane.centerPose))
-                         }
-                 }
+                if (anchorNode == null) {
+                    frame.getUpdatedPlanes()
+                        .firstOrNull { it.type == Plane.Type.HORIZONTAL_UPWARD_FACING }
+                        ?.let { plane ->
+                            addAnchorNode(plane.createAnchor(plane.centerPose))
+                        }
+                }
             }
 
             onTrackingFailureChanged = { reason ->
@@ -143,40 +136,103 @@ import io.github.sceneview.model.ModelInstance
             //     intensity = 1.0f
             //     type = Light.Type.DIRECTIONAL
             // }
-           
+
         }
         (activity as? LifecycleOwner)?.lifecycleScope?.launch {
-                Log.d("ARView", "buildAndAddArrowNode 3")
-        
-            if ((activity as LifecycleOwner).lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+            Log.d("ARView", "buildAndAddArrowNode 3")
+
+            if (lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
                 // Actualiza el nodo en cada frame
-        
-        
+
                 isLoading = true
                 buildAndAddArrowNode()
                 isLoading = false
 
-                 sceneView.onFrame = {
-                     arrowNode?.let { node ->
-                         val distanceFromCamera = -0.5f
-                         val forwardVector = Vector3(0.0f, 0.0f, 1.0f)
-                         val cameraDirection = multiplyQuaternionVector(sceneView.cameraNode.quaternion, forwardVector)
-                         val cameraLowerPosition = Vector3(sceneView.cameraNode.position.x, sceneView.cameraNode.position.y, sceneView.cameraNode.position.z)
-                         val objectPosition = addVectors(cameraLowerPosition, multiplyVectorScalar(cameraDirection, distanceFromCamera))
-                         node.transform(position = Position(x = objectPosition.x, y = objectPosition.y, z = objectPosition.z))
-                         if (anchorNode != null) {
-                             node.lookAt(targetNode = anchorNode!!, smooth = true, smoothSpeed = 1.0f)
-                         }
-                     }
-                 }
+                sceneView!!.onFrame = {
+                    arrowNode?.let { node ->
+                        val distanceFromCamera = -0.5f
+                        val forwardVector = Vector3(0.0f, 0.0f, 1.0f)
+                        val cameraDirection =
+                            multiplyQuaternionVector(
+                                sceneView!!.cameraNode.quaternion,
+                                forwardVector
+                            )
+                        val cameraLowerPosition = Vector3(
+                            sceneView!!.cameraNode.position.x,
+                            sceneView!!.cameraNode.position.y,
+                            sceneView!!.cameraNode.position.z
+                        )
+                        val objectPosition = addVectors(
+                            cameraLowerPosition,
+                            multiplyVectorScalar(cameraDirection, distanceFromCamera)
+                        )
+                        node.transform(
+                            position = Position(
+                                x = objectPosition.x,
+                                y = objectPosition.y,
+                                z = objectPosition.z
+                            )
+                        )
+                        if (anchorNode != null) {
+                            node.lookAt(
+                                targetNode = anchorNode!!,
+                                smooth = true,
+                                smoothSpeed = 1.0f
+                            )
+                        }
+                    }
+                }
             }
-       }
-        
+        }
+
 
     }
 
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
+        val arguments = (call.arguments ?: emptyMap<String, Any>()) as Map<String, Any>
+        when (call.method) {
+            "load" -> load(arguments, result)
+            "pause" -> pause(arguments, result)
+            "resume" -> resume(arguments, result)
+            "unload" -> unload(arguments, result)
+            else -> result.notImplemented()
+        }
+    }
+
+    private fun load(arguments: Map<String, Any>, result: MethodChannel.Result) {
+        sceneView = ARSceneView(context,
+            sharedLifecycle = lifecycle,
+            sessionConfiguration = { session, config ->
+                config.depthMode = if (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
+                    Config.DepthMode.AUTOMATIC
+                } else {
+                    Config.DepthMode.DISABLED
+                }
+                config.instantPlacementMode = Config.InstantPlacementMode.DISABLED
+                config.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
+            }
+        )
+        rootView.addView(
+            sceneView,
+            ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+        )
+        setupSceneView()
+        result.success("DONE")
+    }
+
+    private fun unload(arguments: Map<String, Any>, result: MethodChannel.Result) {
+
+    }
+
+    private fun resume(arguments: Map<String, Any>, result: MethodChannel.Result) {
+
+    }
+
+    private fun pause(arguments: Map<String, Any>, result: MethodChannel.Result) {
 
     }
 
@@ -211,10 +267,13 @@ import io.github.sceneview.model.ModelInstance
     }
 
     private fun addAnchorNode(anchor: Anchor) {
-        sceneView.addChildNode(
-            AnchorNode(sceneView.engine, anchor).apply {
+        if (sceneView == null) {
+            throw RuntimeException("Calling sceneView before initialization.")
+        }
+        sceneView!!.addChildNode(
+            AnchorNode(sceneView!!.engine, anchor).apply {
                 isEditable = true
-                  (activity as? LifecycleOwner)?.lifecycleScope?.launch {
+                (activity as? LifecycleOwner)?.lifecycleScope?.launch {
                     isLoading = true
                     buildModelNode()?.let { addChildNode(it) }
                     isLoading = false
@@ -225,21 +284,29 @@ import io.github.sceneview.model.ModelInstance
     }
 
     private suspend fun buildModelNode(): ModelNode? {
-        return sceneView.modelLoader.loadModelInstance(context.getResourceUri(R.raw.eren_hiphop_dance))?.let { modelInstance ->
-            ModelNode(
-                modelInstance = modelInstance,
-                scaleToUnits = 0.5f,
-                centerOrigin = Position(y = -0.5f)
-            ).apply {
-                isEditable = true
-            }
+        if (sceneView == null) {
+            throw RuntimeException("Calling sceneView before initialization.")
         }
+        return sceneView!!.modelLoader.loadModelInstance(context.getResourceUri(R.raw.eren_hiphop_dance))
+            ?.let { modelInstance ->
+                ModelNode(
+                    modelInstance = modelInstance,
+                    scaleToUnits = 0.5f,
+                    centerOrigin = Position(y = -0.5f)
+                ).apply {
+                    isEditable = true
+                }
+            }
     }
 
     private suspend fun buildAndAddArrowNode() {
         Log.d("ARView", "buildAndAddArrowNode 1")
+        if (sceneView == null) {
+            throw RuntimeException("Calling sceneView before initialization.")
+        }
 
-        val arrowModel = sceneView.modelLoader.loadModelInstance(context.getResourceUri(R.raw.arrow_rotated_center))
+        val arrowModel =
+            sceneView!!.modelLoader.loadModelInstance(context.getResourceUri(R.raw.arrow_rotated_center))
         val arrowPosition = Position(x = 0.0f, y = -1.0f, z = -6.0f)
         arrowModel?.let { modelInstance ->
             arrowNode = ModelNode(
@@ -250,7 +317,7 @@ import io.github.sceneview.model.ModelInstance
                 isEditable = true
                 isPositionEditable = true
             }
-            sceneView.addChildNode(arrowNode!!)
+            sceneView!!.addChildNode(arrowNode!!)
         }
     }
 }

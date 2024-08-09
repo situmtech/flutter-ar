@@ -51,7 +51,6 @@ class ARWidget extends StatefulWidget {
 class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
   late String apiDomain;
   ARController arController = ARController();
-  ARView arViewWidget = ARView();
   bool isArVisible = false;
   bool isMapCollapsed = false;
   bool loadingArMessage = false;
@@ -209,13 +208,16 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
             ),
           ),
         ),
-//         widget.debugMode
-//             ? _createDebugModeSwitchButton(() {
-//                 isArVisible
-//                     ? arController.onArGone()
-//                     : arController.onArRequested();
-//               })
-//             : const SizedBox(),
+        widget.debugMode
+            ? _createDebugModeSwitchButton(() {
+              setState(() {
+                isArVisible = !isArVisible;
+              });
+                // isArVisible
+                //     ? arController.onArGone()
+                //     : arController.onArRequested();
+              })
+            : const SizedBox(),
       ],
     );
   }

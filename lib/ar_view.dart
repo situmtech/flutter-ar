@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -36,19 +34,17 @@ import 'package:permission_handler/permission_handler.dart';
 // }
 
 ///////////
-const CHANNEL_ID = 'ARView';
+const CHANNEL_ID = 'SitumARView';
 
 class ARViewController {
+  ARView _view;
+  final MethodChannel _channel = const MethodChannel(CHANNEL_ID);
+
   ARViewController._(
     ARView view,
-    int id,
-  )   : _view = view,
-        _channel = MethodChannel('${CHANNEL_ID}_$id') {
+  ) : _view = view {
     _channel.setMethodCallHandler(_methodCallHandler);
   }
-
-  ARView _view;
-  final MethodChannel _channel;
 
   Future<dynamic> _methodCallHandler(MethodCall call) async {
     switch (call.method) {
@@ -101,26 +97,27 @@ typedef void ARViewMessageCallback(
 
 class ARView extends StatefulWidget {
   const ARView({
-    Key? key,
+    super.key,
     this.onCreated,
     this.onReattached,
     this.onMessage,
-  }) : super(key: key);
+  });
 
   final ARViewCreatedCallback? onCreated;
   final ARViewReattachedCallback? onReattached;
   final ARViewMessageCallback? onMessage;
 
   @override
-  _ARViewState createState() => _ARViewState();
+  State<ARView> createState() => _ARViewState();
 }
 
 class _ARViewState extends State<ARView> {
-  ARViewController? controller;
+  late final ARViewController controller;
 
   @override
   void initState() {
     super.initState();
+    controller = ARViewController._(widget);
     _requestPermissions();
   }
 
@@ -134,15 +131,15 @@ class _ARViewState extends State<ARView> {
   @override
   void didUpdateWidget(ARView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    controller?._view = widget;
+    controller._view = widget;
   }
 
   @override
   void dispose() {
     if (defaultTargetPlatform == TargetPlatform.iOS) {
-      controller?._channel?.invokeMethod('dispose');
+      controller._channel.invokeMethod('dispose');
     }
-    controller?._channel?.setMethodCallHandler(null);
+    controller._channel.setMethodCallHandler(null);
     super.dispose();
   }
 
@@ -189,8 +186,11 @@ class _ARViewState extends State<ARView> {
   Widget build(BuildContext context) {
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
-        //return _buildHybrid(context);
-        return _buildNormal();
+        return _buildHybrid(context);
+        // return _buildNormal();
+        // Con buildNormal non se está actualizando a vista, probablemente está pintando todo o rato un FrameLayout sin nada.
+        // Con buildHybrid está rendindo mal cando os combinas ao viewer e o AR.
+        // Alternar destruíndo un ou outro? Probas.
         break;
       case TargetPlatform.iOS:
         return UiKitView(
@@ -203,8 +203,11 @@ class _ARViewState extends State<ARView> {
     }
   }
 
-  void onPlatformViewCreated(int id) {
-    controller = ARViewController._(widget, id);
+  void onPlatformViewCreated(int id) async {
+    await controller._channel.invokeMethod("load", {});
+    setState(() {
+      print("Dummy call");
+    });
     if (widget.onCreated != null) {
       widget.onCreated!(controller);
     }
