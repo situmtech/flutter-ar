@@ -334,8 +334,9 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
 
   void _updateStatusAmbienceSelected(int ambienceCode) {
     if (widget.enable3DAmbiences && isArVisible) {
-      var message = "Please be conscious of other people while navigating";
-      _showToast(context, message, const Duration(seconds: 3));
+      // UPDATE: Removed this message as it was confusing the end user.
+      // var message = "Please be conscious of other people while navigating";
+      // _showToast(context, message, const Duration(seconds: 3));
     }
   }
 
