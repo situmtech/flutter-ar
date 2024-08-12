@@ -201,39 +201,50 @@ class ARNativeView(
     }
 
     private fun load(arguments: Map<String, Any>, result: MethodChannel.Result) {
-        sceneView = ARSceneView(context,
-            sharedLifecycle = lifecycle,
-            sessionConfiguration = { session, config ->
-                config.depthMode = if (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
-                    Config.DepthMode.AUTOMATIC
-                } else {
-                    Config.DepthMode.DISABLED
+        rootView.post {
+            sceneView = ARSceneView(context,
+                sharedLifecycle = lifecycle,
+                sessionConfiguration = { session, config ->
+                    config.depthMode = if (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
+                        Config.DepthMode.AUTOMATIC
+                    } else {
+                        Config.DepthMode.DISABLED
+                    }
+                    config.instantPlacementMode = Config.InstantPlacementMode.DISABLED
+                    config.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
                 }
-                config.instantPlacementMode = Config.InstantPlacementMode.DISABLED
-                config.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
-            }
-        )
-        rootView.addView(
-            sceneView,
-            ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
             )
-        )
-        setupSceneView()
-        result.success("DONE")
+            rootView.addView(
+                sceneView,
+                ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+            )
+            setupSceneView()
+            result.success("DONE")
+            Log.d("ATAG", """@#################################################@
+                |@#################################################@
+                |@#################################################@
+                | Supostamente a vista AR está en pantalla.
+                |@#################################################@
+                |@#################################################@
+            """.trimMargin())
+        }
     }
 
-    private fun unload(arguments: Map<String, Any>, result: MethodChannel.Result) {
 
+    private fun unload(arguments: Map<String, Any>, result: MethodChannel.Result) {
+        sceneView?.arCore?.destroy()
+        rootView.removeAllViews()
     }
 
     private fun resume(arguments: Map<String, Any>, result: MethodChannel.Result) {
-
+        sceneView?.arCore?.resume(context, null)
     }
 
     private fun pause(arguments: Map<String, Any>, result: MethodChannel.Result) {
-
+        sceneView?.arCore?.pause()
     }
 
     private fun updateInstructions() {

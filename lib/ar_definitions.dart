@@ -65,3 +65,7 @@ class _Validations {
     return apiDomain;
   }
 }
+
+typedef ARViewCreatedCallback = void Function(
+  ARController? controller,
+);

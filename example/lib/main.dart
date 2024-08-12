@@ -110,10 +110,6 @@ class _NavigationBaseState extends State<NavigationBase> {
     // Notifies the AR module that the MapView has been loaded, ensuring
     // seamless integration between both.
     arController.onMapViewLoad(controller);
-    // UI callbacks:
-    controller.onPoiSelected((poiSelectedResult) {
-      arController.setSelectedPoi(poiSelectedResult.poi);
-    });
   }
 
   void onUnityViewCreated() {

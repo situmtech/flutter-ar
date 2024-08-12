@@ -5,25 +5,21 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:situm_flutter/sdk.dart';
 import 'package:situm_flutter/wayfinding.dart';
-import 'package:situm_flutter_ar/ar_view.dart';
-//import 'package:situm_flutter_unity/flutter_unity.dart';
-
-import 'route_utils.dart';
-
-part 'ar_debug.dart';
-
-part 'ar_mode.dart';
-
-part 'ar_pos_quality.dart';
-
-part 'situm_ar.dart';
 
 part 'ar_controller.dart';
 
 part 'ar_definitions.dart';
+
+part 'ar_view.dart';
+
+part 'situm_ar.dart';
 
 part 'utils.dart';
 
