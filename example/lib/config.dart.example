@@ -1,6 +1,0 @@
-const situmUser = "***";
-const situmApiKey = "***";
-const buildingIdentifier = "***";
-const remoteIdentifier = null;
-const viewerDomain = "https://map-viewer.situm.com";
-const apiDomain = "https://dashboard.situm.com";

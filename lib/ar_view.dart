@@ -7,35 +7,6 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-// class ARViewWidget extends StatefulWidget {
-//   @override
-//   _ARWidgetState createState() => _ARWidgetState();
-// }
-
-// class _ARWidgetState extends State<ARViewWidget> {
-//   @override
-//   Widget build(BuildContext context) {
-//     return AndroidView(
-//       viewType: 'ARView',
-//       creationParamsCodec: const StandardMessageCodec(),
-//     );
-//   }
-
-//   @override
-//   void initState() {
-//     super.initState();
-//     _requestPermissions();
-//   }
-
-//   Future<void> _requestPermissions() async {
-//     var status = await Permission.camera.status;
-//     if (!status.isGranted) {
-//       await Permission.camera.request();
-//     }
-//   }
-// }
-
-///////////
 const CHANNEL_ID = 'ARView';
 
 class ARViewController {
@@ -146,58 +117,16 @@ class _ARViewState extends State<ARView> {
     super.dispose();
   }
 
-  // https://github.com/flutter/flutter/wiki/Android-Platform-Views
-  Widget _buildHybrid(BuildContext context) {
-    print("Situm> Using hybrid components");
-    return PlatformViewLink(
-      viewType: CHANNEL_ID,
-      surfaceFactory: (context, controller) {
-        return AndroidViewSurface(
-          controller: controller as AndroidViewController,
-          gestureRecognizers: const <Factory<OneSequenceGestureRecognizer>>{},
-          hitTestBehavior: PlatformViewHitTestBehavior.opaque,
-        );
-      },
-      onCreatePlatformView: (params) {
-        final AndroidViewController controller =
-            PlatformViewsService.initSurfaceAndroidView(
-          id: params.id,
-          viewType: CHANNEL_ID,
-          layoutDirection: TextDirection.ltr,
-          creationParamsCodec: const StandardMessageCodec(),
-          onFocus: () {
-            params.onFocusChanged(true);
-          },
-        );
-        controller
-            .addOnPlatformViewCreatedListener(params.onPlatformViewCreated);
-        controller.addOnPlatformViewCreatedListener(onPlatformViewCreated);
-        controller.create();
-        return controller;
-      },
-    );
-  }
-
-  Widget _buildNormal() {
-    return AndroidView(
-      viewType: CHANNEL_ID,
-      creationParamsCodec: const StandardMessageCodec(),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
-        //return _buildHybrid(context);
-        return _buildNormal();
-        break;
+        return Container(); // Se implementaría la vista para Android aquí.
       case TargetPlatform.iOS:
         return UiKitView(
           viewType: CHANNEL_ID,
           onPlatformViewCreated: onPlatformViewCreated,
         );
-        break;
       default:
         throw UnsupportedError('Unsupported platform: $defaultTargetPlatform');
     }
