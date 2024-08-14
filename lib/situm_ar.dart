@@ -93,99 +93,53 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
   //   );
   // }
 
-  @override
-  Widget build(BuildContext context) {
-    // Create the AR widget:
-//     var unityView = UnityView(
-//       onCreated: (controller) => onUnityViewCreated(context, controller),
-//       onReattached: onUnityViewReattached,
-//       onMessage: onUnityViewMessage,
-//     );
-    // var arView = ARViewWidget().build(context);
-    // If there is not a MapView, return it immediately:
+@override
+Widget build(BuildContext context) {
+  // Crea la vista de AR
+  var arView = ARView(
+    onCreated: (controller) => onARViewCreated(context, controller),
+    onReattached: onARViewReattached,
+    onMessage: onARViewMessage,
+  );
 
-    var arView = ARView(
-      onCreated: (controller) => onARViewCreated(context, controller),
-      onReattached: onARViewReattached,
-      onMessage: onARViewMessage,
-    );
+  // Verifica que el arHeightRatio esté dentro del rango válido
+  assert(widget.arHeightRatio >= 0 && widget.arHeightRatio <= 1,
+      'arHeightRatio must be a value between 0 and 1');
 
-    return arView;
-
-    if (widget.mapView == null) {
-      return arView;
-    }
-    // Else integrate AR and MapView:
-    assert(widget.arHeightRatio >= 0 && widget.arHeightRatio <= 1,
-        'arHeightRatio must be a value between 0 and 1');
-    return Stack(
-      children: [
-        // ============== AR view ==============================================
-        Stack(
-          children: [
-            // Add the AR Widget at the bottom of the stack. It will start
-            // loading even when it is not visible.
-            // unityView,
-
-            arView,
-            // TODO: fix this:
-            //...debugUI.createWidgetRefresh(),
-            _ARPosQuality(onCreate: _onARPosQuality),
-            FloorChangeIcon(),
-            // TODO: fix at Unity (message not being received):
-            _createTempBackButton(() {
-//               arController.onArGone();
-            }),
-            if (widget.enable3DAmbiences)
-              _AmbienceSelector(
-                debugMode: widget.debugMode,
-              ),
-            if (loadingArMessage) const ARLoadingWidget()
-          ],
-        ),
-        // ============== MapView ==============================================
-        Align(
-          alignment: Alignment.bottomCenter,
+  return Stack(
+    children: [
+      // ============== MapView (fondo) ======================================
+      if (widget.mapView != null)
+        Positioned.fill(
           child: LayoutBuilder(
-            // Let us know about the container's height.
             builder: (BuildContext context, BoxConstraints constraints) {
-              double visibleMapHeight = isArVisible
-                  // If the AR is visible, make the MapView height depend on the
-                  // state collapsed/expanded:
-                  ? (isMapCollapsed
-                      ? 0
-                      : constraints.maxHeight * (1 - widget.arHeightRatio))
-                  // If the AR is not visible, make the MapView full height:
-                  : constraints.maxHeight;
-              return AbsorbPointer(
-                absorbing: isArVisible,
-                child: AnimatedContainer(
-                  // NOTE: visibleMapHeight must be a property of AnimatedContainer
-                  // as it will not animate changes on a child.
-                  duration: animationDuration,
-                  curve: Curves.decelerate,
-                  height: visibleMapHeight,
-                  child: SingleChildScrollView(
-                    // Add ScrollView to center the map: TODO fix MapView resizing on iOS.
-                    controller: scrollController,
-                    physics: const NeverScrollableScrollPhysics(),
-                    child: Container(
-                      // This opaque Container prevents the AR widget from being
-                      // visible while the map is not loaded.
-                      color: Colors.grey[200],
-                      child: SizedBox(
-                        // Set the map height equals to the container.
-                        height: constraints.maxHeight,
-                        child: widget.mapView!,
-                      ),
-                    ),
-                  ),
-                ),
+              double mapHeight = constraints.maxHeight * (1 - widget.arHeightRatio);
+              return SizedBox(
+                height: mapHeight,
+                child: widget.mapView!,
               );
             },
           ),
         ),
-        // ============== Expand/collapse AR ===================================
+
+      // ============== AR view (frente) =====================================
+      Positioned.fill(
+        child: LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            double arHeight = constraints.maxHeight * widget.arHeightRatio;
+            return Align(
+              alignment: Alignment.bottomCenter,
+              child: SizedBox(
+                height: arHeight,
+                child: arView,
+              ),
+            );
+          },
+        ),
+      ),
+
+      // ============== Expand/collapse AR ===================================
+      if (widget.mapView != null)
         Align(
           alignment: Alignment.bottomCenter,
           child: AnimatedOpacity(
@@ -209,16 +163,18 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
             ),
           ),
         ),
-//         widget.debugMode
-//             ? _createDebugModeSwitchButton(() {
-//                 isArVisible
-//                     ? arController.onArGone()
-//                     : arController.onArRequested();
-//               })
-//             : const SizedBox(),
-      ],
-    );
-  }
+
+      // ============== Debug Mode (opcional) ================================
+      // if (widget.debugMode)
+      //   _createDebugModeSwitchButton(() {
+      //     isArVisible
+      //         ? arController.onArGone()
+      //         : arController.onArRequested();
+      //   }),
+    ],
+  );
+}
+
 
   void onUnityViewCreated(BuildContext context, ARViewController? controller) {}
   void onARViewMessage(ARViewController? controller, String? message) {
