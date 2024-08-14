@@ -165,12 +165,12 @@ Widget build(BuildContext context) {
         ),
 
       // ============== Debug Mode (opcional) ================================
-      // if (widget.debugMode)
-      //   _createDebugModeSwitchButton(() {
-      //     isArVisible
-      //         ? arController.onArGone()
-      //         : arController.onArRequested();
-      //   }),
+       if (widget.debugMode)
+         _createDebugModeSwitchButton(() {
+           isArVisible
+               ? arController.onArGone()
+               : arController.onArRequested();
+         }),
     ],
   );
 }
