@@ -22,7 +22,7 @@ dependencies:
 
   situm_flutter_unity: ^0.0.3
 
-  situm_flutter: ^3.17.4
+  situm_flutter: ^3.17.5
 
   io: ^1.0.4
 
