@@ -149,6 +149,9 @@ class ARController {
       case InternalCallType.location:
         _onLocationChanged(call.get());
         break;
+      case InternalCallType.locationStatus:
+        _onLocationStatusChanged(call.get());
+        break;
       case InternalCallType.navigationStart:
         _onNavigationStart(call.get());
         break;
@@ -202,6 +205,12 @@ class ARController {
         "MessageManager", "SendLocation", jsonEncode(locationMap));
     _updateArPosQualityState(location);
     _updateRefreshing();
+  }
+
+  void _onLocationStatusChanged(String locationStatus) {
+    if (locationStatus == "USER_NOT_IN_BUILDING") {
+      onArGone();
+    }
   }
 
   void _updateRefreshing() {
