@@ -117,11 +117,17 @@ class _ARViewState extends State<ARView> {
     super.dispose();
   }
 
+  Widget _buildNormal(){
+    return AndroidView( viewType: CHANNEL_ID,
+    creationParamsCodec: const StandardMessageCodec(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
-        return Container(); // Se implementaría la vista para Android aquí.
+        return _buildNormal();
       case TargetPlatform.iOS:
         return UiKitView(
           viewType: CHANNEL_ID,
