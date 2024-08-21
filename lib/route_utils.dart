@@ -4,6 +4,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:situm_flutter_ar/ar.dart';
 
+import 'ar.dart';
+
 const distanceThresholdToFloorChange = 10;
 
 double calculateDistance(
@@ -77,6 +79,50 @@ String findNextCoordinates(dynamic progress) {
       segmentIndex = i;
     }
   }
+
+  var totalDistance =
+      calculateDistance(projectedPoint, segments[segmentIndex + 1]);
+  var idx = 0;
+  for (int i = segmentIndex + 1; i < segments.length - 1; i++) {
+    idx = i;
+    var distance = calculateDistance(segments[i], segments[i + 1]);
+    totalDistance += distance;
+    debugPrint(
+        "${segments[i]["cartesianCoordinate"]["x"]} ${segments[i]["cartesianCoordinate"]["y"]} ${segments[i + 1]["cartesianCoordinate"]["x"]} ${segments[i + 1]["cartesianCoordinate"]["y"]} - ${distance} ${totalDistance}");
+    if (totalDistance > ARModeDebugValues.arrowDistanceToSkipNode.value) break;
+  }
+  debugPrint(
+      "$idx $totalDistance - ${segments[idx]["cartesianCoordinate"]["x"]} ${segments[idx]["cartesianCoordinate"]["y"]} ${segments[idx + 1]["cartesianCoordinate"]["x"]} ${segments[idx + 1]["cartesianCoordinate"]["y"]}  ");
+
+  Map<String, dynamic> A = segments[idx]["cartesianCoordinate"];
+  Map<String, dynamic> B = segments[idx + 1]["cartesianCoordinate"];
+  double totalDistanceAB = calculateDistance(A, B);
+  double distanceFromA = totalDistanceAB -
+      (totalDistance - ARModeDebugValues.arrowDistanceToSkipNode.value);
+
+// Calculate the ratio t for interpolation
+  double t = distanceFromA / totalDistanceAB;
+
+  debugPrint(A.toString());
+  debugPrint(B.toString());
+
+// Calculate the interpolated point
+  double x = A["x"] + t * (B["x"] - A["x"]);
+  double y = A["y"] + t * (B["y"] - A["y"]);
+
+// Create the new point
+  Map<String, double> interpolatedPoint = {
+    "x": x,
+    "y": y,
+  };
+
+  //return jsonEncode(interpolatedPoint);
+
+  // debugPrint(jsonEncode(interpolatedPoint));
+  //debugPrint(jsonEncode(segments[0]["cartesianCoordinate"]));
+
+// Print the interpolated point
+  debugPrint("New point at 10 meters away: x: $x, y: $y");
 
   for (int i = segmentIndex + 1; i < segments.length; i++) {
     double distance = calculateDistance(projectedPoint, segments[i]);

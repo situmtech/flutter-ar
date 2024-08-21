@@ -2,7 +2,7 @@ part of 'ar.dart';
 
 class ARController {
   static ARController? _instance;
-
+  Map<String, dynamic> lastSitumLocation = {};
   _ARWidgetState? _widgetState;
   _ARPosQualityState? _arPosQualityState;
   UnityViewController? _unityViewController;
@@ -200,7 +200,9 @@ class ARController {
 
   void _onLocationChanged(Location location) {
     var locationMap = location.toMap();
+    lastSitumLocation = locationMap;
     locationMap['timestamp'] = 0;
+
     _unityViewController?.send(
         "MessageManager", "SendLocation", jsonEncode(locationMap));
     _updateArPosQualityState(location);
@@ -276,8 +278,7 @@ class ARController {
       ARModeDebugValues.nextIndicationUp.value =
           getFloorChangeDirection(progressContent);
       ARModeDebugValues.nextIndicationChangeFloor.value = true;
-    } else if (navigationLastCoordinates != nextCoordinates &&
-        nextCoordinates != "") {
+    } else if (nextCoordinates != "") {
       if (navigationLastCoordinates == "floorChange") {
         // After floor change , enable arrow
         _unityViewController?.send(
@@ -291,6 +292,44 @@ class ARController {
       _unityViewController?.send(
           "MessageManager", "SendEnableArrowGuide", "null");
     }
+
+    Map<String, dynamic> nextCoordinatesMap = jsonDecode(nextCoordinates);
+
+    Map<String, dynamic> poisMap = {
+      "identifier": "0", // Setting identifier to 0 as per your request
+      "name": "hello", // Setting name to "hello"
+      "buildingIdentifier":
+          "${lastSitumLocation["buildingIdentifier"].toString()}", // Copying from your structure
+      "poiCategory": {
+        "identifier": "9548",
+        "name": "Ascensores",
+        "iconSelected":
+            "/uploads/poicategoryselected/9548/d81002ad-cc4a-488a-a9d6-9f17cfb1536c.png",
+        "iconUnselected":
+            "/uploads/poicategoryselected/9548/d81002ad-cc4a-488a-a9d6-9f17cfb1536c.png"
+      },
+
+      "position": {
+        "buildingIdentifier":
+            "${lastSitumLocation["buildingIdentifier"].toString()}", // Same as in the image
+        "floorIdentifier":
+            "${lastSitumLocation["floorIdentifier"].toString()}", // Same floor identifier
+        "cartesianCoordinate": {
+          "x":
+              nextCoordinatesMap["x"], // Cartesian x-coordinate from your image
+          "y":
+              nextCoordinatesMap["y"], // Cartesian y-coordinate from your image
+        }
+      },
+    };
+    List<Map<String, dynamic>> poisMapList = [poisMap];
+
+    // _unityViewController?.send(
+    //     "MessageManager", "SendPOIs", jsonEncode(poisMapList));
+
+    ARModeDebugValues.debugVariablesArrow.value =
+        "next: x ${nextCoordinatesMap["x"]} y ${nextCoordinatesMap["y"]}\n"
+        "pos: x ${lastSitumLocation["cartesianCoordinate"]["x"].toStringAsFixed(2)} y ${lastSitumLocation["cartesianCoordinate"]["y"].toStringAsFixed(2)} yaw ${lastSitumLocation["bearing"]["degrees"].toStringAsFixed(2)}";
   }
 
   void _onNavigationProgress(RouteProgress progress) {
@@ -369,8 +408,7 @@ class ARController {
         arModeUnityParams.angleLimit.toString());
     _unityViewController?.send("MessageManager", "SendAccurancyLimitData",
         arModeUnityParams.accuracyLimit.toString());
-    _unityViewController?.send("MessageManager", "SendCameraLimit",
-        arModeUnityParams.cameraLimit.toInt().toString());
+    _unityViewController?.send("MessageManager", "SendCameraLimit", "100");
   }
 
   /// Change the AR ambience (private by now).

@@ -30,7 +30,7 @@ const DYNAMIC_LOCATION_BUFFER_SIZE = 10;
 
 const REFRESH = true;
 const ODO_DIFFERENCE_SENSIBILITY = 4;
-const ARROW_DISTANCE_TO_SKIP_NODE = 12.0;
+const ARROW_DISTANCE_TO_SKIP_NODE = 25.0;
 
 enum DebugMode {
   deactivated,
@@ -56,6 +56,8 @@ class ARModeDebugValues {
       ValueNotifier<int>(NO_HAS_BEARING_TH);
 
   static ValueNotifier<String> debugVariables = ValueNotifier<String>('---');
+  static ValueNotifier<String> debugVariablesArrow =
+      ValueNotifier<String>('---');
 
   // Value Notifiers to listen changes in unity params
 
@@ -381,19 +383,20 @@ class ARDebugUI {
 
   List<Widget> createWidgetRefresh() {
     return [
-      createButtonSwitchPath(ARModeDebugValues.refresh,
-          DebugMode.alertVisibilityParams, 'Show Route', 0, 500, 5),
+      // Duplicate the same dialog structure twice
+//  createButtonSwitchPath(ARModeDebugValues.refresh,
+//           DebugMode.alertVisibilityParams, 'Show Route', 0, 500, 5),
       createButtonRefresh(ARModeDebugValues.refresh,
-          DebugMode.alertVisibilityParams, 'Refresh', 0, 450, 5),
+          DebugMode.alertVisibilityParams, 'Refresh', 0, 350, 5),
       createDebugButton(ARModeDebugValues.arrowDistanceToSkipNode,
           DebugMode.alertVisibilityParams, 'distance to skip node', 1, 400, 5),
+      // First instance of the dialog
       ValueListenableBuilder<DebugMode>(
           valueListenable: ARModeDebugValues.debugMode,
           builder: (context, value, child) {
             return Visibility(
                 visible: (value == DebugMode.alertVisibilityParams),
                 child: Positioned(
-                  //bottom: 10,
                   top: 100,
                   child: Container(
                     padding: const EdgeInsets.all(10),
@@ -403,6 +406,31 @@ class ARDebugUI {
                     ),
                     child: ValueListenableBuilder(
                       valueListenable: ARModeDebugValues.debugVariables,
+                      builder: (context, value, child) => Text(
+                        value,
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ),
+                ));
+          }),
+
+      // Second instance of the dialog (duplicated with a different position)
+      ValueListenableBuilder<DebugMode>(
+          valueListenable: ARModeDebugValues.debugMode,
+          builder: (context, value, child) {
+            return Visibility(
+                visible: (value == DebugMode.alertVisibilityParams),
+                child: Positioned(
+                  top: 300, // Changed position to avoid overlap
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color.fromARGB(77, 255, 255, 255),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: ValueListenableBuilder(
+                      valueListenable: ARModeDebugValues.debugVariablesArrow,
                       builder: (context, value, child) => Text(
                         value,
                         style: const TextStyle(fontSize: 12),

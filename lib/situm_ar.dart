@@ -37,7 +37,7 @@ class ARWidget extends StatefulWidget {
     this.onARVisibilityChanged,
     this.mapView,
     this.arHeightRatio = 2 / 3,
-    this.debugMode = false,
+    this.debugMode = true,
     this.apiDomain = "https://dashboard.situm.com",
     this.enable3DAmbiences = false,
     this.occlusionAndroid = true,
@@ -103,7 +103,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
             // loading even when it is not visible.
             unityView,
             // TODO: fix this:
-            //...debugUI.createWidgetRefresh(),
+            ...debugUI.createWidgetRefresh(),
             _ARPosQuality(onCreate: _onARPosQuality),
             FloorChangeIcon(),
             // TODO: fix at Unity (message not being received):
