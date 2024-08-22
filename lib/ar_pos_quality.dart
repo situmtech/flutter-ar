@@ -438,11 +438,18 @@ class _ARPosQualityState extends State<_ARPosQuality> {
     } else if ((conf < currentRefreshThreshold.value) &&
         currentTimestamp - currentRefreshThreshold.timestamp > 1000 &&
         currentRefreshThreshold.value > 0.20) {
-      // if has passed more than n time, decrease threshold. TODO: Extract and adjust values, now, each 10s decrease 0.01.
-      currentRefreshThreshold.value = currentRefreshThreshold.value - 0.01;
+      // if has passed more than n time, decrease threshold. TODO: Extract and adjust values, now, each s decrease 0.03.
+      currentRefreshThreshold.value = currentRefreshThreshold.value - 0.03;
       currentRefreshThreshold.timestamp = currentTimestamp;
       ARModeDebugValues.dynamicRefreshThreshold.value =
           currentRefreshThreshold.value;
+      return false;
+    } else if (currentTimestamp - currentRefreshThreshold.timestamp > 30000) {
+      currentRefreshThreshold.value = conf > 0.2 ? conf : 0.2;
+      currentRefreshThreshold.timestamp = currentTimestamp;
+      ARModeDebugValues.dynamicRefreshThreshold.value =
+          currentRefreshThreshold.value;
+      return true;
     }
     return false;
   }

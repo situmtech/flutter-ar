@@ -279,6 +279,8 @@ class ARController {
           getFloorChangeDirection(progressContent);
       ARModeDebugValues.nextIndicationChangeFloor.value = true;
     } else if (nextCoordinates != "") {
+      //navigationLastCoordinates != nextCoordinates &&
+      // //Esto evita paso de mensajes innecesarios, pero es posible que si hay un refresh por el medio no se este actualizando
       if (navigationLastCoordinates == "floorChange") {
         // After floor change , enable arrow
         _unityViewController?.send(
