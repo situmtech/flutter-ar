@@ -22,44 +22,82 @@ struct ARViewContainer: UIViewRepresentable {
         configuration.planeDetection = [.horizontal]
         arView.session.run(configuration)
         
-        // Crear y añadir el ancla para la flecha
-        let arrowAnchor = createArrowAnchor()
-        arView.scene.anchors.append(arrowAnchor)
+        // Crear y añadir el ancla para la flecha y el texto
+        let arrowAndTextAnchor = createArrowAndTextAnchor()
+        arView.scene.anchors.append(arrowAndTextAnchor)
         
-        context.coordinator.arrowAnchor = arrowAnchor
+        context.coordinator.arrowAndTextAnchor = arrowAndTextAnchor
         context.coordinator.arView = arView
         
         return arView
     }
     
     func updateUIView(_ uiView: ARView, context: Context) {
-        context.coordinator.updateArrowPositionAndDirection()
+        context.coordinator.updateArrowAndTextPositionAndDirection()
     }
     
     func makeCoordinator() -> Coordinator {
         Coordinator(locationManager: locationManager)
     }
     
-    func createArrowAnchor() -> AnchorEntity {
-        let anchor = AnchorEntity(world: [0, 0, 0])
+    func createArrowAndTextAnchor() -> AnchorEntity {
+        let anchor = AnchorEntity(world: [0, -1, 0])
         
+        // Cargar el modelo de la flecha
         do {
-            // Intenta cargar el modelo
-            let modelEntity = try ModelEntity.load(named: "arrow_situm.usdz")
-            modelEntity.scale = SIMD3<Float>(0.05, 0.05, 0.05)
-            anchor.addChild(modelEntity)
-            print("Modelo cargado exitosamente.")
+            let arrowEntity = try ModelEntity.load(named: "arrow_situm.usdz")
+            arrowEntity.scale = SIMD3<Float>(0.05, 0.05, 0.05)
+            let rotationAngle: Float = .pi / 2 // 90 grados en radianes
+            arrowEntity.orientation = simd_quatf(angle: rotationAngle, axis: [0, 1, 0])
+            anchor.addChild(arrowEntity)
         } catch {
-            // Si hay un error al cargar el modelo, lo loguea
             print("Error al cargar el modelo: \(error.localizedDescription)")
         }
         
+        // Crear y configurar el texto
+        let textMesh = MeshResource.generateText(
+            "Sigue la flecha!",
+            extrusionDepth: 0.01,
+            font: .systemFont(ofSize: 0.1),
+            containerFrame: .zero,
+            alignment: .center,
+            lineBreakMode: .byWordWrapping
+        )
+        let material = SimpleMaterial(color: .white, isMetallic: false)
+        let textEntity = ModelEntity(mesh: textMesh, materials: [material])
+        
+        // Posicionar el texto debajo de la flecha
+        textEntity.position = [-1.0, -4.0, 0.0] // Ajusta la posición según sea necesario
+        textEntity.scale = SIMD3<Float>(5.0, 5.0, 5.0)
+        
+        // Rotar el texto para que esté en horizontal y no esté volteado
+        let textRotationAngle: Float = -.pi / 2 // Rotar 90 grados en sentido contrario en el eje Z
+        let flipRotationAngle: Float = .pi // Rotar 180 grados en el eje Y para corregir el volteo
+        
+        // Segunda rotación que quieres aplicar
+        let secondRotationAngle: Float = .pi / 2 // 90 grados en radianes
+        let secondRotationAxis = SIMD3<Float>(0, 1, 0) // Eje Y para rotación alrededor del eje Y
+        
+        // Crear quaterniones para cada rotación
+        let textRotationQuaternion = simd_quatf(angle: textRotationAngle, axis: [0, 0, 1])
+        let flipRotationQuaternion = simd_quatf(angle: flipRotationAngle, axis: [0, 0, 1])
+        let secondRotationQuaternion = simd_quatf(angle: secondRotationAngle, axis: secondRotationAxis)
+        
+        // Combinar las rotaciones
+        let combinedQuaternion = textRotationQuaternion * flipRotationQuaternion * secondRotationQuaternion
+        
+        // Aplicar la rotación combinada al texto
+        textEntity.orientation = combinedQuaternion
+        
+        anchor.addChild(textEntity)
+        
         return anchor
     }
+
     
     class Coordinator: NSObject, CLLocationManagerDelegate {
         var locationManager: LocationManager
-        var arrowAnchor: AnchorEntity?
+        var arrowAndTextAnchor: AnchorEntity?
         weak var arView: ARView?
 
         init(locationManager: LocationManager) {
@@ -70,25 +108,25 @@ struct ARViewContainer: UIViewRepresentable {
         }
         
         func locationManager(_ manager: CLLocationManager, didUpdateHeading newHeading: CLHeading) {
-            updateArrowPositionAndDirection()
+            updateArrowAndTextPositionAndDirection()
         }
         
-        func updateArrowPositionAndDirection() {
-            guard let arView = arView, let arrowAnchor = arrowAnchor, let modelEntity = arrowAnchor.children.first else { return }
+        func updateArrowAndTextPositionAndDirection() {
+            guard let arView = arView, let arrowAndTextAnchor = arrowAndTextAnchor else { return }
 
             let cameraTransform = arView.cameraTransform.matrix
             let cameraPosition = cameraTransform.translation
 
             let distance: Float = 2.5
             let forwardPosition = cameraPosition + cameraTransform.forwardVector * distance
-            if distanceBetween(arrowAnchor.position, forwardPosition) > 0.05 {
-                arrowAnchor.position = forwardPosition
+            if distanceBetween(arrowAndTextAnchor.position, forwardPosition) > 0.05 {
+                arrowAndTextAnchor.position = forwardPosition
             }
 
             let northRotation = locationManager.getRotationToMagneticNorth()
             let northQuaternion = simd_quatf(angle: northRotation, axis: [1, 0, 0])
             let cameraRotation = arView.cameraTransform.rotation
-            modelEntity.orientation = cameraRotation * northQuaternion
+            arrowAndTextAnchor.orientation = cameraRotation * northQuaternion
         }
         
         func distanceBetween(_ a: SIMD3<Float>, _ b: SIMD3<Float>) -> Float {

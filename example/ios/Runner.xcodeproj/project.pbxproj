@@ -65,7 +65,6 @@
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A3D00868979AD5576CCF2279 /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
 		C5418C63A76A00D537DA524E /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
-		E72D23072C6A349C00B06820 /* UnityFramework.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = UnityFramework.xcframework; sourceTree = "<group>"; };
 		E7CAB0002C6BA11B0006F3D0 /* arrow_situm.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; name = arrow_situm.usdz; path = ../../ios/Classes/arrow_situm.usdz; sourceTree = "<group>"; };
 		F547050BAC466D12F7848D66 /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -135,7 +134,6 @@
 			isa = PBXGroup;
 			children = (
 				E7CAB0002C6BA11B0006F3D0 /* arrow_situm.usdz */,
-				E72D23072C6A349C00B06820 /* UnityFramework.xcframework */,
 				9740EEB11CF90186004384FC /* Flutter */,
 				97C146F01CF9000F007C117D /* Runner */,
 				97C146EF1CF9000F007C117D /* Products */,
