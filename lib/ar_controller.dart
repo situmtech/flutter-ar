@@ -9,6 +9,7 @@ class ARController {
   MapViewController? _mapViewController;
   ARModeManager? _arModeManager;
   final ValueNotifier<int> _current3DAmbience = ValueNotifier<int>(0);
+  Map<String, dynamic> lastSitumLocation = {};
 
   // The UnityView may be constantly created/disposed. On the disposed state,
   // any method call will probably be ignored (mostly in Android).
@@ -200,6 +201,7 @@ class ARController {
 
   void _onLocationChanged(Location location) {
     var locationMap = location.toMap();
+    lastSitumLocation = locationMap;
     locationMap['timestamp'] = 0;
     _unityViewController?.send(
         "MessageManager", "SendLocation", jsonEncode(locationMap));
@@ -276,8 +278,7 @@ class ARController {
       ARModeDebugValues.nextIndicationUp.value =
           getFloorChangeDirection(progressContent);
       ARModeDebugValues.nextIndicationChangeFloor.value = true;
-    } else if (navigationLastCoordinates != nextCoordinates &&
-        nextCoordinates != "") {
+    } else if (nextCoordinates != "") {
       if (navigationLastCoordinates == "floorChange") {
         // After floor change , enable arrow
         _unityViewController?.send(
@@ -291,10 +292,16 @@ class ARController {
       _unityViewController?.send(
           "MessageManager", "SendEnableArrowGuide", "null");
     }
+    Map<String, dynamic> nextCoordinatesMap = jsonDecode(nextCoordinates);
+
+    ARModeDebugValues.debugVariablesArrow.value =
+        "next: x ${nextCoordinatesMap["x"]} y ${nextCoordinatesMap["y"]}\n"
+        "pos: x ${lastSitumLocation["cartesianCoordinate"]["x"].toStringAsFixed(2)} y ${lastSitumLocation["cartesianCoordinate"]["y"].toStringAsFixed(2)} yaw ${lastSitumLocation["bearing"]["degrees"].toStringAsFixed(2)}";
   }
 
   void _onNavigationProgress(RouteProgress progress) {
     updateArArrowGuide(progress);
+    debugPrint("Situm> AR> Navigation> progress: ${progress.rawContent}");
     _unityViewController?.send(
         "MessageManager", "SendRouteProgress", jsonEncode(progress.rawContent));
   }
@@ -304,6 +311,7 @@ class ARController {
       debugPrint("Situm> AR> Navigation> _onNavigationStart");
       _unityViewController?.send(
           "MessageManager", "SendHideRouteElements", "null");
+      debugPrint("Situm> AR> Navigation> route: ${route.rawContent}");
       _unityViewController?.send(
           "MessageManager", "SendRoute", jsonEncode(route.rawContent));
       startRefreshing(5);
