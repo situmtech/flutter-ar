@@ -203,6 +203,9 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
     } else {
       controller?.send("MessageManager", "SendDeactivateOcclusion ", "null");
     }
+    controller?.send("MessageManager", "SendCameraLimit",
+        ARModeDebugValues.navigationCameraLimit.value.toInt().toString());
+
     var sdk = SitumSdk();
     sdk.fetchBuildingInfo(widget.buildingIdentifier).then((buildingInfo) {
       controller?.send("MessageManager", "SendContentUrl", apiDomain);
