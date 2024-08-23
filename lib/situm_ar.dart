@@ -97,7 +97,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
             showDebugUI = !showDebugUI;
           });
         },
-        child: _createTempBackButton2(() {
+        child: _createTempBackButton(() {
           arController.onArGone();
         }),
       ),

@@ -269,7 +269,13 @@ class ARController {
 
   void updateArArrowGuide(RouteProgress progress) {
     dynamic progressContent = jsonDecode(jsonEncode(progress.rawContent));
-    String nextCoordinates = findNextCoordinatesV2(progressContent);
+    String nextCoordinates;
+    if (ARModeDebugValues.arrowTargetAlwaysSameDistance.value) {
+      nextCoordinates = findNextCoordinatesV2(progressContent);
+    } else {
+      nextCoordinates = findNextCoordinates(progressContent);
+    }
+
     if (nextCoordinates == "floorChange") {
       _unityViewController?.send(
           "MessageManager", "SendDisableArrowGuide", "null");

@@ -553,7 +553,8 @@ class _ARPosQualityState extends State<_ARPosQuality> {
         "Conf: ar ${arConf.toStringAsFixed(1)}  situm ${situmConf.toStringAsFixed(1)}\n"
         "ConfDispl: ar ${displacementConf.toStringAsFixed(2)} situm ${displacementConfAR.toStringAsFixed(2)}\n"
         "ConfOdoMatch: ${odometriesDistanceConf.toStringAsFixed(2)}\n"
-        "  -- quality: current ${qualityMetric.toStringAsFixed(2)} th ${ARModeDebugValues.dynamicRefreshThreshold.value.toStringAsFixed(2)}\n";
+        "  -- quality: current ${qualityMetric.toStringAsFixed(2)} th ${ARModeDebugValues.dynamicRefreshThreshold.value.toStringAsFixed(2)}\n"
+        "using new arrow target Algorithm: ${ARModeDebugValues.arrowTargetAlwaysSameDistance.value} \n";
   }
 
   ARModeUnityParams getDynamicARParams() {

@@ -1,6 +1,6 @@
 part of 'ar.dart';
 
-Widget _createTempBackButton2(VoidCallback onPressed) {
+Widget _createTempBackButton(VoidCallback onPressed) {
   return Container(
     width: 42.0,
     height: 42.0,

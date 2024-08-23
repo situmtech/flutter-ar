@@ -118,6 +118,9 @@ class ARModeDebugValues {
     arModeNotifier.value = arMode;
   }
 
+  static ValueNotifier<bool> arrowTargetAlwaysSameDistance =
+      ValueNotifier<bool>(true);
+
   static ARModeUnityParams getUnityParamsForMode(ARMode arMode) {
     switch (arMode) {
       case ARMode.enjoy:
@@ -343,6 +346,21 @@ class ARDebugUI {
     );
   }
 
+  Widget createButtonChangeArrowTargetAlgorithm(ValueNotifier<bool> refresh,
+      DebugMode mode, String label, double left, double top, double size) {
+    return Positioned(
+      left: left,
+      top: top,
+      child: ElevatedButton(
+        onPressed: () {
+          ARModeDebugValues.arrowTargetAlwaysSameDistance.value =
+              !ARModeDebugValues.arrowTargetAlwaysSameDistance.value;
+        },
+        child: Text(label),
+      ),
+    );
+  }
+
   String showElements = "arrow";
   Widget createButtonSwitchPath(ValueNotifier<bool> refresh, DebugMode mode,
       String label, double left, double top, double size) {
@@ -388,6 +406,13 @@ class ARDebugUI {
           DebugMode.alertVisibilityParams, 'Refresh', 0, 350, 5),
       createDebugButton(ARModeDebugValues.arrowDistanceToSkipNode,
           DebugMode.alertVisibilityParams, 'distance to skip node', 1, 400, 5),
+      createButtonChangeArrowTargetAlgorithm(
+          ARModeDebugValues.arrowTargetAlwaysSameDistance,
+          DebugMode.alertVisibilityParams,
+          'Change Arrow algorithm',
+          0,
+          450,
+          5),
 
       ValueListenableBuilder<DebugMode>(
           valueListenable: ARModeDebugValues.debugMode,
