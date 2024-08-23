@@ -250,12 +250,11 @@ packages:
   situm_flutter:
     dependency: "direct main"
     description:
-      path: "."
-      ref: "feature/PRO-3535"
-      resolved-ref: a3c106b0c4cff6753591b16d56d57f90769f4532
-      url: "https://github.com/situmtech/flutter.git"
-    source: git
-    version: "3.18.0"
+      name: situm_flutter
+      sha256: "8d685df7445a5310da697476ec37bc4ff901ae233d6a1dae1949788369d0068b"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.18.1"
   situm_flutter_ar:
     dependency: "direct main"
     description:
