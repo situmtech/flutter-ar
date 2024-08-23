@@ -1,30 +1,27 @@
 part of 'ar.dart';
 
-Widget _createTempBackButton(VoidCallback onPressed) {
-  return Positioned(
-      top: Platform.isAndroid ? 31.0 : 28.0,
-      left: 8.0,
-      child: Container(
-        width: 42.0,
-        height: 42.0,
-        decoration: BoxDecoration(
-          color: Colors.grey,
-          borderRadius: BorderRadius.circular(10.0),
-          border: Border.all(
-            color: Colors.white,
-            width: 3.0,
-          ),
+Widget _createTempBackButton2(VoidCallback onPressed) {
+  return Container(
+    width: 42.0,
+    height: 42.0,
+    decoration: BoxDecoration(
+      color: Colors.grey,
+      borderRadius: BorderRadius.circular(10.0),
+      border: Border.all(
+        color: Colors.white,
+        width: 3.0,
+      ),
+    ),
+    child: InkWell(
+      onTap: onPressed,
+      child: const Center(
+        child: Icon(
+          Icons.arrow_back,
+          color: Colors.white, // Color del icono
         ),
-        child: InkWell(
-          onTap: onPressed,
-          child: const Center(
-            child: Icon(
-              Icons.arrow_back,
-              color: Colors.white, // Color del icono
-            ),
-          ),
-        ),
-      ));
+      ),
+    ),
+  );
 }
 
 class FloorChangeIcon extends StatefulWidget {

@@ -62,6 +62,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
       Duration(milliseconds: animationMillis);
   static const Duration animationDurationWithDelay =
       Duration(milliseconds: animationMillis + 100);
+  bool showDebugUI = false;
 
   @override
   void initState() {
@@ -87,6 +88,21 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
       onMessage: onUnityViewMessage,
     );
 
+    var backButtonLongPressDebug = Positioned(
+      top: Platform.isAndroid ? 31.0 : 28.0,
+      left: 12.0,
+      child: GestureDetector(
+        onLongPress: () {
+          setState(() {
+            showDebugUI = !showDebugUI;
+          });
+        },
+        child: _createTempBackButton2(() {
+          arController.onArGone();
+        }),
+      ),
+    );
+
     // If there is not a MapView, return it immediately:
     if (widget.mapView == null) {
       return unityView;
@@ -102,14 +118,10 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
             // Add the AR Widget at the bottom of the stack. It will start
             // loading even when it is not visible.
             unityView,
-            // TODO: fix this:
-            ...debugUI.createWidgetRefresh(),
+            if (showDebugUI) ...debugUI.createWidgetRefresh(),
             _ARPosQuality(onCreate: _onARPosQuality),
             FloorChangeIcon(),
-            // TODO: fix at Unity (message not being received):
-            _createTempBackButton(() {
-              arController.onArGone();
-            }),
+            backButtonLongPressDebug,
             if (widget.enable3DAmbiences)
               _AmbienceSelector(
                 debugMode: widget.debugMode,
