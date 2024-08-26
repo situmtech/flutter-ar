@@ -298,7 +298,7 @@ class ARLoadingWidget extends StatelessWidget {
           ),
         ),
         title: Text(
-          "AR Loading",
+          "Optimizing AR",
           style: TextStyle(color: Colors.white),
         ),
       ),
