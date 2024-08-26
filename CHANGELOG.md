@@ -1,3 +1,14 @@
+## 0.0.15 - August 14, 2024
+
+### Changed:
+
+- Improved integration with the Situm SDK: now this plugin actively closes the AR view when it
+  receives a "USER_NOT_IN_BUILDING" location status.
+
+### Removed:
+
+- Removed a message that was confusing end users.
+
 ## 0.0.14 - July 16, 2024
 
 - Fix. Check that the ar widget has been initialized before sending messages.
