@@ -16,7 +16,7 @@ dependencies:
 
   situm_flutter_unity: ^0.0.3
 
-  situm_flutter: ^3.17.5
+  situm_flutter: ^3.18.1
 
 dev_dependencies:
   flutter_test:
