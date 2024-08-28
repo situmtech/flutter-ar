@@ -119,7 +119,7 @@ class ARModeDebugValues {
   }
 
   static ValueNotifier<bool> arrowTargetAlwaysSameDistance =
-      ValueNotifier<bool>(false);
+      ValueNotifier<bool>(true);
 
   static ARModeUnityParams getUnityParamsForMode(ARMode arMode) {
     switch (arMode) {
