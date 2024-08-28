@@ -131,26 +131,36 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
                       : constraints.maxHeight * (1 - widget.arHeightRatio))
                   // If the AR is not visible, make the MapView full height:
                   : constraints.maxHeight;
-              return AbsorbPointer(
-                absorbing: isArVisible,
-                child: AnimatedContainer(
-                  // NOTE: visibleMapHeight must be a property of AnimatedContainer
-                  // as it will not animate changes on a child.
-                  duration: animationDuration,
-                  curve: Curves.decelerate,
-                  height: visibleMapHeight,
-                  child: SingleChildScrollView(
-                    // Add ScrollView to center the map: TODO fix MapView resizing on iOS.
-                    controller: scrollController,
-                    physics: const NeverScrollableScrollPhysics(),
-                    child: Container(
-                      // This opaque Container prevents the AR widget from being
-                      // visible while the map is not loaded.
-                      color: Colors.grey[200],
-                      child: SizedBox(
-                        // Set the map height equals to the container.
-                        height: constraints.maxHeight,
-                        child: widget.mapView!,
+              return AnimatedContainer(
+                // NOTE: visibleMapHeight must be a property of AnimatedContainer
+                // as it will not animate changes on a child.
+                duration: animationDuration,
+                curve: Curves.decelerate,
+                height: visibleMapHeight,
+                child: SingleChildScrollView(
+                  // Add ScrollView to center the map: TODO fix MapView resizing on iOS.
+                  controller: scrollController,
+                  physics: const NeverScrollableScrollPhysics(),
+                  child: Container(
+                    // This opaque Container prevents the AR widget from being
+                    // visible while the map is not loaded.
+                    color: Colors.grey[200],
+                    child: SizedBox(
+                      // Set the map height equals to the container.
+                      height: constraints.maxHeight,
+                      child: Stack(
+                        children: [
+                          widget.mapView!,
+                          if (isArVisible)
+                            // This PointerInterceptor prevents weird bugs when interacting
+                            // with widgets on top of webViews in ios
+                            PointerInterceptor(
+                              intercepting: true,
+                              child: Container(
+                                color: Colors.transparent,
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   ),
@@ -183,6 +193,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
             ),
           ),
         ),
+        // ============== Debug AR button ===================================
         widget.debugMode
             ? _createDebugModeSwitchButton(() {
                 isArVisible
