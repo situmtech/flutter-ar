@@ -309,7 +309,6 @@ class ARController {
 
   void _onNavigationProgress(RouteProgress progress) {
     updateArArrowGuide(progress);
-    debugPrint("Situm> AR> Navigation> progress: ${progress.rawContent}");
     _unityViewController?.send(
         "MessageManager", "SendRouteProgress", jsonEncode(progress.rawContent));
   }
@@ -319,7 +318,6 @@ class ARController {
       debugPrint("Situm> AR> Navigation> _onNavigationStart");
       _unityViewController?.send(
           "MessageManager", "SendHideRouteElements", "null");
-      debugPrint("Situm> AR> Navigation> route: ${route.rawContent}");
       _unityViewController?.send(
           "MessageManager", "SendRoute", jsonEncode(route.rawContent));
       startRefreshing(5);
