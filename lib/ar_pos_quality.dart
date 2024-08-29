@@ -439,7 +439,8 @@ class _ARPosQualityState extends State<_ARPosQuality> {
         currentTimestamp - currentRefreshThreshold.timestamp > 1000 &&
         currentRefreshThreshold.value > 0.20) {
       // if has passed more than n time, decrease threshold. TODO: Extract and adjust values, now, each s decrease 0.03.
-      currentRefreshThreshold.value = currentRefreshThreshold.value - 0.03;
+      currentRefreshThreshold.value = currentRefreshThreshold.value -
+          ARModeDebugValues.qualityThresholdDecreaseRate.value;
       currentRefreshThreshold.timestamp = currentTimestamp;
       ARModeDebugValues.dynamicRefreshThreshold.value =
           currentRefreshThreshold.value;
@@ -553,8 +554,7 @@ class _ARPosQualityState extends State<_ARPosQuality> {
         "Conf: ar ${arConf.toStringAsFixed(1)}  situm ${situmConf.toStringAsFixed(1)}\n"
         "ConfDispl: ar ${displacementConf.toStringAsFixed(2)} situm ${displacementConfAR.toStringAsFixed(2)}\n"
         "ConfOdoMatch: ${odometriesDistanceConf.toStringAsFixed(2)}\n"
-        "  -- quality: current ${qualityMetric.toStringAsFixed(2)} th ${ARModeDebugValues.dynamicRefreshThreshold.value.toStringAsFixed(2)}\n"
-        "using new arrow target Algorithm: ${ARModeDebugValues.arrowTargetAlwaysSameDistance.value} \n";
+        "  -- quality: current ${qualityMetric.toStringAsFixed(2)} th ${ARModeDebugValues.dynamicRefreshThreshold.value.toStringAsFixed(2)}\n";
   }
 
   ARModeUnityParams getDynamicARParams() {

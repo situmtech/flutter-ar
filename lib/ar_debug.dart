@@ -13,13 +13,13 @@ const EXPLORATION_REFRESS_DATA = 5;
 const EXPLORATION_DISTANCE_LIMIT_DATA = 5.0;
 const EXPLORATION_ANGLE_LIMIT_DATA = 30;
 const EXPLORATION_ACCURACY_LIMIT_DATA = 6;
-const EXPLORATION_CAMERA_LIMIT = 20.0;
+const EXPLORATION_CAMERA_LIMIT = 20;
 
 const NAVIGATION_REFRESS_DATA = 3;
 const NAVIGATION_DISTANCE_LIMIT_DATA = -0.1;
 const NAVIGATION_ANGLE_LIMIT_DATA = 30;
 const NAVIGATION_ACCURACY_LIMIT_DATA = 6;
-const NAVIGATION_CAMERA_LIMIT = 20.0;
+const NAVIGATION_CAMERA_LIMIT = 20;
 
 const DYNAMIC_STABLE_REFRESH_TIME = 30;
 const DYNAMIC_UNSTABLE_REFRESH_TIME = 5; //30;
@@ -31,6 +31,7 @@ const DYNAMIC_LOCATION_BUFFER_SIZE = 10;
 const REFRESH = true;
 const ODO_DIFFERENCE_SENSIBILITY = 4;
 const ARROW_DISTANCE_TO_SKIP_NODE = 25.0;
+const QUALITY_THRESHOLD_DECREASE_RATE = 0.03;
 
 enum DebugMode {
   deactivated,
@@ -85,8 +86,8 @@ class ARModeDebugValues {
       ValueNotifier<int>(EXPLORATION_ANGLE_LIMIT_DATA);
   static ValueNotifier<int> explorationAccuracyLimitDada =
       ValueNotifier<int>(EXPLORATION_ACCURACY_LIMIT_DATA);
-  static ValueNotifier<double> explorationCameraLimit =
-      ValueNotifier<double>(EXPLORATION_CAMERA_LIMIT);
+  static ValueNotifier<int> explorationCameraLimit =
+      ValueNotifier<int>(EXPLORATION_CAMERA_LIMIT);
 
   static ValueNotifier<int> navigationRefreshData =
       ValueNotifier<int>(NAVIGATION_REFRESS_DATA);
@@ -96,8 +97,8 @@ class ARModeDebugValues {
       ValueNotifier<int>(NAVIGATION_ANGLE_LIMIT_DATA);
   static ValueNotifier<int> navigationAccuracyLimitDada =
       ValueNotifier<int>(NAVIGATION_ACCURACY_LIMIT_DATA);
-  static ValueNotifier<double> navigationCameraLimit =
-      ValueNotifier<double>(NAVIGATION_CAMERA_LIMIT);
+  static ValueNotifier<int> navigationCameraLimit =
+      ValueNotifier<int>(NAVIGATION_CAMERA_LIMIT);
 
   static ValueNotifier<bool> refresh = ValueNotifier<bool>(REFRESH);
 
@@ -113,6 +114,9 @@ class ARModeDebugValues {
   static ValueNotifier<bool> nextIndicationUp = ValueNotifier<bool>(false);
   static ValueNotifier<bool> nextIndicationChangeFloor =
       ValueNotifier<bool>(false);
+
+  static ValueNotifier<double> qualityThresholdDecreaseRate =
+      ValueNotifier<double>(QUALITY_THRESHOLD_DECREASE_RATE);
 
   static set arMode(ARMode arMode) {
     arModeNotifier.value = arMode;
@@ -160,7 +164,7 @@ class ARModeUnityParams {
   double distanceLimit;
   int angleLimit;
   int accuracyLimit;
-  double cameraLimit;
+  int cameraLimit;
 
   ARModeUnityParams(this.refreshData, this.distanceLimit, this.angleLimit,
       this.accuracyLimit, this.cameraLimit);
@@ -214,6 +218,9 @@ class ARDebugUI {
         "SendAccurancyLimitData", ARMode.strict);
     addUnityParamsListener(ARModeDebugValues.navigationCameraLimit,
         "SendCameraLimit", ARMode.strict);
+    debugPrint(">>>> ARRDEBUG UI");
+    addUnityParamsListener(ARModeDebugValues.navigationCameraLimit,
+        "SendCameraLimit", ARMode.dynamicRefreshRate);
   }
 
   //
@@ -402,18 +409,22 @@ class ARDebugUI {
     return [
       // createButtonSwitchPath(ARModeDebugValues.refresh,
       //     DebugMode.alertVisibilityParams, 'Show Route', 0, 500, 5),
-      createButtonRefresh(ARModeDebugValues.refresh,
-          DebugMode.alertVisibilityParams, 'Refresh', 0, 350, 5),
-      createDebugButton(ARModeDebugValues.arrowDistanceToSkipNode,
-          DebugMode.alertVisibilityParams, 'distance to skip node', 1, 400, 5),
+
       createButtonChangeArrowTargetAlgorithm(
           ARModeDebugValues.arrowTargetAlwaysSameDistance,
           DebugMode.alertVisibilityParams,
           'Change Arrow algorithm',
           0,
-          450,
+          400,
           5),
-
+      createButtonRefresh(ARModeDebugValues.refresh,
+          DebugMode.alertVisibilityParams, 'Refresh', 0, 350, 5),
+      createDebugButton(ARModeDebugValues.arrowDistanceToSkipNode,
+          DebugMode.alertVisibilityParams, 'distance to skip node', 1, 300, 5),
+      createDebugButton(ARModeDebugValues.qualityThresholdDecreaseRate,
+          DebugMode.alertVisibilityParams, 'qualityThreshold', 0.01, 250, 5),
+      createDebugButton(ARModeDebugValues.navigationCameraLimit,
+          DebugMode.alertVisibilityParams, 'NavCamera', 1, 200, 5),
       ValueListenableBuilder<DebugMode>(
           valueListenable: ARModeDebugValues.debugMode,
           builder: (context, value, child) {
@@ -586,17 +597,21 @@ class ARDebugUI {
     } else if (value is DebugMode) {
       return value.toString().split('.').last;
     } else {
-      return '${value.toStringAsFixed(1)}';
+      return '${value.toStringAsFixed(2)}';
     }
   }
 
   void addUnityParamsListener(
       ValueNotifier param, String unityMessage, ARMode? arModeToSendMessage) {
     param.addListener(() {
+      debugPrint(
+          ">>>> unity listener: param.value.toString(): ${param.value.toString()}");
       if (arModeToSendMessage != null &&
           ARModeDebugValues.arModeNotifier.value != arModeToSendMessage) {
         return;
       }
+      debugPrint(
+          ">>>> sent MessageManager $unityMessage ${param.value.toString()}");
       _controller?.send("MessageManager", unityMessage, param.value.toString());
     });
   }

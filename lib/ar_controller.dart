@@ -304,7 +304,8 @@ class ARController {
 
     ARModeDebugValues.debugVariablesArrow.value =
         "next: x ${nextCoordinatesMap["x"]} y ${nextCoordinatesMap["y"]}\n"
-        "pos: x ${lastSitumLocation["cartesianCoordinate"]["x"].toStringAsFixed(2)} y ${lastSitumLocation["cartesianCoordinate"]["y"].toStringAsFixed(2)} yaw ${lastSitumLocation["bearing"]["degrees"].toStringAsFixed(2)}";
+        "pos: x ${lastSitumLocation["cartesianCoordinate"]["x"].toStringAsFixed(2)} y ${lastSitumLocation["cartesianCoordinate"]["y"].toStringAsFixed(2)} yaw ${lastSitumLocation["bearing"]["degrees"].toStringAsFixed(2)}\n"
+        "using new arrow target Algorithm: ${ARModeDebugValues.arrowTargetAlwaysSameDistance.value} \n";
   }
 
   void _onNavigationProgress(RouteProgress progress) {
