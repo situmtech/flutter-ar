@@ -16,7 +16,7 @@ dependencies:
 
   situm_flutter_unity: ^0.0.3
 
-  situm_flutter: ^3.18.1
+  situm_flutter: ^3.18.2
   pointer_interceptor: ^0.10.1+2
 
 dev_dependencies:
