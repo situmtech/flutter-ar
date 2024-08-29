@@ -1,3 +1,28 @@
+## 0.0.16 - August 29, 2024
+
+## Fixed:
+
+- Fixed an issue where the viewer would remain in an inconsistent state on iOS devices after opening the AR view
+
+## Changed:
+
+- Added new algorithm to set coordinates to which the arrow is pointing during guidance and force this coordinates to be updated always.
+- Increased default distance to point to coordinates to 25 m.
+- Changed starting AR message from "AR Loading" to "Optimizing AR"
+- Faster decrement of the quality metric threhsold to enforce a world reset. This reduces the time before a reset occurs which improves cases where the AR guidance is in an incorrect state.
+- Updated flutter plugin version to 3.18.2
+
+## 0.0.15 - August 14, 2024
+
+### Changed:
+
+- Improved integration with the Situm SDK: now this plugin actively closes the AR view when it
+  receives a "USER_NOT_IN_BUILDING" location status.
+
+### Removed:
+
+- Removed a message that was confusing end users.
+
 ## 0.0.14 - July 16, 2024
 
 - Fix. Check that the ar widget has been initialized before sending messages.
