@@ -9,6 +9,7 @@ class ARController {
   MapViewController? _mapViewController;
   ARModeManager? _arModeManager;
   final ValueNotifier<int> _current3DAmbience = ValueNotifier<int>(0);
+  Map<String, dynamic> lastSitumLocation = {};
 
   // The UnityView may be constantly created/disposed. On the disposed state,
   // any method call will probably be ignored (mostly in Android).
@@ -200,6 +201,7 @@ class ARController {
 
   void _onLocationChanged(Location location) {
     var locationMap = location.toMap();
+    lastSitumLocation = locationMap;
     locationMap['timestamp'] = 0;
     _unityViewController?.send(
         "MessageManager", "SendLocation", jsonEncode(locationMap));
@@ -267,7 +269,13 @@ class ARController {
 
   void updateArArrowGuide(RouteProgress progress) {
     dynamic progressContent = jsonDecode(jsonEncode(progress.rawContent));
-    String nextCoordinates = findNextCoordinates(progressContent);
+    String nextCoordinates;
+    if (ARModeDebugValues.arrowTargetAlwaysSameDistance.value) {
+      nextCoordinates = findNextCoordinatesV2(progressContent);
+    } else {
+      nextCoordinates = findNextCoordinates(progressContent);
+    }
+
     if (nextCoordinates == "floorChange") {
       _unityViewController?.send(
           "MessageManager", "SendDisableArrowGuide", "null");
@@ -276,8 +284,9 @@ class ARController {
       ARModeDebugValues.nextIndicationUp.value =
           getFloorChangeDirection(progressContent);
       ARModeDebugValues.nextIndicationChangeFloor.value = true;
-    } else if (navigationLastCoordinates != nextCoordinates &&
-        nextCoordinates != "") {
+    } else if (nextCoordinates != "") {
+      //navigationLastCoordinates != nextCoordinates &&
+      // This avoids unnecessary message passing, but it's possible that if there's a refresh in between, it might not be updating.
       if (navigationLastCoordinates == "floorChange") {
         // After floor change , enable arrow
         _unityViewController?.send(
@@ -291,6 +300,12 @@ class ARController {
       _unityViewController?.send(
           "MessageManager", "SendEnableArrowGuide", "null");
     }
+    Map<String, dynamic> nextCoordinatesMap = jsonDecode(nextCoordinates);
+
+    ARModeDebugValues.debugVariablesArrow.value =
+        "next: x ${nextCoordinatesMap["x"]} y ${nextCoordinatesMap["y"]}\n"
+        "pos: x ${lastSitumLocation["cartesianCoordinate"]["x"].toStringAsFixed(2)} y ${lastSitumLocation["cartesianCoordinate"]["y"].toStringAsFixed(2)} yaw ${lastSitumLocation["bearing"]["degrees"].toStringAsFixed(2)}\n"
+        "using new arrow target Algorithm: ${ARModeDebugValues.arrowTargetAlwaysSameDistance.value} \n";
   }
 
   void _onNavigationProgress(RouteProgress progress) {
