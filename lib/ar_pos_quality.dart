@@ -438,11 +438,19 @@ class _ARPosQualityState extends State<_ARPosQuality> {
     } else if ((conf < currentRefreshThreshold.value) &&
         currentTimestamp - currentRefreshThreshold.timestamp > 1000 &&
         currentRefreshThreshold.value > 0.20) {
-      // if has passed more than n time, decrease threshold. TODO: Extract and adjust values, now, each 10s decrease 0.01.
-      currentRefreshThreshold.value = currentRefreshThreshold.value - 0.01;
+      // if has passed more than n time, decrease threshold. TODO: Extract and adjust values, now, each s decrease 0.03.
+      currentRefreshThreshold.value = currentRefreshThreshold.value -
+          ARModeDebugValues.qualityThresholdDecreaseRate.value;
       currentRefreshThreshold.timestamp = currentTimestamp;
       ARModeDebugValues.dynamicRefreshThreshold.value =
           currentRefreshThreshold.value;
+      return false;
+    } else if (currentTimestamp - currentRefreshThreshold.timestamp > 30000) {
+      currentRefreshThreshold.value = conf > 0.2 ? conf : 0.2;
+      currentRefreshThreshold.timestamp = currentTimestamp;
+      ARModeDebugValues.dynamicRefreshThreshold.value =
+          currentRefreshThreshold.value;
+      return true;
     }
     return false;
   }
@@ -480,6 +488,9 @@ class _ARPosQualityState extends State<_ARPosQuality> {
         areOdoSimilar,
         totalDisplacementSitum,
         totalDisplacementAR,
+        displacementConf,
+        displacementConfAR,
+        odometriesDistanceConf,
         arLocations.length,
         sdkLocationCoordinates.length,
         arConf,
@@ -524,6 +535,9 @@ class _ARPosQualityState extends State<_ARPosQuality> {
       areOdoSimilar,
       totalDisplacementSitum,
       totalDisplacementAR,
+      displacementConf,
+      displacementConfAR,
+      odometriesDistanceConf,
       arBufferSize,
       sdkBufferSize,
       arConf,
@@ -531,39 +545,16 @@ class _ARPosQualityState extends State<_ARPosQuality> {
       currentRefreshThreshold,
       qualityMetric) {
     String status = isRefreshing ? "REFRESHING" : "NOT REFRESHING";
-    double angularDistanceDegrees = areOdoSimilar.angularDistance * 180 / pi;
-    return "$status\n"
-        "ar / Situm diff: ${areOdoSimilar.distance.toStringAsFixed(3)}  (${odometriesDifferenceConf(areOdoSimilar.distance).toStringAsFixed(3)})\n"
-        "ar / situm angle diff: ${areOdoSimilar.angularDistance.toStringAsFixed(3)} , ${angularDistanceDegrees.toStringAsFixed(1)} , conf (${odometriesAngleDifferenceConf(areOdoSimilar.angularDistance).toStringAsFixed(3)})\n"
-        "totalDisplacementSitum: ${totalDisplacementSitum.toStringAsFixed(3)}  (${totalDisplacementConf(totalDisplacementSitum!).toStringAsFixed(3)})\n"
-        "totalDisplacementAR: ${totalDisplacementAR.toStringAsFixed(3)}\n"
-        "ar buffer size: $arBufferSize\n"
-        "sdk buffer size: $sdkBufferSize\n"
-        "arCore Conf: $arConf\n"
-        "situm Conf: $situmConf\n"
-        "currentRefreshThreshold: ${currentRefreshThreshold.toStringAsFixed(3)}\n"
-        "quality: ${qualityMetric.toStringAsFixed(3)}\n";
-  }
+    // double angularDistanceDegrees = areOdoSimilar.angularDistance * 180 / pi;
 
-  String buildDebugMessageForIOS(
-      bool isRefreshing,
-      areOdoSimilar,
-      totalDisplacementSitum,
-      totalDisplacementAR,
-      arBufferSize,
-      sdkBufferSize,
-      arConf,
-      situmConf,
-      currentRefreshThreshold,
-      qualityMetric) {
-    String status = isRefreshing ? "REFRESHING" : "NOT REFRESHING";
     return "$status\n"
-        "totalDisplacementSitum: ${totalDisplacementSitum.toStringAsFixed(3)}  (${totalDisplacementConf(totalDisplacementSitum!).toStringAsFixed(3)})\n"
-        "ar buffer size: $arBufferSize\n"
-        "sdk buffer size: $sdkBufferSize\n"
-        "situm Conf: $situmConf\n"
-        "currentRefreshThreshold: ${currentRefreshThreshold.toStringAsFixed(3)}\n"
-        "quality: ${qualityMetric.toStringAsFixed(3)}\n";
+        "Buffer sz: ar $arBufferSize situm $sdkBufferSize\n"
+        "Loc: ar ${arLocations.last.x.toStringAsFixed(2)}|${arLocations.last.y.toStringAsFixed(2)}|${arLocations.last.yaw.toStringAsFixed(2)} situm ${sdkLocationCoordinates.last.x.toStringAsFixed(2)}|${sdkLocationCoordinates.last.y.toStringAsFixed(2)}|${sdkLocationCoordinates.last.yaw.toStringAsFixed(2)}\n"
+        "Displ: ar ${totalDisplacementAR.toStringAsFixed(2)} situm ${totalDisplacementSitum.toStringAsFixed(2)}\n\n"
+        "Conf: ar ${arConf.toStringAsFixed(1)}  situm ${situmConf.toStringAsFixed(1)}\n"
+        "ConfDispl: ar ${displacementConf.toStringAsFixed(2)} situm ${displacementConfAR.toStringAsFixed(2)}\n"
+        "ConfOdoMatch: ${odometriesDistanceConf.toStringAsFixed(2)}\n"
+        "  -- quality: current ${qualityMetric.toStringAsFixed(2)} th ${ARModeDebugValues.dynamicRefreshThreshold.value.toStringAsFixed(2)}\n";
   }
 
   ARModeUnityParams getDynamicARParams() {

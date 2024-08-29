@@ -48,6 +48,80 @@ Map<String, dynamic> projectPointOnSegment(
   };
 }
 
+// finds next coordinates interpolating in destination. Destination target is
+// always at same distance of inteprolating current location point.
+String findNextCoordinatesV2(dynamic progress) {
+  if (progress['segments'] == null ||
+      progress['segments'][0] == null ||
+      progress['segments'][0]['points'] == null) {
+    debugPrint("findNextCoordinates: There are no segment points ");
+    return "";
+  }
+  dynamic points = progress['segments'][0]['points']; //points in current floor
+  List<Map<String, dynamic>> pathPoints =
+      List<Map<String, dynamic>>.from(points);
+  Map<String, dynamic> currentPosition = progress['closestLocationInRoute']
+      ['position']; //TODO: Check if that is correct
+
+  // Project current position on path
+  Map<String, dynamic> projectedPoint = pathPoints[0];
+  double minDistance = double.infinity;
+  int segmentIndex = -1;
+
+  for (int i = 0; i < pathPoints.length - 1; i++) {
+    Map<String, dynamic> A = pathPoints[i];
+    Map<String, dynamic> B = pathPoints[i + 1];
+    Map<String, dynamic> P = projectPointOnSegment(currentPosition, A, B);
+
+    double distance = calculateDistance(currentPosition, P);
+    if (distance < minDistance) {
+      minDistance = distance;
+      projectedPoint = P;
+      segmentIndex = i + 1; // from p to segment index is the first segment
+    }
+  }
+
+  ////
+  // Calculate the distance to skip
+  double distanceToSkip = ARModeDebugValues.arrowDistanceToSkipNode.value;
+  double accumulatedDistance = calculateDistance(
+      projectedPoint, pathPoints[segmentIndex]); // remaining of first segment
+
+  for (int i = segmentIndex + 1; i < pathPoints.length; i++) {
+    Map<String, dynamic> A = pathPoints[i - 1];
+    Map<String, dynamic> B = pathPoints[i];
+    double segmentDistance = calculateDistance(A, B);
+    accumulatedDistance += segmentDistance;
+
+    if (accumulatedDistance >= distanceToSkip) {
+      // Interpolate between A and B to find the exact position
+      double distanceWithinSegment =
+          distanceToSkip - (accumulatedDistance - segmentDistance);
+      double interpolationFactor = distanceWithinSegment / segmentDistance;
+
+      // Interpolated position
+      double x = A['cartesianCoordinate']['x'] +
+          interpolationFactor *
+              (B['cartesianCoordinate']['x'] - A['cartesianCoordinate']['x']);
+      double y = A['cartesianCoordinate']['y'] +
+          interpolationFactor *
+              (B['cartesianCoordinate']['y'] - A['cartesianCoordinate']['y']);
+
+      return jsonEncode({'x': x, 'y': y});
+    } else if (i == pathPoints.length - 1 && // last element
+        progress['segments'].length > 1 && // there are more floors
+        accumulatedDistance < distanceThresholdToFloorChange) {
+      //below distance threshold
+      return "floorChange";
+    } else if (i == pathPoints.length - 1) {
+      // Last element
+      return jsonEncode(pathPoints[i]["cartesianCoordinate"]);
+    }
+  }
+
+  return "";
+}
+
 String findNextCoordinates(dynamic progress) {
   if (progress['segments'] == null ||
       progress['segments'][0] == null ||
