@@ -217,6 +217,16 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
     );
   }
 
+  List<Map<String, dynamic>> filterHiddenArPois(
+      List<Map<String, dynamic>> pois) {
+    return pois.where((poi) {
+      var customFields = poi['customFields'] as Map<String, dynamic>;
+      var hiddenArValue = customFields['hidden-ar'];
+      return hiddenArValue != true &&
+          hiddenArValue?.toString().toLowerCase() != 'true';
+    }).toList();
+  }
+
   void onUnityViewCreated(
       BuildContext context, UnityViewController? controller) {
     debugPrint("Situm> AR> onUnityViewCreated");
@@ -237,7 +247,9 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
           "MessageManager", "SendBuildingInfo", jsonEncode(buildingInfoMap));
       debugPrint("Situm> AR> BuildingInfo has been sent.");
       var poisMap = buildingInfoMap["indoorPOIs"];
-      controller?.send("MessageManager", "SendPOIs", jsonEncode(poisMap));
+      var filteredPoisMap = filterHiddenArPois(poisMap);
+      controller?.send(
+          "MessageManager", "SendPOIs", jsonEncode(filteredPoisMap));
       debugPrint(
           "Situm> AR> indoorPOIs array has been sent. API DOMAIN IS $apiDomain");
       widget.onPopulated.call();

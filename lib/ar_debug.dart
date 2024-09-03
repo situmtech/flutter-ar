@@ -340,10 +340,10 @@ class ARDebugUI {
   }
 
   Widget createButtonRefresh(ValueNotifier<bool> refresh, DebugMode mode,
-      String label, double left, double top, double size) {
+      String label, double left, double bottom, double size) {
     return Positioned(
       left: left,
-      top: top,
+      bottom: bottom,
       child: ElevatedButton(
         onPressed: () {
           _controller?.send("MessageManager", "ForceReposition", "null");
@@ -354,10 +354,10 @@ class ARDebugUI {
   }
 
   Widget createButtonChangeArrowTargetAlgorithm(ValueNotifier<bool> refresh,
-      DebugMode mode, String label, double left, double top, double size) {
+      DebugMode mode, String label, double left, double bottom, double size) {
     return Positioned(
       left: left,
-      top: top,
+      bottom: bottom,
       child: ElevatedButton(
         onPressed: () {
           ARModeDebugValues.arrowTargetAlwaysSameDistance.value =
@@ -456,7 +456,7 @@ class ARDebugUI {
             return Visibility(
                 visible: (value == DebugMode.alertVisibilityParams),
                 child: Positioned(
-                  top: 300, // Changed position to avoid overlap
+                  top: 270, // Changed position to avoid overlap
                   child: Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(

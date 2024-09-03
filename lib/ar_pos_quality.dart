@@ -550,11 +550,11 @@ class _ARPosQualityState extends State<_ARPosQuality> {
     return "$status\n"
         "Buffer sz: ar $arBufferSize situm $sdkBufferSize\n"
         "Loc: ar ${arLocations.last.x.toStringAsFixed(2)}|${arLocations.last.y.toStringAsFixed(2)}|${arLocations.last.yaw.toStringAsFixed(2)} situm ${sdkLocationCoordinates.last.x.toStringAsFixed(2)}|${sdkLocationCoordinates.last.y.toStringAsFixed(2)}|${sdkLocationCoordinates.last.yaw.toStringAsFixed(2)}\n"
-        "Displ: ar ${totalDisplacementAR.toStringAsFixed(2)} situm ${totalDisplacementSitum.toStringAsFixed(2)}\n\n"
+        "Displ: ar ${totalDisplacementAR.toStringAsFixed(2)} situm ${totalDisplacementSitum.toStringAsFixed(2)}\n"
         "Conf: ar ${arConf.toStringAsFixed(1)}  situm ${situmConf.toStringAsFixed(1)}\n"
         "ConfDispl: ar ${displacementConf.toStringAsFixed(2)} situm ${displacementConfAR.toStringAsFixed(2)}\n"
         "ConfOdoMatch: ${odometriesDistanceConf.toStringAsFixed(2)}\n"
-        "  -- quality: current ${qualityMetric.toStringAsFixed(2)} th ${ARModeDebugValues.dynamicRefreshThreshold.value.toStringAsFixed(2)}\n";
+        "  -- quality: current ${qualityMetric.toStringAsFixed(2)} th ${ARModeDebugValues.dynamicRefreshThreshold.value.toStringAsFixed(2)}";
   }
 
   ARModeUnityParams getDynamicARParams() {
