@@ -1,3 +1,9 @@
+## 0.0.17 - September 3, 2024
+
+## Added:
+
+- Added POI filtering to hide in the AR view POIs with the custom field ‘hidden-ar’ set to true.
+
 ## 0.0.16 - August 29, 2024
 
 ## Fixed:
