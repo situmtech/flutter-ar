@@ -3,16 +3,48 @@ import RealityKit
 import ARKit
 import CoreLocation
 
-@available(iOS 13.0, *)
-struct ContentView: View {
-    var body: some View {
-        ARViewContainer().edgesIgnoringSafeArea(.all)
+// Clase LocationManager para manejar la ubicación
+class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
+    private let locationManager = CLLocationManager()
+    
+    @Published var heading: CLHeading?
+    
+    override init() {
+        super.init()
+        locationManager.delegate = self
+        locationManager.requestWhenInUseAuthorization()
+        locationManager.startUpdatingHeading()
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didUpdateHeading newHeading: CLHeading) {
+        heading = newHeading
     }
 }
 
+// Vista principal ContentView
+@available(iOS 13.0, *)
+struct ContentView: View {
+    @ObservedObject private var locationManager = LocationManager()
+    @State private var poisMap: [String: Any]
+
+    init(poisMap: [String: Any]) {
+        _poisMap = State(initialValue: poisMap)
+    }
+
+    var body: some View {
+        ARViewContainer(poisMap: poisMap)
+            .edgesIgnoringSafeArea(.all)
+            .onReceive(NotificationCenter.default.publisher(for: .poisUpdated)) { _ in
+                // Manejar actualización de POIs si es necesario
+            }
+    }
+}
+
+// Vista ARViewContainer
 @available(iOS 13.0, *)
 struct ARViewContainer: UIViewRepresentable {
     @ObservedObject private var locationManager = LocationManager()
+    var poisMap: [String: Any]
 
     func makeUIView(context: Context) -> ARView {
         let arView = ARView(frame: .zero)
@@ -28,12 +60,17 @@ struct ARViewContainer: UIViewRepresentable {
         
         context.coordinator.arrowAndTextAnchor = arrowAndTextAnchor
         context.coordinator.arView = arView
-        
+        context.coordinator.poisMap = poisMap
+
         return arView
     }
     
     func updateUIView(_ uiView: ARView, context: Context) {
         context.coordinator.updateArrowAndTextPositionAndDirection()
+        // Actualizar POIs si es necesario
+        if !poisMap.isEmpty {
+            context.coordinator.updatePOIs(poisMap: poisMap)
+        }
     }
     
     func makeCoordinator() -> Coordinator {
@@ -41,20 +78,27 @@ struct ARViewContainer: UIViewRepresentable {
     }
     
     func createArrowAndTextAnchor() -> AnchorEntity {
-        let anchor = AnchorEntity(world: [0, -1, 0])
+        let anchor = AnchorEntity(world: SIMD3(x: 0, y: -1, z: -2)) // Ajusta la posición inicial si es necesario
         
-        // Cargar el modelo de la flecha
+        // Crear y añadir la flecha
         do {
             let arrowEntity = try ModelEntity.load(named: "arrow_situm.usdz")
-            arrowEntity.scale = SIMD3<Float>(0.05, 0.05, 0.05)
-            let rotationAngle: Float = .pi / 2 // 90 grados en radianes
-            arrowEntity.orientation = simd_quatf(angle: rotationAngle, axis: [0, 1, 0])
+            arrowEntity.scale = SIMD3<Float>(0.1, 0.1, 0.1)
+            // La flecha debe apuntar hacia adelante en el plano horizontal
+            arrowEntity.orientation = simd_quatf(angle: .pi / 2, axis: [1, 0, 0])
             anchor.addChild(arrowEntity)
         } catch {
-            print("Error al cargar el modelo: \(error.localizedDescription)")
+            print("Error al cargar el modelo de la flecha: \(error.localizedDescription)")
         }
         
-        // Crear y configurar el texto
+        // Crear y añadir el texto usando una función separada
+        let textEntity = createTextEntity()
+        anchor.addChild(textEntity)
+        
+        return anchor
+    }
+
+    func createTextEntity() -> ModelEntity {
         let textMesh = MeshResource.generateText(
             "Sigue la flecha!",
             extrusionDepth: 0.01,
@@ -67,44 +111,27 @@ struct ARViewContainer: UIViewRepresentable {
         let textEntity = ModelEntity(mesh: textMesh, materials: [material])
         
         // Posicionar el texto debajo de la flecha
-        textEntity.position = [-1.0, -4.0, 0.0] // Ajusta la posición según sea necesario
-        textEntity.scale = SIMD3<Float>(5.0, 5.0, 5.0)
+        textEntity.position = [0.0, -0.5, 0.0] // Ajusta la posición según sea necesario
+        textEntity.scale = SIMD3<Float>(2.0, 2.0, 2.0)
         
         // Rotar el texto para que esté en horizontal y no esté volteado
-        let textRotationAngle: Float = -.pi / 2 // Rotar 90 grados en sentido contrario en el eje Z
-        let flipRotationAngle: Float = .pi // Rotar 180 grados en el eje Y para corregir el volteo
-        
-        // Segunda rotación que quieres aplicar
-        let secondRotationAngle: Float = .pi / 2 // 90 grados en radianes
-        let secondRotationAxis = SIMD3<Float>(0, 1, 0) // Eje Y para rotación alrededor del eje Y
-        
-        // Crear quaterniones para cada rotación
+        let textRotationAngle: Float = .pi / 2 // Rotar 90 grados en el eje Z
         let textRotationQuaternion = simd_quatf(angle: textRotationAngle, axis: [0, 0, 1])
-        let flipRotationQuaternion = simd_quatf(angle: flipRotationAngle, axis: [0, 0, 1])
-        let secondRotationQuaternion = simd_quatf(angle: secondRotationAngle, axis: secondRotationAxis)
+        textEntity.orientation = textRotationQuaternion
         
-        // Combinar las rotaciones
-        let combinedQuaternion = textRotationQuaternion * flipRotationQuaternion * secondRotationQuaternion
-        
-        // Aplicar la rotación combinada al texto
-        textEntity.orientation = combinedQuaternion
-        
-        anchor.addChild(textEntity)
-        
-        return anchor
+        return textEntity
     }
 
-    
     class Coordinator: NSObject, CLLocationManagerDelegate {
         var locationManager: LocationManager
         var arrowAndTextAnchor: AnchorEntity?
         weak var arView: ARView?
+        var poisMap: [String: Any] = [:]
 
         init(locationManager: LocationManager) {
             self.locationManager = locationManager
             super.init()
-            locationManager.manager.delegate = self
-            locationManager.manager.startUpdatingHeading()
+            // El coordinator usa la instancia de LocationManager que ya tiene el delegate configurado
         }
         
         func locationManager(_ manager: CLLocationManager, didUpdateHeading newHeading: CLHeading) {
@@ -113,74 +140,36 @@ struct ARViewContainer: UIViewRepresentable {
         
         func updateArrowAndTextPositionAndDirection() {
             guard let arView = arView, let arrowAndTextAnchor = arrowAndTextAnchor else { return }
-
-            let cameraTransform = arView.cameraTransform.matrix
+            
+            // Obtener la posición y rotación de la cámara
+            let cameraTransform = arView.cameraTransform
             let cameraPosition = cameraTransform.translation
-
+            let cameraRotation = cameraTransform.rotation
+            
+            // Ajustar la posición de la flecha frente a la cámara
             let distance: Float = 2.5
-            let forwardPosition = cameraPosition + cameraTransform.forwardVector * distance
-            if distanceBetween(arrowAndTextAnchor.position, forwardPosition) > 0.05 {
-                arrowAndTextAnchor.position = forwardPosition
-            }
-
-            let northRotation = locationManager.getRotationToMagneticNorth()
-            let northQuaternion = simd_quatf(angle: northRotation, axis: [1, 0, 0])
-            let cameraRotation = arView.cameraTransform.rotation
-            arrowAndTextAnchor.orientation = cameraRotation * northQuaternion
+            let forwardVector = -cameraTransform.matrix.columns.2.xyz
+            let forwardPosition = cameraPosition + forwardVector * distance
+            arrowAndTextAnchor.position = forwardPosition
+            
+            // Actualizar la rotación de la flecha para que apunte hacia la cámara
+            let targetDirection = forwardVector
+            let currentDirection = SIMD3<Float>(0, 0, 1) // Asumiendo que la flecha está orientada hacia adelante en el espacio local
+            let angle = acos(dot(currentDirection, targetDirection) / (length(currentDirection) * length(targetDirection)))
+            let axis = cross(currentDirection, targetDirection)
+            arrowAndTextAnchor.orientation = simd_quatf(angle: angle, axis: axis)
         }
         
-        func distanceBetween(_ a: SIMD3<Float>, _ b: SIMD3<Float>) -> Float {
-            return simd_distance(a, b)
+        func updatePOIs(poisMap: [String: Any]) {
+            // Implementar lógica para colocar POIs en la vista AR
+            // Crear objetos AR para cada POI y añadirlos a la escena
         }
     }
 }
 
-@available(iOS 13.0, *)
-class LocationManager: NSObject, ObservableObject {
-    var manager = CLLocationManager()
-
-    override init() {
-        super.init()
-        manager.headingFilter = kCLHeadingFilterNone
-        manager.desiredAccuracy = kCLLocationAccuracyBest
-        manager.startUpdatingHeading()
-    }
-
-    func getRotationToMagneticNorth() -> Float {
-        guard let heading = manager.heading else {
-            return 0.0
-        }
-        return -Float(heading.magneticHeading) * .pi / 180 + (.pi/2.0)
-    }
-}
-
-@available(iOS 13.0, *)
-extension ARView {
-    var cameraTransform: Transform {
-        return Transform(matrix: self.session.currentFrame?.camera.transform ?? matrix_identity_float4x4)
-    }
-}
-
-@available(iOS 13.0, *)
-extension float4x4 {
-    var translation: SIMD3<Float> {
-        return SIMD3<Float>(self.columns.3.x, self.columns.3.y, self.columns.3.z)
-    }
-    
-    var forwardVector: SIMD3<Float> {
-        return SIMD3<Float>(-self.columns.2.x, -self.columns.2.y, -self.columns.2.z)
-    }
-}
-
-@available(iOS 13.0, *)
-extension Transform {
-    var rotation: simd_quatf {
-        return simd_quatf(self.rotationMatrix)
-    }
-    
-    var rotationMatrix: float3x3 {
-        return float3x3([self.matrix.columns.0.x, self.matrix.columns.0.y, self.matrix.columns.0.z],
-                        [self.matrix.columns.1.x, self.matrix.columns.1.y, self.matrix.columns.1.z],
-                        [self.matrix.columns.2.x, self.matrix.columns.2.y, self.matrix.columns.2.z])
+// Extensión para obtener el vector xyz de un float4x4
+extension SIMD4<Float> {
+    var xyz: SIMD3<Float> {
+        return SIMD3<Float>(x, y, z)
     }
 }

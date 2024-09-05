@@ -6,7 +6,8 @@ import ARKit
 import CoreLocation
 
 public class SitumArPlugin: NSObject, FlutterPlugin {
-    
+    var poisMap: [String: Any] = [:]
+
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: "situm_ar", binaryMessenger: registrar.messenger())
         let instance = SitumArPlugin()
@@ -23,6 +24,13 @@ public class SitumArPlugin: NSObject, FlutterPlugin {
             result("iOS " + UIDevice.current.systemVersion)
         case "startARView":
             presentARView(result: result)
+        case "updatePOIs":
+            if let pois = call.arguments as? [String: Any] {
+                poisMap = pois
+                // Notify the ARView to update with new POIs
+                NotificationCenter.default.post(name: .poisUpdated, object: nil)
+            }
+            result(nil)
         default:
             result(FlutterMethodNotImplemented)
         }
@@ -35,13 +43,17 @@ public class SitumArPlugin: NSObject, FlutterPlugin {
         }
 
         if #available(iOS 13.0, *) {
-            let arView = UIHostingController(rootView: ContentView())
+            let arView = UIHostingController(rootView: ContentView(poisMap: poisMap))
             viewController.present(arView, animated: true, completion: nil)
             result(nil)
         } else {
             result(FlutterError(code: "UNSUPPORTED_VERSION", message: "iOS version is lower than 13.0", details: nil))
         }
     }
+}
+
+extension Notification.Name {
+    static let poisUpdated = Notification.Name("poisUpdated")
 }
 
 class ARViewFactory: NSObject, FlutterPlatformViewFactory {
@@ -62,7 +74,7 @@ class ARPlatformView: NSObject, FlutterPlatformView {
 
     init(frame: CGRect, viewIdentifier viewId: Int64, arguments args: Any?, binaryMessenger: FlutterBinaryMessenger?) {
         if #available(iOS 13.0, *) {
-            let arView = UIHostingController(rootView: ContentView()).view!
+            let arView = UIHostingController(rootView: ContentView(poisMap: [:])).view!
             arView.frame = frame
             _view = arView
         } else {
