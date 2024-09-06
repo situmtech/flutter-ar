@@ -425,7 +425,7 @@ class ARDebugUI {
       createDebugButton(ARModeDebugValues.arrowDistanceToSkipNode,
           DebugMode.alertVisibilityParams, 'distance to skip node', 1, 300, 5),
       createDebugButton(ARModeDebugValues.constantQualityDecreaseRate,
-          DebugMode.alertVisibilityParams, 'constantQThresh', 0.005, 250, 5),
+          DebugMode.alertVisibilityParams, 'constantQThresh', 0.001, 250, 5),
       createDebugButton(ARModeDebugValues.qualityThresholdDecreaseRate,
           DebugMode.alertVisibilityParams, 'qualityThreshold', 0.01, 200, 5),
       createDebugButton(ARModeDebugValues.navigationCameraLimit,
