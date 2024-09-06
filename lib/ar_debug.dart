@@ -602,7 +602,7 @@ class ARDebugUI {
     } else if (value is DebugMode) {
       return value.toString().split('.').last;
     } else {
-      return '${value.toStringAsFixed(2)}';
+      return '${value.toStringAsFixed(3)}';
     }
   }
 
