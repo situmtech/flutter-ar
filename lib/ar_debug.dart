@@ -32,6 +32,7 @@ const REFRESH = true;
 const ODO_DIFFERENCE_SENSIBILITY = 4;
 const ARROW_DISTANCE_TO_SKIP_NODE = 25.0;
 const QUALITY_THRESHOLD_DECREASE_RATE = 0.03;
+const CONSTANT_QUALITY_THRESHOLD_DECREASE_RATE = 0.005;
 
 enum DebugMode {
   deactivated,
@@ -117,6 +118,8 @@ class ARModeDebugValues {
 
   static ValueNotifier<double> qualityThresholdDecreaseRate =
       ValueNotifier<double>(QUALITY_THRESHOLD_DECREASE_RATE);
+  static ValueNotifier<double> constantQualityDecreaseRate =
+      ValueNotifier<double>(CONSTANT_QUALITY_THRESHOLD_DECREASE_RATE);
 
   static set arMode(ARMode arMode) {
     arModeNotifier.value = arMode;
@@ -421,10 +424,17 @@ class ARDebugUI {
           DebugMode.alertVisibilityParams, 'Refresh', 0, 350, 5),
       createDebugButton(ARModeDebugValues.arrowDistanceToSkipNode,
           DebugMode.alertVisibilityParams, 'distance to skip node', 1, 300, 5),
+      createDebugButton(
+          ARModeDebugValues.constantQualityDecreaseRate,
+          DebugMode.alertVisibilityParams,
+          'constantQualityThresholdDecrease',
+          0.005,
+          250,
+          5),
       createDebugButton(ARModeDebugValues.qualityThresholdDecreaseRate,
-          DebugMode.alertVisibilityParams, 'qualityThreshold', 0.01, 250, 5),
+          DebugMode.alertVisibilityParams, 'qualityThreshold', 0.01, 200, 5),
       createDebugButton(ARModeDebugValues.navigationCameraLimit,
-          DebugMode.alertVisibilityParams, 'NavCamera', 1, 200, 5),
+          DebugMode.alertVisibilityParams, 'NavCamera', 1, 150, 5),
       ValueListenableBuilder<DebugMode>(
           valueListenable: ARModeDebugValues.debugMode,
           builder: (context, value, child) {
