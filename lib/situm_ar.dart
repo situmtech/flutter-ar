@@ -6,11 +6,11 @@ part of 'ar.dart';
 class SitumAr {
   static const MethodChannel _channel = MethodChannel('situm_ar');
 
-  static Future<void> startARView() async {
+  static Future<void> startARView() async {   
     await _channel.invokeMethod('startARView');
   }
 
-  static Future<void> updatePOIs(Map<String, dynamic> poisMap) async {
+  static Future<void> updatePOIs(List<Map<String, dynamic>> poisMap) async {
     await _channel.invokeMethod('updatePOIs', poisMap);
   }
 }
@@ -180,8 +180,9 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
     debugPrint("Situm> AR> MESSAGE!!!!!!!!!!!!!!! $message");
   }
 
-  void onARViewCreated(BuildContext context, ARViewController? controller) {
+  void onARViewCreated(BuildContext context, ARViewController? controller) {    
     debugPrint("Situm> AR> onARViewCreated!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+    sendPOIs();
   }
 
   void onARViewReattached(ARViewController controller) {
@@ -215,6 +216,26 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
     super.didChangeDependencies();
     debugPrint("Situm> AR> LIFECYCLE> didChangeDependencies");
   }
+
+  void sendPOIs() {
+  
+    var sdk = SitumSdk();    
+    sdk.fetchBuildingInfo(widget.buildingIdentifier).then((buildingInfo) {            
+      var buildingInfoMap = buildingInfo.toMap();   
+      var poisMap = buildingInfoMap["indoorPOIs"];  
+      print("POIs to be sent: $poisMap"); 
+print("4444444444444444!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        SitumAr.updatePOIs(poisMap).then((_) {
+          print("POIs updated successfully!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        }).catchError((error) {
+          print("Error updating POIs: $error");
+        });
+
+    });
+  
+
+}
+
 
   void updateStatusArRequested() {
     setState(() {

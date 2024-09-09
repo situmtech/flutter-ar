@@ -32,10 +32,15 @@ struct ContentView: View {
     }
 
     var body: some View {
-        ARViewContainer(poisMap: poisMap)
+        ARViewContainer(poisMap: $poisMap)
             .edgesIgnoringSafeArea(.all)
-            .onReceive(NotificationCenter.default.publisher(for: .poisUpdated)) { _ in
-                // Manejar actualización de POIs si es necesario
+            .onReceive(NotificationCenter.default.publisher(for: .poisUpdated)) { notification in
+                if let poisMap = notification.userInfo?["poisMap"] as? [String: Any] {
+                    self.poisMap = poisMap
+                }
+                else {
+                        print("Failed to cast POIs map. UserInfo: \(String(describing: notification.userInfo))")
+                    }
             }
     }
 }
@@ -44,7 +49,7 @@ struct ContentView: View {
 @available(iOS 13.0, *)
 struct ARViewContainer: UIViewRepresentable {
     @ObservedObject private var locationManager = LocationManager()
-    var poisMap: [String: Any]
+    @Binding var poisMap: [String: Any]
 
     func makeUIView(context: Context) -> ARView {
         let arView = ARView(frame: .zero)
@@ -60,7 +65,6 @@ struct ARViewContainer: UIViewRepresentable {
         
         context.coordinator.arrowAndTextAnchor = arrowAndTextAnchor
         context.coordinator.arView = arView
-        context.coordinator.poisMap = poisMap
 
         return arView
     }
@@ -68,9 +72,7 @@ struct ARViewContainer: UIViewRepresentable {
     func updateUIView(_ uiView: ARView, context: Context) {
         context.coordinator.updateArrowAndTextPositionAndDirection()
         // Actualizar POIs si es necesario
-        if !poisMap.isEmpty {
-            context.coordinator.updatePOIs(poisMap: poisMap)
-        }
+        context.coordinator.updatePOIs(poisMap: poisMap)
     }
     
     func makeCoordinator() -> Coordinator {
@@ -161,8 +163,13 @@ struct ARViewContainer: UIViewRepresentable {
         }
         
         func updatePOIs(poisMap: [String: Any]) {
+            self.poisMap = poisMap
+            
             // Implementar lógica para colocar POIs en la vista AR
             // Crear objetos AR para cada POI y añadirlos a la escena
+            // Ejemplo básico: Solo imprimir los POIs para depuración
+            NSLog("UPDATING POIS IN AR WITH DATA: \(poisMap)")
+
         }
     }
 }

@@ -4,11 +4,29 @@ import SwiftUI
 import RealityKit
 import ARKit
 import CoreLocation
+import Foundation
+
+// Clase que maneja la lógica del plugin SitumAR
+@objc(SitumARPlugin)
+class SitumARPlugin: NSObject {
+    
+    @objc func updatePOIs(poisMap: [String: Any]) {
+        // Enviar una notificación para actualizar los POIs en la vista AR
+        NotificationCenter.default.post(name: .poisUpdated, object: nil, userInfo: ["poisMap": poisMap])
+        print("POIs updated from SitumARPlugin with data: \(poisMap)")
+    }
+}
+
+// Extensión para definir la notificación de actualización de POIs
+extension Notification.Name {
+    static let poisUpdated = Notification.Name("poisUpdated")
+}
 
 public class SitumArPlugin: NSObject, FlutterPlugin {
     var poisMap: [String: Any] = [:]
 
     public static func register(with registrar: FlutterPluginRegistrar) {
+        
         let channel = FlutterMethodChannel(name: "situm_ar", binaryMessenger: registrar.messenger())
         let instance = SitumArPlugin()
         registrar.addMethodCallDelegate(instance, channel: channel)
@@ -25,10 +43,23 @@ public class SitumArPlugin: NSObject, FlutterPlugin {
         case "startARView":
             presentARView(result: result)
         case "updatePOIs":
-            if let pois = call.arguments as? [String: Any] {
-                poisMap = pois
-                // Notify the ARView to update with new POIs
-                NotificationCenter.default.post(name: .poisUpdated, object: nil)
+            if let pois = call.arguments as? [[String: Any]] {
+                poisMap = ["pois": pois]
+                var poisMapString = ""
+
+                // Convertir el diccionario a JSON para poder imprimirlo
+                if let poisMapData = try? JSONSerialization.data(withJSONObject: poisMap, options: .prettyPrinted),
+                   let jsonString = String(data: poisMapData, encoding: .utf8) {
+                    poisMapString = jsonString
+                } else {
+                    NSLog("Failed to convert POIs to JSON string")
+                }
+                
+                print("POIs received: \(poisMapString)")
+                NotificationCenter.default.post(name: .poisUpdated, object: nil, userInfo: ["poisMap": poisMap])
+
+            } else {
+                NSLog("Failed to cast POIs. Received data: %@", String(describing: call.arguments))
             }
             result(nil)
         default:
@@ -50,10 +81,6 @@ public class SitumArPlugin: NSObject, FlutterPlugin {
             result(FlutterError(code: "UNSUPPORTED_VERSION", message: "iOS version is lower than 13.0", details: nil))
         }
     }
-}
-
-extension Notification.Name {
-    static let poisUpdated = Notification.Name("poisUpdated")
 }
 
 class ARViewFactory: NSObject, FlutterPlatformViewFactory {
