@@ -83,6 +83,9 @@ class _NavigationBaseState extends State<NavigationBase> {
               persistUnderlyingWidget: true,
             ),
             onLoad: onMapViewLoad,
+            onError: (error) {
+              debugPrint("Error loading Map View");
+            },
           ),
         ),
       ),
