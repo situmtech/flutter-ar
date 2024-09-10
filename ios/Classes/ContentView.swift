@@ -32,15 +32,14 @@ struct ContentView: View {
     }
 
     var body: some View {
-        ARViewContainer(poisMap: $poisMap)
+        ARViewContainer(poisMap: $poisMap, locationManager: locationManager)
             .edgesIgnoringSafeArea(.all)
             .onReceive(NotificationCenter.default.publisher(for: .poisUpdated)) { notification in
                 if let poisMap = notification.userInfo?["poisMap"] as? [String: Any] {
                     self.poisMap = poisMap
+                } else {
+                    print("Failed to cast POIs map. UserInfo: \(String(describing: notification.userInfo))")
                 }
-                else {
-                        print("Failed to cast POIs map. UserInfo: \(String(describing: notification.userInfo))")
-                    }
             }
     }
 }
@@ -48,15 +47,15 @@ struct ContentView: View {
 // Vista ARViewContainer
 @available(iOS 13.0, *)
 struct ARViewContainer: UIViewRepresentable {
-    @ObservedObject private var locationManager = LocationManager()
     @Binding var poisMap: [String: Any]
+    @ObservedObject var locationManager: LocationManager
 
     func makeUIView(context: Context) -> ARView {
         let arView = ARView(frame: .zero)
         
         // Configuración de ARKit
         let configuration = ARWorldTrackingConfiguration()
-        configuration.planeDetection = [.horizontal]
+        configuration.planeDetection = []
         arView.session.run(configuration)
         
         // Crear y añadir el ancla para la flecha y el texto
@@ -71,7 +70,6 @@ struct ARViewContainer: UIViewRepresentable {
     
     func updateUIView(_ uiView: ARView, context: Context) {
         context.coordinator.updateArrowAndTextPositionAndDirection()
-        // Actualizar POIs si es necesario
         context.coordinator.updatePOIs(poisMap: poisMap)
     }
     
@@ -80,20 +78,18 @@ struct ARViewContainer: UIViewRepresentable {
     }
     
     func createArrowAndTextAnchor() -> AnchorEntity {
-        let anchor = AnchorEntity(world: SIMD3(x: 0, y: -1, z: -2)) // Ajusta la posición inicial si es necesario
+        let anchor = AnchorEntity() // Usar un ancla sin posición inicial fija
         
         // Crear y añadir la flecha
         do {
             let arrowEntity = try ModelEntity.load(named: "arrow_situm.usdz")
             arrowEntity.scale = SIMD3<Float>(0.1, 0.1, 0.1)
-            // La flecha debe apuntar hacia adelante en el plano horizontal
-            arrowEntity.orientation = simd_quatf(angle: .pi / 2, axis: [1, 0, 0])
             anchor.addChild(arrowEntity)
         } catch {
             print("Error al cargar el modelo de la flecha: \(error.localizedDescription)")
         }
         
-        // Crear y añadir el texto usando una función separada
+        // Crear y añadir el texto
         let textEntity = createTextEntity()
         anchor.addChild(textEntity)
         
@@ -116,28 +112,16 @@ struct ARViewContainer: UIViewRepresentable {
         textEntity.position = [0.0, -0.5, 0.0] // Ajusta la posición según sea necesario
         textEntity.scale = SIMD3<Float>(2.0, 2.0, 2.0)
         
-        // Rotar el texto para que esté en horizontal y no esté volteado
-        let textRotationAngle: Float = .pi / 2 // Rotar 90 grados en el eje Z
-        let textRotationQuaternion = simd_quatf(angle: textRotationAngle, axis: [0, 0, 1])
-        textEntity.orientation = textRotationQuaternion
-        
         return textEntity
     }
 
-    class Coordinator: NSObject, CLLocationManagerDelegate {
+    class Coordinator: NSObject {
         var locationManager: LocationManager
         var arrowAndTextAnchor: AnchorEntity?
         weak var arView: ARView?
-        var poisMap: [String: Any] = [:]
-
+        
         init(locationManager: LocationManager) {
             self.locationManager = locationManager
-            super.init()
-            // El coordinator usa la instancia de LocationManager que ya tiene el delegate configurado
-        }
-        
-        func locationManager(_ manager: CLLocationManager, didUpdateHeading newHeading: CLHeading) {
-            updateArrowAndTextPositionAndDirection()
         }
         
         func updateArrowAndTextPositionAndDirection() {
@@ -146,30 +130,28 @@ struct ARViewContainer: UIViewRepresentable {
             // Obtener la posición y rotación de la cámara
             let cameraTransform = arView.cameraTransform
             let cameraPosition = cameraTransform.translation
-            let cameraRotation = cameraTransform.rotation
             
-            // Ajustar la posición de la flecha frente a la cámara
-            let distance: Float = 2.5
+            // Mantener la flecha y el texto a una distancia fija frente a la cámara
+            let distance: Float = 2.0
             let forwardVector = -cameraTransform.matrix.columns.2.xyz
             let forwardPosition = cameraPosition + forwardVector * distance
             arrowAndTextAnchor.position = forwardPosition
             
-            // Actualizar la rotación de la flecha para que apunte hacia la cámara
-            let targetDirection = forwardVector
-            let currentDirection = SIMD3<Float>(0, 0, 1) // Asumiendo que la flecha está orientada hacia adelante en el espacio local
-            let angle = acos(dot(currentDirection, targetDirection) / (length(currentDirection) * length(targetDirection)))
-            let axis = cross(currentDirection, targetDirection)
-            arrowAndTextAnchor.orientation = simd_quatf(angle: angle, axis: axis)
+            // Actualizar la orientación de la flecha para que apunte al norte
+            if let heading = locationManager.heading {
+                let headingRadians = Float(heading.trueHeading) * .pi / 180
+                let northOrientation = simd_quatf(angle: headingRadians, axis: [0, 1, 0])
+                arrowAndTextAnchor.orientation = northOrientation
+            }
         }
         
         func updatePOIs(poisMap: [String: Any]) {
-            self.poisMap = poisMap
+            // Implementar la lógica para actualizar POIs en la vista AR
+            // Puedes añadir o actualizar los POIs en función de `poisMap`
+            // Ejemplo básico: solo imprimir los POIs para depuración
+            NSLog("Updating POIs in AR with data: \(poisMap)")
             
-            // Implementar lógica para colocar POIs en la vista AR
-            // Crear objetos AR para cada POI y añadirlos a la escena
-            // Ejemplo básico: Solo imprimir los POIs para depuración
-            NSLog("UPDATING POIS IN AR WITH DATA: \(poisMap)")
-
+            // Aquí puedes agregar o actualizar POIs en la escena AR si es necesario
         }
     }
 }
