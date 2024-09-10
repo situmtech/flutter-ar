@@ -1,3 +1,9 @@
+## 0.0.18 - September 10, 2024
+
+### Changed:
+
+- Updated Situm Flutter SDK to version 3.20.0. This version fixes a compatibility break and also a bug that displays a blank screen on the map under some circumstances.
+
 ## 0.0.17 - September 3, 2024
 
 ## Added:
