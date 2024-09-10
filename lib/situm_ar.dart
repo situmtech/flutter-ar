@@ -122,7 +122,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
             _ARPosQuality(onCreate: _onARPosQuality),
             FloorChangeIcon(),
             backButtonLongPressDebug,
-            if (widget.enable3DAmbiences)
+            if (widget.enable3DAmbiences && widget.debugMode)
               _AmbienceSelector(
                 debugMode: widget.debugMode,
               ),
