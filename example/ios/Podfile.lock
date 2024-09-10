@@ -7,14 +7,14 @@ PODS:
   - pointer_interceptor_ios (0.0.1):
     - Flutter
   - Protobuf (3.28.0)
-  - situm_flutter (3.18.2):
+  - situm_flutter (3.20.0):
     - Flutter
-    - SitumSDK (~> 3.15.3)
-  - situm_flutter_ar (0.0.15):
+    - SitumSDK (~> 3.15.4)
+  - situm_flutter_ar (0.0.17):
     - Flutter
   - situm_flutter_unity (0.0.1):
     - Flutter
-  - SitumSDK (3.15.3):
+  - SitumSDK (3.15.4):
     - Protobuf (~> 3.7)
     - SSZipArchive (~> 2.4)
   - SSZipArchive (2.4.3)
@@ -57,17 +57,17 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
-  integration_test: ce0a3ffa1de96d1a89ca0ac26fca7ea18a749ef4
+  integration_test: 252f60fa39af5e17c3aa9899d35d908a0721b573
   permission_handler_apple: 9878588469a2b0d0fc1e048d9f43605f92e6cec2
   pointer_interceptor_ios: 508241697ff0947f853c061945a8b822463947c1
   Protobuf: 9f10df3b9b31e47a98789ea4d2f12bb9f84de2ad
-  situm_flutter: e65d539f35a7b7d99c4ddf6d5c88d0063e9dccc8
-  situm_flutter_ar: d2e3d2e0e4cf9a0ccf4dd414857dd0dada417d98
+  situm_flutter: ff26d2636f3c31b15a504d9d4da39b3c3f23b5d8
+  situm_flutter_ar: 4b7339cbbc429bc74dab5161d1859a3d56e07a71
   situm_flutter_unity: 99318030326e66563eddea5036fcc4e25e9ad6fd
-  SitumSDK: d85a880d661885575b33250487b0b64e944f27ca
+  SitumSDK: 9cfa749962dd8e9ce69fff7c0790426d185a4ff2
   SSZipArchive: fe6a26b2a54d5a0890f2567b5cc6de5caa600aef
   webview_flutter_wkwebview: 4f3e50f7273d31e5500066ed267e3ae4309c5ae4
 
-PODFILE CHECKSUM: 572cb4e4a0d4060c5bf5f41de4afb132eb7725c6
+PODFILE CHECKSUM: 8985b4f69e77cea0222eeb889ce6f84b017a4e2f
 
 COCOAPODS: 1.15.2
