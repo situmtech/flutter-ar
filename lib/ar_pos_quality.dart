@@ -116,6 +116,7 @@ class _ARPosQualityState extends State<_ARPosQuality> {
       RefreshThreshold(DEFAULT_REFRESH_THRESHOLD, 0);
   RefreshThreshold lastRefreshThreshold = // last time and value of refresh
       RefreshThreshold(DEFAULT_REFRESH_THRESHOLD, 0);
+
   @override
   void initState() {
     super.initState();
@@ -426,6 +427,12 @@ class _ARPosQualityState extends State<_ARPosQuality> {
       resetThreshold();
       return true;
     } // if ar wrong, restart
+    // always decrease some threshold
+    if (currentRefreshThreshold.value > 0.20 &&
+        currentTimestamp - currentRefreshThreshold.timestamp > 1000) {
+      currentRefreshThreshold.value = currentRefreshThreshold.value -
+          ARModeDebugValues.constantQualityDecreaseRate.value;
+    }
 
     if (conf > currentRefreshThreshold.value + 0.2) {
       // only update if above 0.2 + its value
