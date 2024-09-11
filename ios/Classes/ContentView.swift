@@ -84,6 +84,10 @@ struct ARViewContainer: UIViewRepresentable {
         do {
             let arrowEntity = try ModelEntity.load(named: "arrow_situm.usdz")
             arrowEntity.scale = SIMD3<Float>(0.1, 0.1, 0.1)
+
+            // **Corregir la rotación inicial si es necesario** (apuntar la flecha en el eje correcto)
+            arrowEntity.orientation = simd_quatf(angle: .pi, axis: [0, 1, 0]) // Ajustar según la dirección inicial del modelo
+
             anchor.addChild(arrowEntity)
         } catch {
             print("Error al cargar el modelo de la flecha: \(error.localizedDescription)")
@@ -98,7 +102,7 @@ struct ARViewContainer: UIViewRepresentable {
 
     func createTextEntity() -> ModelEntity {
         let textMesh = MeshResource.generateText(
-            "Sigue la flecha!",
+            " Flecha!",
             extrusionDepth: 0.01,
             font: .systemFont(ofSize: 0.1),
             containerFrame: .zero,
@@ -137,21 +141,21 @@ struct ARViewContainer: UIViewRepresentable {
             let forwardPosition = cameraPosition + forwardVector * distance
             arrowAndTextAnchor.position = forwardPosition
             
-            // Actualizar la orientación de la flecha para que apunte al norte
+            // **Corregir orientación hacia el norte** solo en el eje Y
             if let heading = locationManager.heading {
                 let headingRadians = Float(heading.trueHeading) * .pi / 180
-                let northOrientation = simd_quatf(angle: headingRadians, axis: [0, 1, 0])
-                arrowAndTextAnchor.orientation = northOrientation
+                
+                // Rotar solo alrededor del eje Y (horizontal) para mantener la flecha apuntando al norte
+                let correctedOrientation = simd_quatf(angle: headingRadians, axis: [0, 1, 0])
+                
+                // **Aplicar la orientación corregida solo en el eje Y**
+                arrowAndTextAnchor.orientation = simd_quatf(angle: .pi / 2, axis: [1, 0, 0]) * correctedOrientation
             }
         }
         
         func updatePOIs(poisMap: [String: Any]) {
             // Implementar la lógica para actualizar POIs en la vista AR
-            // Puedes añadir o actualizar los POIs en función de `poisMap`
-            // Ejemplo básico: solo imprimir los POIs para depuración
             NSLog("Updating POIs in AR with data: \(poisMap)")
-            
-            // Aquí puedes agregar o actualizar POIs en la escena AR si es necesario
         }
     }
 }
