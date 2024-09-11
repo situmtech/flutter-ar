@@ -79,40 +79,64 @@ struct ARViewContainer: UIViewRepresentable {
     
     func createArrowAndTextAnchor() -> AnchorEntity {
         let anchor = AnchorEntity()
-        
+
         // Crear y añadir la flecha
         do {
             let arrowEntity = try ModelEntity.load(named: "arrow_situm.usdz")
             arrowEntity.scale = SIMD3<Float>(0.1, 0.1, 0.1)
-            
-            // Asegúrate de que la flecha apunta hacia el eje Z positivo en el modelo
             arrowEntity.orientation = simd_quatf(angle: .pi / 2, axis: [1, 0, 0])
-            
             anchor.addChild(arrowEntity)
         } catch {
             print("Error al cargar el modelo de la flecha: \(error.localizedDescription)")
         }
-        
+
         // Crear y añadir el texto
         let textEntity = createTextEntity()
         anchor.addChild(textEntity)
-        
+
         // Añadir los ejes XYZ y sus etiquetas
         let axisEntities = createAxisEntities()
         anchor.addChild(axisEntities.xAxis)
         anchor.addChild(axisEntities.yAxis)
         anchor.addChild(axisEntities.zAxis)
-        
+
         let xAxisLabel = createLabelEntity(text: "X", position: [1.1, 0, 0], color: .red)
         let yAxisLabel = createLabelEntity(text: "Y", position: [0, 1.1, 0], color: .green)
         let zAxisLabel = createLabelEntity(text: "Z", position: [0, 0, 1.1], color: .blue)
-        
+
         anchor.addChild(xAxisLabel)
         anchor.addChild(yAxisLabel)
         anchor.addChild(zAxisLabel)
-        
+
+        // Crear y añadir el modelo animado de "robot.usdz"
+        do {
+            let robotEntity = try ModelEntity.load(named: "Manta_Ray_Birostris_animated.usdz")
+            robotEntity.scale = SIMD3<Float>(0.025, 0.025, 0.025)
+            robotEntity.position = SIMD3<Float>(0.0, 0.0, -30.0) // Ajusta la posición según sea necesario
+            
+            // Rotar 45 grados (π/4 radianes) alrededor del eje Y
+            let rotation = simd_quatf(angle: .pi / 4, axis: SIMD3<Float>(0, 1, 0))
+            robotEntity.orientation = rotation
+            
+            // Verificar y reproducir la animación "global scene animation"
+            if let animation = robotEntity.availableAnimations.first(where: { $0.name == "global scene animation" }) {
+                robotEntity.playAnimation(animation.repeat(), transitionDuration: 0.5, startsPaused: false)
+            } else {
+                print("No se encontró la animación 'global scene animation'")
+            }
+            
+            anchor.addChild(robotEntity)
+        } catch {
+            print("Error al cargar el modelo animado: \(error.localizedDescription)")
+        }
+
+
+
+
         return anchor
     }
+
+
 
     func createTextEntity() -> ModelEntity {
         let textMesh = MeshResource.generateText(
