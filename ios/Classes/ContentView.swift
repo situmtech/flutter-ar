@@ -78,16 +78,16 @@ struct ARViewContainer: UIViewRepresentable {
     }
     
     func createArrowAndTextAnchor() -> AnchorEntity {
-        let anchor = AnchorEntity() // Usar un ancla sin posición inicial fija
+        let anchor = AnchorEntity()
         
         // Crear y añadir la flecha
         do {
             let arrowEntity = try ModelEntity.load(named: "arrow_situm.usdz")
             arrowEntity.scale = SIMD3<Float>(0.1, 0.1, 0.1)
-
-            // **Corregir la rotación inicial si es necesario** (apuntar la flecha en el eje correcto)
-            arrowEntity.orientation = simd_quatf(angle: .pi, axis: [0, 1, 0]) // Ajustar según la dirección inicial del modelo
-
+            
+            // Asegúrate de que la flecha apunta hacia el eje Z positivo en el modelo
+            arrowEntity.orientation = simd_quatf(angle: .pi / 2, axis: [1, 0, 0])
+            
             anchor.addChild(arrowEntity)
         } catch {
             print("Error al cargar el modelo de la flecha: \(error.localizedDescription)")
@@ -96,6 +96,20 @@ struct ARViewContainer: UIViewRepresentable {
         // Crear y añadir el texto
         let textEntity = createTextEntity()
         anchor.addChild(textEntity)
+        
+        // Añadir los ejes XYZ y sus etiquetas
+        let axisEntities = createAxisEntities()
+        anchor.addChild(axisEntities.xAxis)
+        anchor.addChild(axisEntities.yAxis)
+        anchor.addChild(axisEntities.zAxis)
+        
+        let xAxisLabel = createLabelEntity(text: "X", position: [1.1, 0, 0], color: .red)
+        let yAxisLabel = createLabelEntity(text: "Y", position: [0, 1.1, 0], color: .green)
+        let zAxisLabel = createLabelEntity(text: "Z", position: [0, 0, 1.1], color: .blue)
+        
+        anchor.addChild(xAxisLabel)
+        anchor.addChild(yAxisLabel)
+        anchor.addChild(zAxisLabel)
         
         return anchor
     }
@@ -113,10 +127,55 @@ struct ARViewContainer: UIViewRepresentable {
         let textEntity = ModelEntity(mesh: textMesh, materials: [material])
         
         // Posicionar el texto debajo de la flecha
-        textEntity.position = [0.0, -0.5, 0.0] // Ajusta la posición según sea necesario
+        textEntity.position = [0.0, -0.5, 0.0]
         textEntity.scale = SIMD3<Float>(2.0, 2.0, 2.0)
         
         return textEntity
+    }
+
+    func createAxisEntities() -> (xAxis: ModelEntity, yAxis: ModelEntity, zAxis: ModelEntity) {
+        let axisLength: Float = 1.0
+        
+        let xAxis = createLineEntity(start: [0, 0, 0], end: [axisLength, 0, 0], color: .red)
+        let yAxis = createLineEntity(start: [0, 0, 0], end: [0, axisLength, 0], color: .green)
+        let zAxis = createLineEntity(start: [0, 0, 0], end: [0, 0, axisLength], color: .blue)
+        
+        return (xAxis, yAxis, zAxis)
+    }
+
+    func createLineEntity(start: SIMD3<Float>, end: SIMD3<Float>, color: UIColor) -> ModelEntity {
+        let lineMesh = MeshResource.generateBox(size: [0.01, lengthBetween(start, end), 0.01])
+        let material = SimpleMaterial(color: color, isMetallic: false)
+        let lineEntity = ModelEntity(mesh: lineMesh, materials: [material])
+        
+        let midPoint = (start + end) / 2
+        let direction = normalize(end - start)
+        lineEntity.position = midPoint
+        lineEntity.orientation = simd_quatf(from: SIMD3<Float>(0, 1, 0), to: direction)
+        
+        return lineEntity
+    }
+
+    func lengthBetween(_ start: SIMD3<Float>, _ end: SIMD3<Float>) -> Float {
+        return length(end - start)
+    }
+
+    func createLabelEntity(text: String, position: SIMD3<Float>, color: UIColor) -> ModelEntity {
+        let textMesh = MeshResource.generateText(
+            text,
+            extrusionDepth: 0.01,
+            font: .systemFont(ofSize: 0.1),
+            containerFrame: .zero,
+            alignment: .center,
+            lineBreakMode: .byWordWrapping
+        )
+        let material = SimpleMaterial(color: color, isMetallic: false)
+        let labelEntity = ModelEntity(mesh: textMesh, materials: [material])
+        
+        labelEntity.position = position
+        labelEntity.scale = SIMD3<Float>(1.0, 1.0, 1.0)
+        
+        return labelEntity
     }
 
     class Coordinator: NSObject {
@@ -141,15 +200,17 @@ struct ARViewContainer: UIViewRepresentable {
             let forwardPosition = cameraPosition + forwardVector * distance
             arrowAndTextAnchor.position = forwardPosition
             
-            // **Corregir orientación hacia el norte** solo en el eje Y
+            // **Ajustar la orientación para que la flecha apunte siempre al norte global**
             if let heading = locationManager.heading {
                 let headingRadians = Float(heading.trueHeading) * .pi / 180
                 
-                // Rotar solo alrededor del eje Y (horizontal) para mantener la flecha apuntando al norte
-                let correctedOrientation = simd_quatf(angle: headingRadians, axis: [0, 1, 0])
+                // Crear una orientación que apunte al norte global
+                let northOrientation = simd_quatf(angle: headingRadians, axis: [0, 1, 0])
                 
-                // **Aplicar la orientación corregida solo en el eje Y**
-                arrowAndTextAnchor.orientation = simd_quatf(angle: .pi / 2, axis: [1, 0, 0]) * correctedOrientation
+                // Establecer la orientación correcta para apuntar al norte global
+                // El ángulo de la orientación se ajusta para que la flecha apunte correctamente
+                let arrowEntity = arrowAndTextAnchor.children.first!
+                arrowEntity.orientation = simd_quatf(angle: .pi / 2, axis: [1, 0, 0]) * northOrientation
             }
         }
         
