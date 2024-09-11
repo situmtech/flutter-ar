@@ -205,7 +205,7 @@ struct ARViewContainer: UIViewRepresentable {
                 let headingRadians = Float(heading.trueHeading) * .pi / 180
                 
                 // Crear una orientación que apunte al norte global
-                let northOrientation = simd_quatf(angle: headingRadians, axis: [0, 1, 0])
+                let northOrientation = simd_quatf(angle: headingRadians, axis: [0, -1, 0])
                 
                 // Establecer la orientación correcta para apuntar al norte global
                 // El ángulo de la orientación se ajusta para que la flecha apunte correctamente
