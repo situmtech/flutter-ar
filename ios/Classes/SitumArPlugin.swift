@@ -56,11 +56,13 @@ public class SitumArPlugin: NSObject, FlutterPlugin {
         case "updateLocation":
             if let args = call.arguments as? [String: Double],
                let latitude = args["latitude"],
-               let longitude = args["longitude"] {
+               let longitude = args["longitude"],
+               let yaw = args["yaw"] {
                 // Crear un diccionario para los argumentos de ubicación
                 let locationData: [String: Any] = [
                     "latitude": latitude,
-                    "longitude": longitude
+                    "longitude": longitude,
+                    "yaw": yaw
                 ]
                 
                 // Enviar una notificación para actualizar la ubicación

@@ -202,6 +202,7 @@ class ARController {
       await platform.invokeMethod('updateLocation', {
         'latitude': locationMap['coordinate']['latitude'],
         'longitude': locationMap['coordinate']['longitude'],
+        'yaw': locationMap['bearing']['radians'],
       });
     } on PlatformException catch (e) {
       print("Failed to update location: '${e.message}'.");

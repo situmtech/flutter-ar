@@ -68,9 +68,10 @@ struct ARViewContainer: UIViewRepresentable {
         NotificationCenter.default.addObserver(forName: .locationUpdated, object: nil, queue: .main) { notification in
             if let userInfo = notification.userInfo,
                let latitude = userInfo["latitude"] as? Double,
-               let longitude = userInfo["longitude"] as? Double {
+               let longitude = userInfo["longitude"] as? Double,
+               let yaw = userInfo["yaw"] as? Double {
                 // Manejar la actualización de ubicación aquí
-                context.coordinator.updateLocation(latitude: latitude, longitude: longitude)
+                context.coordinator.updateLocation(latitude: latitude, longitude: longitude, yaw: yaw)
             }
         }
 
@@ -221,7 +222,7 @@ struct ARViewContainer: UIViewRepresentable {
             self.locationManager = locationManager
         }
         
-        func updateLocation(latitude: Double, longitude: Double) {
+        func updateLocation(latitude: Double, longitude: Double, yaw: Double) {
             guard let arView = arView else { return }
 
             // Actualizar la posición en la vista AR usando la nueva ubicación
@@ -229,7 +230,8 @@ struct ARViewContainer: UIViewRepresentable {
             
             print("LATITUDE:  ", latitude)
             print("LONGITUDE:  ", longitude)
-            let locationPosition = SIMD3<Float>(Float(latitude), Float(longitude), 0.0)
+            print("YAW:  ", yaw)
+            let locationPosition = SIMD3<Float>(Float(latitude), Float(longitude), Float(yaw))
             
             // Ejemplo: Añadir un marcador en la ubicación
             let locationEntity = createSphereEntity(radius: 1, color: .green)
@@ -255,7 +257,7 @@ struct ARViewContainer: UIViewRepresentable {
             
             // **Ajustar la orientación para que la flecha apunte siempre al norte global**
             if let heading = locationManager.heading {
-                let headingRadians = Float(heading.trueHeading) * .pi / 180
+                let headingRadians = Float(heading.trueHeading + 90) * .pi / 180
                 
                 // Crear una orientación que apunte al norte global
                 let northOrientation = simd_quatf(angle: headingRadians, axis: [0, -1, 0])

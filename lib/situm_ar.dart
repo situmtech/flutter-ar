@@ -216,8 +216,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
 
   void sendPOIs() {
   
-   var sdk = SitumSdk();  
-    //print("SDK POSITIONSSSSSS   $positions");   
+   var sdk = SitumSdk();      
     sdk.fetchBuildingInfo(widget.buildingIdentifier).then((buildingInfo) {            
       var buildingInfoMap = buildingInfo.toMap();   
       var poisMap = buildingInfoMap["indoorPOIs"];        
