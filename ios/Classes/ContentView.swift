@@ -57,13 +57,22 @@ struct ARViewContainer: UIViewRepresentable {
         let configuration = ARWorldTrackingConfiguration()
         configuration.planeDetection = []
         arView.session.run(configuration)
-        
-        // Crear y añadir el ancla para la flecha y el texto
+
         let arrowAndTextAnchor = createArrowAndTextAnchor()
         arView.scene.anchors.append(arrowAndTextAnchor)
         
         context.coordinator.arrowAndTextAnchor = arrowAndTextAnchor
         context.coordinator.arView = arView
+
+        // Suscribirse a la notificación de ubicación actualizada
+        NotificationCenter.default.addObserver(forName: .locationUpdated, object: nil, queue: .main) { notification in
+            if let userInfo = notification.userInfo,
+               let latitude = userInfo["latitude"] as? Double,
+               let longitude = userInfo["longitude"] as? Double {
+                // Manejar la actualización de ubicación aquí
+                context.coordinator.updateLocation(latitude: latitude, longitude: longitude)
+            }
+        }
 
         return arView
     }
@@ -85,6 +94,7 @@ struct ARViewContainer: UIViewRepresentable {
             let arrowEntity = try ModelEntity.load(named: "arrow_situm.usdz")
             arrowEntity.scale = SIMD3<Float>(0.1, 0.1, 0.1)
             arrowEntity.orientation = simd_quatf(angle: .pi / 2, axis: [1, 0, 0])
+            arrowEntity.position = SIMD3<Float>(0.0, 0.0, 0.0)
             anchor.addChild(arrowEntity)
         } catch {
             print("Error al cargar el modelo de la flecha: \(error.localizedDescription)")
@@ -108,7 +118,7 @@ struct ARViewContainer: UIViewRepresentable {
         anchor.addChild(yAxisLabel)
         anchor.addChild(zAxisLabel)
 
-        // Crear y añadir el modelo animado de "robot.usdz"
+        // Crear y añadir el modelo animado de "Manta.usdz"
         do {
             let robotEntity = try ModelEntity.load(named: "Manta_Ray_Birostris_animated.usdz")
             robotEntity.scale = SIMD3<Float>(0.025, 0.025, 0.025)
@@ -210,6 +220,25 @@ struct ARViewContainer: UIViewRepresentable {
         init(locationManager: LocationManager) {
             self.locationManager = locationManager
         }
+        
+        func updateLocation(latitude: Double, longitude: Double) {
+            guard let arView = arView else { return }
+
+            // Actualizar la posición en la vista AR usando la nueva ubicación
+            // Aquí podrías actualizar la posición de un marcador en la vista AR, por ejemplo
+            
+            print("LATITUDE:  ", latitude)
+            print("LONGITUDE:  ", longitude)
+            let locationPosition = SIMD3<Float>(Float(latitude), Float(longitude), 0.0)
+            
+            // Ejemplo: Añadir un marcador en la ubicación
+            let locationEntity = createSphereEntity(radius: 1, color: .green)
+            locationEntity.position = locationPosition
+            let locationAnchor = AnchorEntity(world: locationPosition)
+            locationAnchor.addChild(locationEntity)
+            arView.scene.anchors.append(locationAnchor)
+        }
+        
         
         func updateArrowAndTextPositionAndDirection() {
             guard let arView = arView, let arrowAndTextAnchor = arrowAndTextAnchor else { return }

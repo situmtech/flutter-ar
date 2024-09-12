@@ -1,8 +1,5 @@
 part of 'ar.dart';
 
-
-
-
 class SitumAr {
   static const MethodChannel _channel = MethodChannel('situm_ar');
 
@@ -88,7 +85,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
     if (widget.enable3DAmbiences) {
       var situmSdk = SitumSdk();
       situmSdk.init();
-      situmSdk.internalEnableGeofenceListening();
+      situmSdk.internalEnableGeofenceListening();     
     }
 
     ARController()._onARWidgetState(this);
@@ -177,16 +174,16 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
   }
 
   void onARViewMessage(ARViewController? controller, String? message) {
-    debugPrint("Situm> AR> MESSAGE!!!!!!!!!!!!!!! $message");
+    debugPrint("Situm> AR> MESSAGE! $message");
   }
 
   void onARViewCreated(BuildContext context, ARViewController? controller) {    
-    debugPrint("Situm> AR> onARViewCreated!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+    debugPrint("Situm> AR> onARViewCreated!");
     sendPOIs();
   }
 
   void onARViewReattached(ARViewController controller) {
-    debugPrint("Situm> AR> REATTACHED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+    debugPrint("Situm> AR> REATTACHED!");
   }
 
   @override
@@ -219,14 +216,12 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
 
   void sendPOIs() {
   
-    var sdk = SitumSdk();    
+   var sdk = SitumSdk();  
+    //print("SDK POSITIONSSSSSS   $positions");   
     sdk.fetchBuildingInfo(widget.buildingIdentifier).then((buildingInfo) {            
       var buildingInfoMap = buildingInfo.toMap();   
-      var poisMap = buildingInfoMap["indoorPOIs"];  
-      print("POIs to be sent: $poisMap"); 
-print("4444444444444444!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-        SitumAr.updatePOIs(poisMap).then((_) {
-          print("POIs updated successfully!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+      var poisMap = buildingInfoMap["indoorPOIs"];        
+        SitumAr.updatePOIs(poisMap).then((_) {          
         }).catchError((error) {
           print("Error updating POIs: $error");
         });

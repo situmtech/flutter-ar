@@ -15,6 +15,12 @@ class SitumARPlugin: NSObject {
         NotificationCenter.default.post(name: .poisUpdated, object: nil, userInfo: ["poisMap": poisMap])
         print("POIs updated from SitumARPlugin with data: \(poisMap)")
     }
+    
+    @objc func updateLocation(latitude: Double, longitude: Double) {
+        // Enviar una notificación para actualizar la ubicación en la vista AR
+        NotificationCenter.default.post(name: .locationUpdated, object: nil, userInfo: ["latitude": latitude, "longitude": longitude])
+        print("Location updated from SitumARPlugin with latitude: \(latitude), longitude: \(longitude)")
+    }
 }
 
 // Extensión para definir la notificación de actualización de POIs
@@ -22,11 +28,16 @@ extension Notification.Name {
     static let poisUpdated = Notification.Name("poisUpdated")
 }
 
+// Añadir a la extensión para la notificación de ubicación actualizada
+extension Notification.Name {
+    static let locationUpdated = Notification.Name("locationUpdated")
+}
+
 public class SitumArPlugin: NSObject, FlutterPlugin {
     var poisMap: [String: Any] = [:]
+    var situmARPlugin = SitumARPlugin() // Instancia de la clase que contiene updateLocation
 
     public static func register(with registrar: FlutterPluginRegistrar) {
-        
         let channel = FlutterMethodChannel(name: "situm_ar", binaryMessenger: registrar.messenger())
         let instance = SitumArPlugin()
         registrar.addMethodCallDelegate(instance, channel: channel)
@@ -42,6 +53,22 @@ public class SitumArPlugin: NSObject, FlutterPlugin {
             result("iOS " + UIDevice.current.systemVersion)
         case "startARView":
             presentARView(result: result)
+        case "updateLocation":
+            if let args = call.arguments as? [String: Double],
+               let latitude = args["latitude"],
+               let longitude = args["longitude"] {
+                // Crear un diccionario para los argumentos de ubicación
+                let locationData: [String: Any] = [
+                    "latitude": latitude,
+                    "longitude": longitude
+                ]
+                
+                // Enviar una notificación para actualizar la ubicación
+                NotificationCenter.default.post(name: .locationUpdated, object: nil, userInfo: locationData)
+                result(nil)
+            } else {
+                result(FlutterError(code: "INVALID_ARGUMENT", message: "Invalid arguments for updateLocation", details: nil))
+            }
         case "updatePOIs":
             if let pois = call.arguments as? [[String: Any]] {
                 poisMap = ["pois": pois]
@@ -57,7 +84,6 @@ public class SitumArPlugin: NSObject, FlutterPlugin {
                 
                 print("POIs received: \(poisMapString)")
                 NotificationCenter.default.post(name: .poisUpdated, object: nil, userInfo: ["poisMap": poisMap])
-
             } else {
                 NSLog("Failed to cast POIs. Received data: %@", String(describing: call.arguments))
             }

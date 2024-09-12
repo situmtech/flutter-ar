@@ -1,5 +1,7 @@
 part of 'ar.dart';
 
+const platform = MethodChannel('situm_ar');
+
 class ARController {
   static ARController? _instance;
 
@@ -193,11 +195,25 @@ class ARController {
     //_unityViewController?.send("MessageManager", "SendRefressData", '1000000');
   }
 
+  void _onLocationChangedToAR(Location location) async {
+    var locationMap = location.toMap(); 
+    try {
+      // Envía la ubicación a iOS
+      await platform.invokeMethod('updateLocation', {
+        'latitude': locationMap['coordinate']['latitude'],
+        'longitude': locationMap['coordinate']['longitude'],
+      });
+    } on PlatformException catch (e) {
+      print("Failed to update location: '${e.message}'.");
+    }
+  }
+
   void _onLocationChanged(Location location) {
     var locationMap = location.toMap();
     locationMap['timestamp'] = 0;
 //     _unityViewController?.send(
 //         "MessageManager", "SendLocation", jsonEncode(locationMap));
+    _onLocationChangedToAR(location);
     _updateArPosQualityState(location);
     _updateRefreshing();
   }
