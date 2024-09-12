@@ -67,11 +67,11 @@ struct ARViewContainer: UIViewRepresentable {
         // Suscribirse a la notificación de ubicación actualizada
         NotificationCenter.default.addObserver(forName: .locationUpdated, object: nil, queue: .main) { notification in
             if let userInfo = notification.userInfo,
-               let latitude = userInfo["latitude"] as? Double,
-               let longitude = userInfo["longitude"] as? Double,
-               let yaw = userInfo["yaw"] as? Double {
+               let xSitum = userInfo["xSitum"] as? Double,
+               let ySitum = userInfo["ySitum"] as? Double,
+               let yawSitum = userInfo["yawSitum"] as? Double {
                 // Manejar la actualización de ubicación aquí
-                context.coordinator.updateLocation(latitude: latitude, longitude: longitude, yaw: yaw)
+                context.coordinator.updateLocation(xSitum: xSitum, ySitum: ySitum, yawSitum: yawSitum)
             }
         }
 
@@ -124,6 +124,30 @@ struct ARViewContainer: UIViewRepresentable {
             let robotEntity = try ModelEntity.load(named: "Manta_Ray_Birostris_animated.usdz")
             robotEntity.scale = SIMD3<Float>(0.025, 0.025, 0.025)
             robotEntity.position = SIMD3<Float>(0.0, 0.0, -30.0) // Ajusta la posición según sea necesario
+            
+            // Rotar 45 grados (π/4 radianes) alrededor del eje Y
+            let rotation = simd_quatf(angle: .pi / 4, axis: SIMD3<Float>(0, 1, 0))
+            robotEntity.orientation = rotation
+            
+            // Verificar y reproducir la animación "global scene animation"
+            if let animation = robotEntity.availableAnimations.first(where: { $0.name == "global scene animation" }) {
+                robotEntity.playAnimation(animation.repeat(), transitionDuration: 0.5, startsPaused: false)
+            } else {
+                print("No se encontró la animación 'global scene animation'")
+            }
+            
+            anchor.addChild(robotEntity)
+        } catch {
+            print("Error al cargar el modelo animado: \(error.localizedDescription)")
+        }
+        
+        
+        
+        // Crear y añadir el modelo animado de "Manta.usdz"
+        do {
+            let robotEntity = try ModelEntity.load(named: "Animated_Dragon_Three_Motion_Loops.usdz")
+            robotEntity.scale = SIMD3<Float>(0.15, 0.15, 0.15)
+            robotEntity.position = SIMD3<Float>(-25.0, -50.0, -20.0) // Ajusta la posición según sea necesario
             
             // Rotar 45 grados (π/4 radianes) alrededor del eje Y
             let rotation = simd_quatf(angle: .pi / 4, axis: SIMD3<Float>(0, 1, 0))
@@ -222,16 +246,16 @@ struct ARViewContainer: UIViewRepresentable {
             self.locationManager = locationManager
         }
         
-        func updateLocation(latitude: Double, longitude: Double, yaw: Double) {
+        func updateLocation(xSitum: Double, ySitum: Double, yawSitum: Double) {
             guard let arView = arView else { return }
 
             // Actualizar la posición en la vista AR usando la nueva ubicación
             // Aquí podrías actualizar la posición de un marcador en la vista AR, por ejemplo
             
-            print("LATITUDE:  ", latitude)
-            print("LONGITUDE:  ", longitude)
-            print("YAW:  ", yaw)
-            let locationPosition = SIMD3<Float>(Float(latitude), Float(longitude), Float(yaw))
+            print("X_SITUM:  ", xSitum)
+            print("Y_SITUM:  ", ySitum)
+            print("YAW_SITUM:  ", yawSitum)
+            let locationPosition = SIMD3<Float>(Float(xSitum), Float(ySitum), Float(yawSitum))
             
             // Ejemplo: Añadir un marcador en la ubicación
             let locationEntity = createSphereEntity(radius: 1, color: .green)

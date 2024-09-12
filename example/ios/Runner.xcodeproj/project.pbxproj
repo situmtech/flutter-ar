@@ -19,6 +19,7 @@
 		E714889F2C91A85A000B174F /* robot.usdz in Resources */ = {isa = PBXBuildFile; fileRef = E714889E2C91A85A000B174F /* robot.usdz */; };
 		E71488A12C91BE17000B174F /* Manta_Ray_Birostris_animated.usdz in Resources */ = {isa = PBXBuildFile; fileRef = E71488A02C91BE17000B174F /* Manta_Ray_Birostris_animated.usdz */; };
 		E7CAB0012C6BA11B0006F3D0 /* arrow_situm.usdz in Resources */ = {isa = PBXBuildFile; fileRef = E7CAB0002C6BA11B0006F3D0 /* arrow_situm.usdz */; };
+		E7CC8D802C93468E00228C60 /* Animated_Dragon_Three_Motion_Loops.usdz in Resources */ = {isa = PBXBuildFile; fileRef = E7CC8D7F2C93468E00228C60 /* Animated_Dragon_Three_Motion_Loops.usdz */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -70,6 +71,7 @@
 		E714889E2C91A85A000B174F /* robot.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; name = robot.usdz; path = ../../ios/Classes/robot.usdz; sourceTree = "<group>"; };
 		E71488A02C91BE17000B174F /* Manta_Ray_Birostris_animated.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; name = Manta_Ray_Birostris_animated.usdz; path = ../../ios/Classes/Manta_Ray_Birostris_animated.usdz; sourceTree = "<group>"; };
 		E7CAB0002C6BA11B0006F3D0 /* arrow_situm.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; name = arrow_situm.usdz; path = ../../ios/Classes/arrow_situm.usdz; sourceTree = "<group>"; };
+		E7CC8D7F2C93468E00228C60 /* Animated_Dragon_Three_Motion_Loops.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; name = Animated_Dragon_Three_Motion_Loops.usdz; path = ../../ios/Classes/Animated_Dragon_Three_Motion_Loops.usdz; sourceTree = "<group>"; };
 		F547050BAC466D12F7848D66 /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -137,6 +139,7 @@
 		97C146E51CF9000F007C117D = {
 			isa = PBXGroup;
 			children = (
+				E7CC8D7F2C93468E00228C60 /* Animated_Dragon_Three_Motion_Loops.usdz */,
 				E71488A02C91BE17000B174F /* Manta_Ray_Birostris_animated.usdz */,
 				E714889E2C91A85A000B174F /* robot.usdz */,
 				E7CAB0002C6BA11B0006F3D0 /* arrow_situm.usdz */,
@@ -268,6 +271,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E7CC8D802C93468E00228C60 /* Animated_Dragon_Three_Motion_Loops.usdz in Resources */,
 				E71488A12C91BE17000B174F /* Manta_Ray_Birostris_animated.usdz in Resources */,
 				E714889F2C91A85A000B174F /* robot.usdz in Resources */,
 				E7CAB0012C6BA11B0006F3D0 /* arrow_situm.usdz in Resources */,
