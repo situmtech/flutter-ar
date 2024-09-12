@@ -239,9 +239,62 @@ struct ARViewContainer: UIViewRepresentable {
         }
         
         func updatePOIs(poisMap: [String: Any]) {
-            // Implementar la lógica para actualizar POIs en la vista AR
-            NSLog("Updating POIs in AR with data: \(poisMap)")
+            guard let arView = arView else { return }
+
+            // Extraer la lista de POIs desde el diccionario "pois"
+            guard let poisList = poisMap["pois"] as? [[String: Any]] else {
+                print("Error: No se encontró la clave 'pois' en el mapa de POIs")
+                return
+            }
+
+            // Imprimir el número de POIs recibidos
+            print("Número de POIs: \(poisList.count)")
+
+            // Eliminar las anclas anteriores
+            let anchorsToRemove = arView.scene.anchors.filter { anchor in
+                return anchor.name.starts(with: "poi_")
+            }
+            for anchor in anchorsToRemove {
+                arView.scene.anchors.remove(anchor)
+            }
+
+            // Procesar cada POI
+            for (index, poi) in poisList.enumerated() {
+                if let position = poi["position"] as? [String: Any],
+                   let cartesianCoordinate = position["cartesianCoordinate"] as? [String: Double],
+                   let x = cartesianCoordinate["x"],
+                   let y = cartesianCoordinate["y"] {
+
+                    // Ajustar la posición Z según tu necesidad, aquí pongo 0 como ejemplo
+                    let z: Float = 0.0
+
+                    let poiPosition = SIMD3<Float>(Float(x), Float(y), z)
+
+                    // Imprimir las coordenadas del POI
+                    print("POI \(index): (x: \(x), y: \(y), z: \(z))")
+
+                    // Crear la esfera y añadirla a la escena
+                    let poiEntity = createSphereEntity(radius: 1, color: .blue)
+                    poiEntity.position = poiPosition
+                    let poiAnchor = AnchorEntity(world: poiPosition)
+                    poiAnchor.name = "poi_\(index)"
+                    poiAnchor.addChild(poiEntity)
+                    arView.scene.anchors.append(poiAnchor)
+                } else {
+                    print("Error: No se encontraron coordenadas cartesianas válidas para el POI \(index)")
+                }
+            }
         }
+
+
+        
+        func createSphereEntity(radius: Float, color: UIColor) -> ModelEntity {
+            let sphereMesh = MeshResource.generateSphere(radius: radius)
+            let material = SimpleMaterial(color: color, isMetallic: false)
+            let sphereEntity = ModelEntity(mesh: sphereMesh, materials: [material])
+            return sphereEntity
+        }
+
     }
 }
 
