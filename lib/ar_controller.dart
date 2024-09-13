@@ -200,8 +200,8 @@ class ARController {
     try {
       // Envía la ubicación a iOS
       await platform.invokeMethod('updateLocation', {
-        'xSitum': locationMap['coordinate']['x'],
-        'ySitum': locationMap['coordinate']['y'],
+        'xSitum': locationMap['cartesianCoordinate']['x'],
+        'ySitum': locationMap['cartesianCoordinate']['y'],
         'yawSitum': locationMap['bearing']['radians'],
       });
     } on PlatformException catch (e) {

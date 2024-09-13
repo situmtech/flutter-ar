@@ -16,10 +16,10 @@ class SitumARPlugin: NSObject {
         print("POIs updated from SitumARPlugin with data: \(poisMap)")
     }
     
-    @objc func updateLocation(xSitum: Double, ySitum: Double) {
+    @objc func updateLocation(xSitum: Double, ySitum: Double, yawSitum: Double) {
         // Enviar una notificación para actualizar la ubicación en la vista AR
-        NotificationCenter.default.post(name: .locationUpdated, object: nil, userInfo: ["x": xSitum, "y": ySitum])
-        print("Location updated from SitumARPlugin with xSitum: \(xSitum), ySitum: \(ySitum)")
+        NotificationCenter.default.post(name: .locationUpdated, object: nil, userInfo: ["xSitum": xSitum, "ySitum": ySitum, "yawSitum": yawSitum])
+        print("Location updated from SitumARPlugin with xSitum: \(xSitum), ySitum: \(ySitum), yawSitum: \(yawSitum)")
     }
 }
 
@@ -55,16 +55,15 @@ public class SitumArPlugin: NSObject, FlutterPlugin {
             presentARView(result: result)
         case "updateLocation":
             if let args = call.arguments as? [String: Double],
-               let xSitum = args["x"],
-               let ySitum = args["y"],
-               let yawSitum = args["yaw"] {
+               let xSitum = args["xSitum"],
+               let ySitum = args["ySitum"],
+               let yawSitum = args["yawSitum"] {
                 // Crear un diccionario para los argumentos de ubicación
                 let locationData: [String: Any] = [
                     "xSitum": xSitum,
                     "ySitum": ySitum,
                     "yawSitum": yawSitum
-                ]
-                
+                ]                
                 // Enviar una notificación para actualizar la ubicación
                 NotificationCenter.default.post(name: .locationUpdated, object: nil, userInfo: locationData)
                 result(nil)

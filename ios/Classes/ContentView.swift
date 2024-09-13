@@ -15,17 +15,12 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         locationManager.delegate = self
         locationManager.requestWhenInUseAuthorization()
         locationManager.startUpdatingHeading()
-        locationManager.startUpdatingLocation()
     }
     
     func locationManager(_ manager: CLLocationManager, didUpdateHeading newHeading: CLHeading) {
         heading = newHeading
     }
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-            if initialLocation == nil {
-                initialLocation = locations.first
-            }
-    }
+
 }
 
 // Vista principal ContentView
@@ -73,12 +68,17 @@ struct ARViewContainer: UIViewRepresentable {
 
         // Suscribirse a la notificación de ubicación actualizada
         NotificationCenter.default.addObserver(forName: .locationUpdated, object: nil, queue: .main) { notification in
+            print("Notificación de ubicación actualizada recibida")
             if let userInfo = notification.userInfo,
                let xSitum = userInfo["xSitum"] as? Double,
                let ySitum = userInfo["ySitum"] as? Double,
                let yawSitum = userInfo["yawSitum"] as? Double {
+                print("Datos recibidos: xSitum = \(xSitum), ySitum = \(ySitum), yawSitum = \(yawSitum)")
+
                 // Manejar la actualización de ubicación aquí
                 context.coordinator.updateLocation(xSitum: xSitum, ySitum: ySitum, yawSitum: yawSitum)
+            }else {
+                print("Datos inválidos recibidos en la notificación: \(String(describing: notification.userInfo))")
             }
         }
 
@@ -129,8 +129,8 @@ struct ARViewContainer: UIViewRepresentable {
         // Crear y añadir el modelo animado de "Manta.usdz"
         do {
             let robotEntity = try ModelEntity.load(named: "Manta_Ray_Birostris_animated.usdz")
-            robotEntity.scale = SIMD3<Float>(0.025, 0.025, 0.025)
-            robotEntity.position = SIMD3<Float>(0.0, 0.0, -30.0) // Ajusta la posición según sea necesario
+            robotEntity.scale = SIMD3<Float>(0.005, 0.005, 0.005)
+            robotEntity.position = SIMD3<Float>(0.0, 0.0, -2.0) // Ajusta la posición según sea necesario
             
             // Rotar 45 grados (π/4 radianes) alrededor del eje Y
             let rotation = simd_quatf(angle: .pi / 4, axis: SIMD3<Float>(0, 1, 0))
@@ -153,8 +153,8 @@ struct ARViewContainer: UIViewRepresentable {
         // Crear y añadir el modelo animado de "Manta.usdz"
         do {
             let robotEntity = try ModelEntity.load(named: "Animated_Dragon_Three_Motion_Loops.usdz")
-            robotEntity.scale = SIMD3<Float>(0.15, 0.15, 0.15)
-            robotEntity.position = SIMD3<Float>(-25.0, -50.0, -20.0) // Ajusta la posición según sea necesario
+            robotEntity.scale = SIMD3<Float>(0.07, 0.07, 0.07)
+            robotEntity.position = SIMD3<Float>(-10.0, -25.0, -10.0) // Ajusta la posición según sea necesario
             
             // Rotar 45 grados (π/4 radianes) alrededor del eje Y
             let rotation = simd_quatf(angle: .pi / 4, axis: SIMD3<Float>(0, 1, 0))
@@ -259,17 +259,14 @@ struct ARViewContainer: UIViewRepresentable {
             // Actualizar la posición en la vista AR usando la nueva ubicación
             // Aquí podrías actualizar la posición de un marcador en la vista AR, por ejemplo
             
-            print("X_SITUM:  ", xSitum)
-            print("Y_SITUM:  ", ySitum)
-            print("YAW_SITUM:  ", yawSitum)
+            //print("X_SITUM:  ", xSitum)
+            //print("Y_SITUM:  ", ySitum)
+            //print("YAW_SITUM:  ", yawSitum)
             let locationPosition = SIMD3<Float>(Float(xSitum), Float(ySitum), Float(yawSitum))
             
-            // Ejemplo: Añadir un marcador en la ubicación
-            let locationEntity = createSphereEntity(radius: 1, color: .green)
-            locationEntity.position = locationPosition
-            let locationAnchor = AnchorEntity(world: locationPosition)
-            locationAnchor.addChild(locationEntity)
-            arView.scene.anchors.append(locationAnchor)
+            let newLocation = CLLocation(coordinate: CLLocationCoordinate2D(latitude: ySitum, longitude: xSitum), altitude: 0, horizontalAccuracy: kCLLocationAccuracyBest, verticalAccuracy: kCLLocationAccuracyBest, course: yawSitum, speed: 0, timestamp: Date())
+            
+            locationManager.initialLocation = newLocation
         }
         
         
@@ -320,17 +317,38 @@ struct ARViewContainer: UIViewRepresentable {
                 if let position = poi["position"] as? [String: Any],
                    let cartesianCoordinate = position["cartesianCoordinate"] as? [String: Double],
                    let x = cartesianCoordinate["x"],
-                   let y = cartesianCoordinate["y"] {
+                   let y = cartesianCoordinate["y"],
+                   let name = poi["name"] as? String{
                     
                     let transformedPosition = transformPosition(x: Float(x), y: Float(y), referenceLocation: initialLocation)
 
                     // Crear la esfera y añadirla a la escena
-                    let poiEntity = createSphereEntity(radius: 5, color: .blue)
+                    let poiEntity = createSphereEntity(radius: 10, color: .green)
                     poiEntity.position = transformedPosition
+                    print("name of poi:  ", name)
+                    print("Initial Location: \(initialLocation.coordinate.latitude), \(initialLocation.coordinate.longitude)")
+                    print("posiciones poi (Situm):   x", x ," and y:  ",y)
+                    print("posiciones transformadas:   ", poiEntity.position)
+                    
+                    // Crear la entidad de texto con el nombre del POI
+                    let textEntity = createTextEntity(text: name, position: transformedPosition)
+
+                    // Crear el ancla y añadir la esfera y el texto
                     let poiAnchor = AnchorEntity(world: transformedPosition)
                     poiAnchor.name = "poi_\(index)"
+                    // Establecer la posición del POI (esfera) a 1 metro de altura
+                    poiEntity.position = SIMD3<Float>(transformedPosition.x, 1.0, transformedPosition.z)
                     poiAnchor.addChild(poiEntity)
+                    poiAnchor.addChild(textEntity)
+                    
+                    // Orientar el texto hacia la cámara
+                    let cameraTransform = arView.cameraTransform
+                    textEntity.look(at: cameraTransform.translation, from: textEntity.position, relativeTo: nil)
+
+                    
                     arView.scene.anchors.append(poiAnchor)
+                    
+
                 } else {
                     print("Error: No se encontraron coordenadas cartesianas válidas para el POI \(index)")
                 }
@@ -339,16 +357,20 @@ struct ARViewContainer: UIViewRepresentable {
 
         // Transformar la posición de los POIs al sistema de referencia de la cámara
         func transformPosition(x: Float, y: Float, referenceLocation: CLLocation) -> SIMD3<Float> {
-            // Aquí se aplica la traslación y rotación
-
-            let translation = SIMD3<Float>(x, y, 0.0)
-            let rotationAngle = Float(referenceLocation.course) * .pi / 180.0 // Convertir el ángulo de rotación
+            // Aplicar traslación restando la posición de referencia
+            let xTranslated = x - Float(referenceLocation.coordinate.longitude)
+            let yTranslated = y - Float(referenceLocation.coordinate.latitude)
+            
+            // Convertir el ángulo de rotación
+            let rotationAngle = Float(referenceLocation.course) * .pi / 180.0
             let rotationMatrix = float4x4(simd_quatf(angle: rotationAngle, axis: [0, 0, 1]))
-
+            
+            // Aplicar rotación
+            let translation = SIMD3<Float>(xTranslated, yTranslated, 0.0)
             let transformedPosition = rotationMatrix * SIMD4<Float>(translation.x, translation.y, 0, 1)
+            
             return SIMD3<Float>(transformedPosition.x, transformedPosition.y, transformedPosition.z)
         }
-
         
         func createSphereEntity(radius: Float, color: UIColor) -> ModelEntity {
             let sphereMesh = MeshResource.generateSphere(radius: radius)
@@ -356,6 +378,31 @@ struct ARViewContainer: UIViewRepresentable {
             let sphereEntity = ModelEntity(mesh: sphereMesh, materials: [material])
             return sphereEntity
         }
+        func createTextEntity(text: String, position: SIMD3<Float>) -> ModelEntity {
+            // Generar el texto
+            
+            let mesh = MeshResource.generateText(text,
+                                                 extrusionDepth: 0.02,  // Mayor profundidad para mayor visibilidad
+                                                 font: .systemFont(ofSize: 0.2),  // Aumentar el tamaño de la fuente
+                                                 containerFrame: .zero,
+                                                 alignment: .center,
+                                                 lineBreakMode: .byWordWrapping)
+            
+            // Material visible (blanco o color que contraste con el fondo)
+            let material = SimpleMaterial(color: .white, isMetallic: false)
+            
+            let textEntity = ModelEntity(mesh: mesh, materials: [material])
+            
+            // Escalar el texto para hacerlo más visible
+            textEntity.scale = SIMD3<Float>(2, 2, 2)  // Ajusta la escala según tu escena
+            
+            // Ajustar la posición del texto, ligeramente por encima de la esfera
+            textEntity.position = SIMD3<Float>(position.x, position.y + 0.5, position.z)
+            
+            return textEntity
+        }
+
+
 
     }
 }
