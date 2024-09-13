@@ -8,16 +8,23 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     private let locationManager = CLLocationManager()
     
     @Published var heading: CLHeading?
+    @Published var initialLocation: CLLocation?
     
     override init() {
         super.init()
         locationManager.delegate = self
         locationManager.requestWhenInUseAuthorization()
         locationManager.startUpdatingHeading()
+        locationManager.startUpdatingLocation()
     }
     
     func locationManager(_ manager: CLLocationManager, didUpdateHeading newHeading: CLHeading) {
         heading = newHeading
+    }
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+            if initialLocation == nil {
+                initialLocation = locations.first
+            }
     }
 }
 
@@ -93,7 +100,7 @@ struct ARViewContainer: UIViewRepresentable {
         // Crear y añadir la flecha
         do {
             let arrowEntity = try ModelEntity.load(named: "arrow_situm.usdz")
-            arrowEntity.scale = SIMD3<Float>(0.1, 0.1, 0.1)
+            arrowEntity.scale = SIMD3<Float>(0.051, 0.051, 0.051)
             arrowEntity.orientation = simd_quatf(angle: .pi / 2, axis: [1, 0, 0])
             arrowEntity.position = SIMD3<Float>(0.0, 0.0, 0.0)
             anchor.addChild(arrowEntity)
@@ -294,16 +301,12 @@ struct ARViewContainer: UIViewRepresentable {
         }
         
         func updatePOIs(poisMap: [String: Any]) {
-            guard let arView = arView else { return }
+            guard let arView = arView, let initialLocation = locationManager.initialLocation else { return }
 
-            // Extraer la lista de POIs desde el diccionario "pois"
             guard let poisList = poisMap["pois"] as? [[String: Any]] else {
                 print("Error: No se encontró la clave 'pois' en el mapa de POIs")
                 return
             }
-
-            // Imprimir el número de POIs recibidos
-            print("Número de POIs: \(poisList.count)")
 
             // Eliminar las anclas anteriores
             let anchorsToRemove = arView.scene.anchors.filter { anchor in
@@ -313,25 +316,18 @@ struct ARViewContainer: UIViewRepresentable {
                 arView.scene.anchors.remove(anchor)
             }
 
-            // Procesar cada POI
             for (index, poi) in poisList.enumerated() {
                 if let position = poi["position"] as? [String: Any],
                    let cartesianCoordinate = position["cartesianCoordinate"] as? [String: Double],
                    let x = cartesianCoordinate["x"],
                    let y = cartesianCoordinate["y"] {
-
-                    // Ajustar la posición Z según tu necesidad, aquí pongo 0 como ejemplo
-                    let z: Float = 0.0
-
-                    let poiPosition = SIMD3<Float>(Float(x), Float(y), z)
-
-                    // Imprimir las coordenadas del POI
-                    print("POI \(index): (x: \(x), y: \(y), z: \(z))")
+                    
+                    let transformedPosition = transformPosition(x: Float(x), y: Float(y), referenceLocation: initialLocation)
 
                     // Crear la esfera y añadirla a la escena
-                    let poiEntity = createSphereEntity(radius: 1, color: .blue)
-                    poiEntity.position = poiPosition
-                    let poiAnchor = AnchorEntity(world: poiPosition)
+                    let poiEntity = createSphereEntity(radius: 5, color: .blue)
+                    poiEntity.position = transformedPosition
+                    let poiAnchor = AnchorEntity(world: transformedPosition)
                     poiAnchor.name = "poi_\(index)"
                     poiAnchor.addChild(poiEntity)
                     arView.scene.anchors.append(poiAnchor)
@@ -341,6 +337,17 @@ struct ARViewContainer: UIViewRepresentable {
             }
         }
 
+        // Transformar la posición de los POIs al sistema de referencia de la cámara
+        func transformPosition(x: Float, y: Float, referenceLocation: CLLocation) -> SIMD3<Float> {
+            // Aquí se aplica la traslación y rotación
+
+            let translation = SIMD3<Float>(x, y, 0.0)
+            let rotationAngle = Float(referenceLocation.course) * .pi / 180.0 // Convertir el ángulo de rotación
+            let rotationMatrix = float4x4(simd_quatf(angle: rotationAngle, axis: [0, 0, 1]))
+
+            let transformedPosition = rotationMatrix * SIMD4<Float>(translation.x, translation.y, 0, 1)
+            return SIMD3<Float>(transformedPosition.x, transformedPosition.y, transformedPosition.z)
+        }
 
         
         func createSphereEntity(radius: Float, color: UIColor) -> ModelEntity {
