@@ -285,12 +285,13 @@ struct ARViewContainer: UIViewRepresentable {
             let sphereEntity = ModelEntity(mesh: sphereMesh, materials: [material])
             return sphereEntity
         }
+
         func createTextEntity(text: String, position: SIMD3<Float>) -> ModelEntity {
             // Generar el texto
             let mesh = MeshResource.generateText(
                 text,
-                extrusionDepth: 0.02,  // Profundidad mayor para mayor visibilidad
-                font: .systemFont(ofSize: 0.3),  // Tamaño de la fuente aumentado
+                extrusionDepth: 0.02,  // Profundidad del texto para mayor visibilidad
+                font: .systemFont(ofSize: 0.5),  // Aumentar el tamaño de la fuente
                 containerFrame: .zero,
                 alignment: .center,
                 lineBreakMode: .byWordWrapping
@@ -300,11 +301,13 @@ struct ARViewContainer: UIViewRepresentable {
             let material = SimpleMaterial(color: .white, isMetallic: false)
             let textEntity = ModelEntity(mesh: mesh, materials: [material])
             
-            textEntity.scale = SIMD3<Float>(1, 1, 1)
+            // Aumentar el tamaño del texto
+            textEntity.scale = SIMD3<Float>(1.5, 1.5, 1.5)  // Ajusta los valores para hacer el texto más grande
             textEntity.position = SIMD3<Float>(position.x, position.y + 0.5, position.z)
             
             return textEntity
         }
+
         
         
         func updateTextOrientation() {
@@ -320,12 +323,19 @@ struct ARViewContainer: UIViewRepresentable {
                         let cameraTransform = arView.cameraTransform
                         let cameraPosition = cameraTransform.translation
                         
-                        // Orientar el texto para que siempre esté mirando a la cámara
+                        // Orientar el texto para que mire a la cámara
                         textEntity.look(at: cameraPosition, from: textEntity.position, relativeTo: nil)
+                        
+                        // Aplicar una rotación de 180 grados en el eje Y para corregir la orientación
+                        textEntity.orientation = simd_mul(
+                            textEntity.orientation,
+                            simd_quatf(angle: .pi, axis: SIMD3<Float>(0, 1, 0))  // Rotación 180 grados en Y
+                        )
                     }
                 }
             }
         }
+
 
     }
 }
