@@ -67,6 +67,8 @@ struct ARViewContainer: UIViewRepresentable {
         context.coordinator.arView = arView
         
         context.coordinator.setupFixedAnchor()
+
+
         
         // Suscribirse a la notificación de ubicación actualizada
         NotificationCenter.default.addObserver(forName: .locationUpdated, object: nil, queue: .main) { notification in
@@ -83,13 +85,14 @@ struct ARViewContainer: UIViewRepresentable {
                 print("Datos inválidos recibidos en la notificación: \(String(describing: notification.userInfo))")
             }
         }
-
+        
         return arView
     }
     
     func updateUIView(_ uiView: ARView, context: Context) {
         context.coordinator.updateArrowAndTextPositionAndDirection()
         context.coordinator.updatePOIs(poisMap: poisMap)
+        context.coordinator.updateTextOrientation()
     }
     
     func makeCoordinator() -> Coordinator {
@@ -210,14 +213,14 @@ struct ARViewContainer: UIViewRepresentable {
         func setupFixedAnchor() {
             guard let arView = arView else { return }
 
-            let fixedAnchor = AnchorEntity(world: SIMD3<Float>(-2.0, 0.0, -2.0)) // Posición fija en el espacio global
+            let fixedAnchor = AnchorEntity(world: SIMD3<Float>(0.0, 0.0, 0.0)) // Posición fija en el espacio global
             fixedAnchor.name = "fixedPOIAnchor" // Asegúrate de que el nombre esté asignado
 
             // Crear y añadir el modelo animado de "Manta.usdz"
             do {
                 let robotEntity = try ModelEntity.load(named: "Animated_Dragon_Three_Motion_Loops.usdz")
-                robotEntity.scale = SIMD3<Float>(0.07, 0.07, 0.07)
-                robotEntity.position = SIMD3<Float>(-10.0, -25.0, -10.0) // Ajusta la posición según sea necesario
+                robotEntity.scale = SIMD3<Float>(0.025, 0.025, 0.025)
+                robotEntity.position = SIMD3<Float>(-1.0, -10.0, -2.0) // Ajusta la posición según sea necesario
                 
                 // Rotar 45 grados (π/4 radianes) alrededor del eje Y
                 let rotation = simd_quatf(angle: .pi / 4, axis: SIMD3<Float>(0, 1, 0))
@@ -238,6 +241,7 @@ struct ARViewContainer: UIViewRepresentable {
             // Añadir el ancla de la esfera fija a la escena
             arView.scene.anchors.append(fixedAnchor)
             self.fixedAnchor = fixedAnchor
+            
         }
 
         func updateLocation(xSitum: Double, ySitum: Double, yawSitum: Double) {
@@ -286,13 +290,18 @@ struct ARViewContainer: UIViewRepresentable {
         
         func updatePOIs(poisMap: [String: Any]) {
             guard let arView = arView, let initialLocation = locationManager.initialLocation else { return }
- 
+
             // Buscar el ancla fijo por nombre y convertirlo a AnchorEntity
             if let fixedPOIAnchor = arView.scene.anchors.first(where: { $0.name == "fixedPOIAnchor" }) as? AnchorEntity {
 
                 // Eliminar las entidades de POI existentes en el ancla fijo
-                let poiEntitiesToRemove = fixedPOIAnchor.children.filter { $0.name.starts(with: "poi_") }
-                poiEntitiesToRemove.forEach { $0.removeFromParent() }
+                let existingPOIs = fixedPOIAnchor.children.filter {
+                    let name = $0.name
+                    return name.starts(with: "poi_") || name.starts(with: "text_")
+                }
+                
+                // Eliminar las entidades encontradas
+                existingPOIs.forEach { $0.removeFromParent() }
 
                 // Agregar nuevos POIs
                 guard let poisList = poisMap["pois"] as? [[String: Any]] else {
@@ -313,13 +322,10 @@ struct ARViewContainer: UIViewRepresentable {
                         let poiEntity = createSphereEntity(radius: 1, color: .green)
                         poiEntity.position = transformedPosition
                         poiEntity.name = "poi_\(index)"  // Asignar un nombre único a cada POI
-                        print("name of poi!!!!!!!!!!!!!!!!:  ", name)
-                        print("Initial Location: \(initialLocation.coordinate.latitude), \(initialLocation.coordinate.longitude)")
-                        print("posiciones poi (Situm):   x", x ," and y:  ",y)
-                        print("posiciones transformadas:   ", poiEntity.position)
 
                         // Crear la entidad de texto con el nombre del POI
                         let textEntity = createTextEntity(text: name, position: transformedPosition)
+                        textEntity.name = "text_\(index)"  // Asignar un nombre único al texto
 
                         // Añadir las entidades POI y el texto al ancla fijo
                         fixedPOIAnchor.addChild(poiEntity)
@@ -347,14 +353,14 @@ struct ARViewContainer: UIViewRepresentable {
             let yTranslated = y - Float(referenceLocation.coordinate.latitude)
             
             // Convertir el ángulo de rotación
-            let rotationAngle = Float(referenceLocation.course) * .pi / 180.0
+            let rotationAngle = Float(referenceLocation.course + 90.0) * .pi / 180.0
             let rotationMatrix = float4x4(simd_quatf(angle: rotationAngle, axis: [0, 0, 1]))
             
             // Aplicar rotación
             let translation = SIMD3<Float>(xTranslated, yTranslated, 0.0)
             let transformedPosition = rotationMatrix * SIMD4<Float>(translation.x, translation.y, 0, 1)
             
-            return SIMD3<Float>(transformedPosition.x, transformedPosition.z, transformedPosition.y)
+            return SIMD3<Float>(transformedPosition.x, -1, transformedPosition.y)
         }
         
         func createSphereEntity(radius: Float, color: UIColor) -> ModelEntity {
@@ -365,27 +371,52 @@ struct ARViewContainer: UIViewRepresentable {
         }
         func createTextEntity(text: String, position: SIMD3<Float>) -> ModelEntity {
             // Generar el texto
-            
-            let mesh = MeshResource.generateText(text,
-                                                 extrusionDepth: 0.02,  // Mayor profundidad para mayor visibilidad
-                                                 font: .systemFont(ofSize: 0.2),  // Aumentar el tamaño de la fuente
-                                                 containerFrame: .zero,
-                                                 alignment: .center,
-                                                 lineBreakMode: .byWordWrapping)
+            let mesh = MeshResource.generateText(
+                text,
+                extrusionDepth: 0.02,  // Profundidad mayor para mayor visibilidad
+                font: .systemFont(ofSize: 0.3),  // Tamaño de la fuente aumentado
+                containerFrame: .zero,
+                alignment: .center,
+                lineBreakMode: .byWordWrapping
+            )
             
             // Material visible (blanco o color que contraste con el fondo)
             let material = SimpleMaterial(color: .white, isMetallic: false)
             
             let textEntity = ModelEntity(mesh: mesh, materials: [material])
             
-            // Escalar el texto para hacerlo más visible
-            textEntity.scale = SIMD3<Float>(2, 2, 2)  // Ajusta la escala según tu escena
+            // Ajustar la escala del texto para hacerlo más visible
+            textEntity.scale = SIMD3<Float>(1, 1, 1)  // Ajusta la escala según tu escena
             
             // Ajustar la posición del texto, ligeramente por encima de la esfera
             textEntity.position = SIMD3<Float>(position.x, position.y + 0.5, position.z)
             
             return textEntity
         }
+        
+        
+        func updateTextOrientation() {
+            guard let arView = arView else { return }
+
+            // Buscar el ancla fijo por nombre
+            if let fixedPOIAnchor = arView.scene.anchors.first(where: { $0.name == "fixedPOIAnchor" }) as? AnchorEntity {
+                
+                // Iterar sobre los hijos del ancla fijo
+                for child in fixedPOIAnchor.children {
+                    if let textEntity = child as? ModelEntity, textEntity.name.starts(with: "text_") {
+                        // Obtener la posición de la cámara
+                        let cameraTransform = arView.cameraTransform
+                        let cameraPosition = cameraTransform.translation
+                        
+                        // Orientar el texto para que siempre esté mirando a la cámara
+                        textEntity.look(at: cameraPosition, from: textEntity.position, relativeTo: nil)
+                    }
+                }
+            }
+        }
+
+
+
 
 
 
