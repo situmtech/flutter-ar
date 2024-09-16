@@ -20,7 +20,6 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     func locationManager(_ manager: CLLocationManager, didUpdateHeading newHeading: CLHeading) {
         heading = newHeading
     }
-
 }
 
 // Vista principal ContentView
@@ -69,7 +68,6 @@ struct ARViewContainer: UIViewRepresentable {
         context.coordinator.setupFixedAnchor()
 
 
-        
         // Suscribirse a la notificación de ubicación actualizada
         NotificationCenter.default.addObserver(forName: .locationUpdated, object: nil, queue: .main) { notification in
             print("Notificación de ubicación actualizada recibida")
@@ -81,7 +79,7 @@ struct ARViewContainer: UIViewRepresentable {
 
                 // Manejar la actualización de ubicación aquí
                 context.coordinator.updateLocation(xSitum: xSitum, ySitum: ySitum, yawSitum: yawSitum)
-            }else {
+            } else {
                 print("Datos inválidos recibidos en la notificación: \(String(describing: notification.userInfo))")
             }
         }
@@ -112,54 +110,8 @@ struct ARViewContainer: UIViewRepresentable {
         } catch {
             print("Error al cargar el modelo de la flecha: \(error.localizedDescription)")
         }
-      
 
         return anchor
-    }
-
-    func createAxisEntities() -> (xAxis: ModelEntity, yAxis: ModelEntity, zAxis: ModelEntity) {
-        let axisLength: Float = 1.0
-        
-        let xAxis = createLineEntity(start: [0, 0, 0], end: [axisLength, 0, 0], color: .red)
-        let yAxis = createLineEntity(start: [0, 0, 0], end: [0, axisLength, 0], color: .green)
-        let zAxis = createLineEntity(start: [0, 0, 0], end: [0, 0, axisLength], color: .blue)
-        
-        return (xAxis, yAxis, zAxis)
-    }
-
-    func createLineEntity(start: SIMD3<Float>, end: SIMD3<Float>, color: UIColor) -> ModelEntity {
-        let lineMesh = MeshResource.generateBox(size: [0.01, lengthBetween(start, end), 0.01])
-        let material = SimpleMaterial(color: color, isMetallic: false)
-        let lineEntity = ModelEntity(mesh: lineMesh, materials: [material])
-        
-        let midPoint = (start + end) / 2
-        let direction = normalize(end - start)
-        lineEntity.position = midPoint
-        lineEntity.orientation = simd_quatf(from: SIMD3<Float>(0, 1, 0), to: direction)
-        
-        return lineEntity
-    }
-
-    func lengthBetween(_ start: SIMD3<Float>, _ end: SIMD3<Float>) -> Float {
-        return length(end - start)
-    }
-
-    func createLabelEntity(text: String, position: SIMD3<Float>, color: UIColor) -> ModelEntity {
-        let textMesh = MeshResource.generateText(
-            text,
-            extrusionDepth: 0.01,
-            font: .systemFont(ofSize: 0.1),
-            containerFrame: .zero,
-            alignment: .center,
-            lineBreakMode: .byWordWrapping
-        )
-        let material = SimpleMaterial(color: color, isMetallic: false)
-        let labelEntity = ModelEntity(mesh: textMesh, materials: [material])
-        
-        labelEntity.position = position
-        labelEntity.scale = SIMD3<Float>(1.0, 1.0, 1.0)
-        
-        return labelEntity
     }
 
     class Coordinator: NSObject {
@@ -167,6 +119,9 @@ struct ARViewContainer: UIViewRepresentable {
         var arrowAndTextAnchor: AnchorEntity?
         var fixedAnchor: AnchorEntity?
         weak var arView: ARView?
+
+        // Nueva bandera para verificar si la ubicación ha sido actualizada
+        var locationUpdated = false
         
         init(locationManager: LocationManager) {
             self.locationManager = locationManager
@@ -206,18 +161,21 @@ struct ARViewContainer: UIViewRepresentable {
             
         }
 
+        // Actualizar la ubicación solo una vez
         func updateLocation(xSitum: Double, ySitum: Double, yawSitum: Double) {
-            guard let arView = arView else { return }
+            // Comprobar si la ubicación ya ha sido actualizada
+            guard !locationUpdated else { return }
 
-            // Actualizar la posición en la vista AR usando la nueva ubicación
-            // Aquí podrías actualizar la posición de un marcador en la vista AR, por ejemplo
-            
-            //print("(x,y,yaw) _SITUM:  ", xSitum, ySitum, yawSitum)
+            // Aquí se actualiza la posición solo la primera vez
+            print("Actualizando la ubicación solo una vez")
             let locationPosition = SIMD3<Float>(Float(xSitum), Float(ySitum), Float(yawSitum))
-            
+
+            // Simular la actualización de la ubicación inicial
             let newLocation = CLLocation(coordinate: CLLocationCoordinate2D(latitude: ySitum, longitude: xSitum), altitude: 0, horizontalAccuracy: kCLLocationAccuracyBest, verticalAccuracy: kCLLocationAccuracyBest, course: yawSitum, speed: 0, timestamp: Date())
-            
             locationManager.initialLocation = newLocation
+
+            // Marcar que la ubicación ha sido actualizada
+            locationUpdated = true
         }
         
         
@@ -303,8 +261,6 @@ struct ARViewContainer: UIViewRepresentable {
                 print("Error: No se encontró el ancla fijo con el nombre 'fixedPOIAnchor'")
             }
         }
-
-
 
         // Transformar la posición de los POIs al sistema de referencia de la cámara
         func transformPosition(x: Float, y: Float, referenceLocation: CLLocation) -> SIMD3<Float> {
