@@ -208,34 +208,11 @@ struct ARViewContainer: UIViewRepresentable {
         }
         
         func setupFixedAnchor() {
-                guard let arView = arView else { return }
+            guard let arView = arView else { return }
 
             let fixedAnchor = AnchorEntity(world: SIMD3<Float>(-2.0, 0.0, -2.0)) // Posición fija en el espacio global
-            
-            // Crear y añadir el modelo animado de "Manta.usdz"
-            /*do {
-                let robotEntity = try ModelEntity.load(named: "Manta_Ray_Birostris_animated.usdz")
-                robotEntity.scale = SIMD3<Float>(0.005, 0.005, 0.005)
-                robotEntity.position = SIMD3<Float>(0.0, 0.0, -2.0) // Ajusta la posición según sea necesario
-                
-                // Rotar 45 grados (π/4 radianes) alrededor del eje Y
-                let rotation = simd_quatf(angle: .pi / 4, axis: SIMD3<Float>(0, 1, 0))
-                robotEntity.orientation = rotation
-                
-                // Verificar y reproducir la animación "global scene animation"
-                if let animation = robotEntity.availableAnimations.first(where: { $0.name == "global scene animation" }) {
-                    robotEntity.playAnimation(animation.repeat(), transitionDuration: 0.5, startsPaused: false)
-                } else {
-                    print("No se encontró la animación 'global scene animation'")
-                }
-                
-                fixedAnchor.addChild(robotEntity)
-            } catch {
-                print("Error al cargar el modelo animado: \(error.localizedDescription)")
-            }
-            
-            */
-            
+            fixedAnchor.name = "fixedPOIAnchor" // Asegúrate de que el nombre esté asignado
+
             // Crear y añadir el modelo animado de "Manta.usdz"
             do {
                 let robotEntity = try ModelEntity.load(named: "Animated_Dragon_Three_Motion_Loops.usdz")
@@ -257,11 +234,12 @@ struct ARViewContainer: UIViewRepresentable {
             } catch {
                 print("Error al cargar el modelo animado: \(error.localizedDescription)")
             }
-                
-                // Añadir el ancla de la esfera fija a la escena
-                arView.scene.anchors.append(fixedAnchor)
-                self.fixedAnchor = fixedAnchor
-            }
+            
+            // Añadir el ancla de la esfera fija a la escena
+            arView.scene.anchors.append(fixedAnchor)
+            self.fixedAnchor = fixedAnchor
+        }
+
         func updateLocation(xSitum: Double, ySitum: Double, yawSitum: Double) {
             guard let arView = arView else { return }
 
@@ -308,61 +286,59 @@ struct ARViewContainer: UIViewRepresentable {
         
         func updatePOIs(poisMap: [String: Any]) {
             guard let arView = arView, let initialLocation = locationManager.initialLocation else { return }
+ 
+            // Buscar el ancla fijo por nombre y convertirlo a AnchorEntity
+            if let fixedPOIAnchor = arView.scene.anchors.first(where: { $0.name == "fixedPOIAnchor" }) as? AnchorEntity {
 
-            guard let poisList = poisMap["pois"] as? [[String: Any]] else {
-                print("Error: No se encontró la clave 'pois' en el mapa de POIs")
-                return
-            }
+                // Eliminar las entidades de POI existentes en el ancla fijo
+                let poiEntitiesToRemove = fixedPOIAnchor.children.filter { $0.name.starts(with: "poi_") }
+                poiEntitiesToRemove.forEach { $0.removeFromParent() }
 
-            // Eliminar las anclas anteriores
-            let anchorsToRemove = arView.scene.anchors.filter { anchor in
-                return anchor.name.starts(with: "poi_")
-            }
-            for anchor in anchorsToRemove {
-                arView.scene.anchors.remove(anchor)
-            }
-
-            for (index, poi) in poisList.enumerated() {
-                if let position = poi["position"] as? [String: Any],
-                   let cartesianCoordinate = position["cartesianCoordinate"] as? [String: Double],
-                   let x = cartesianCoordinate["x"],
-                   let y = cartesianCoordinate["y"],
-                   let name = poi["name"] as? String{
-                    
-                    let transformedPosition = transformPosition(x: Float(x), y: Float(y), referenceLocation: initialLocation)
-
-                    // Crear la esfera y añadirla a la escena
-                    let poiEntity = createSphereEntity(radius: 10, color: .green)
-                    poiEntity.position = transformedPosition
-                    print("name of poi:  ", name)
-                    print("Initial Location: \(initialLocation.coordinate.latitude), \(initialLocation.coordinate.longitude)")
-                    print("posiciones poi (Situm):   x", x ," and y:  ",y)
-                    print("posiciones transformadas:   ", poiEntity.position)
-                    
-                    // Crear la entidad de texto con el nombre del POI
-                    let textEntity = createTextEntity(text: name, position: transformedPosition)
-
-                    // Crear el ancla y añadir la esfera y el texto
-                    let poiAnchor = AnchorEntity(world: transformedPosition)
-                    poiAnchor.name = "poi_\(index)"
-                    // Establecer la posición del POI (esfera) a 1 metro de altura
-                    poiEntity.position = SIMD3<Float>(transformedPosition.x, 1.0, transformedPosition.z)
-                    poiAnchor.addChild(poiEntity)
-                    poiAnchor.addChild(textEntity)
-                    
-                    // Orientar el texto hacia la cámara
-                    let cameraTransform = arView.cameraTransform
-                    textEntity.look(at: cameraTransform.translation, from: textEntity.position, relativeTo: nil)
-
-                    
-                    arView.scene.anchors.append(poiAnchor)
-                    
-
-                } else {
-                    print("Error: No se encontraron coordenadas cartesianas válidas para el POI \(index)")
+                // Agregar nuevos POIs
+                guard let poisList = poisMap["pois"] as? [[String: Any]] else {
+                    print("Error: No se encontró la clave 'pois' en el mapa de POIs")
+                    return
                 }
+                
+                for (index, poi) in poisList.enumerated() {
+                    if let position = poi["position"] as? [String: Any],
+                       let cartesianCoordinate = position["cartesianCoordinate"] as? [String: Double],
+                       let x = cartesianCoordinate["x"],
+                       let y = cartesianCoordinate["y"],
+                       let name = poi["name"] as? String {
+
+                        let transformedPosition = transformPosition(x: Float(x), y: Float(y), referenceLocation: initialLocation)
+
+                        // Crear la esfera y añadirla a la escena
+                        let poiEntity = createSphereEntity(radius: 1, color: .green)
+                        poiEntity.position = transformedPosition
+                        poiEntity.name = "poi_\(index)"  // Asignar un nombre único a cada POI
+                        print("name of poi!!!!!!!!!!!!!!!!:  ", name)
+                        print("Initial Location: \(initialLocation.coordinate.latitude), \(initialLocation.coordinate.longitude)")
+                        print("posiciones poi (Situm):   x", x ," and y:  ",y)
+                        print("posiciones transformadas:   ", poiEntity.position)
+
+                        // Crear la entidad de texto con el nombre del POI
+                        let textEntity = createTextEntity(text: name, position: transformedPosition)
+
+                        // Añadir las entidades POI y el texto al ancla fijo
+                        fixedPOIAnchor.addChild(poiEntity)
+                        fixedPOIAnchor.addChild(textEntity)
+                    } else {
+                        print("Error: No se encontraron coordenadas cartesianas válidas para el POI \(index)")
+                    }
+                }
+
+                // Asegurarse de que el ancla fijo está en la escena
+                if !arView.scene.anchors.contains(where: { $0 as? AnchorEntity == fixedPOIAnchor }) {
+                    arView.scene.anchors.append(fixedPOIAnchor)
+                }
+            } else {
+                print("Error: No se encontró el ancla fijo con el nombre 'fixedPOIAnchor'")
             }
         }
+
+
 
         // Transformar la posición de los POIs al sistema de referencia de la cámara
         func transformPosition(x: Float, y: Float, referenceLocation: CLLocation) -> SIMD3<Float> {
@@ -378,7 +354,7 @@ struct ARViewContainer: UIViewRepresentable {
             let translation = SIMD3<Float>(xTranslated, yTranslated, 0.0)
             let transformedPosition = rotationMatrix * SIMD4<Float>(translation.x, translation.y, 0, 1)
             
-            return SIMD3<Float>(transformedPosition.x, transformedPosition.y, transformedPosition.z)
+            return SIMD3<Float>(transformedPosition.x, transformedPosition.z, transformedPosition.y)
         }
         
         func createSphereEntity(radius: Float, color: UIColor) -> ModelEntity {
