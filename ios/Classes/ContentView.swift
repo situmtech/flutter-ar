@@ -65,7 +65,9 @@ struct ARViewContainer: UIViewRepresentable {
         
         context.coordinator.arrowAndTextAnchor = arrowAndTextAnchor
         context.coordinator.arView = arView
-
+        
+        context.coordinator.setupFixedAnchor()
+        
         // Suscribirse a la notificación de ubicación actualizada
         NotificationCenter.default.addObserver(forName: .locationUpdated, object: nil, queue: .main) { notification in
             print("Notificación de ubicación actualizada recibida")
@@ -125,55 +127,6 @@ struct ARViewContainer: UIViewRepresentable {
         anchor.addChild(xAxisLabel)
         anchor.addChild(yAxisLabel)
         anchor.addChild(zAxisLabel)
-
-        // Crear y añadir el modelo animado de "Manta.usdz"
-        do {
-            let robotEntity = try ModelEntity.load(named: "Manta_Ray_Birostris_animated.usdz")
-            robotEntity.scale = SIMD3<Float>(0.005, 0.005, 0.005)
-            robotEntity.position = SIMD3<Float>(0.0, 0.0, -2.0) // Ajusta la posición según sea necesario
-            
-            // Rotar 45 grados (π/4 radianes) alrededor del eje Y
-            let rotation = simd_quatf(angle: .pi / 4, axis: SIMD3<Float>(0, 1, 0))
-            robotEntity.orientation = rotation
-            
-            // Verificar y reproducir la animación "global scene animation"
-            if let animation = robotEntity.availableAnimations.first(where: { $0.name == "global scene animation" }) {
-                robotEntity.playAnimation(animation.repeat(), transitionDuration: 0.5, startsPaused: false)
-            } else {
-                print("No se encontró la animación 'global scene animation'")
-            }
-            
-            anchor.addChild(robotEntity)
-        } catch {
-            print("Error al cargar el modelo animado: \(error.localizedDescription)")
-        }
-        
-        
-        
-        // Crear y añadir el modelo animado de "Manta.usdz"
-        do {
-            let robotEntity = try ModelEntity.load(named: "Animated_Dragon_Three_Motion_Loops.usdz")
-            robotEntity.scale = SIMD3<Float>(0.07, 0.07, 0.07)
-            robotEntity.position = SIMD3<Float>(-10.0, -25.0, -10.0) // Ajusta la posición según sea necesario
-            
-            // Rotar 45 grados (π/4 radianes) alrededor del eje Y
-            let rotation = simd_quatf(angle: .pi / 4, axis: SIMD3<Float>(0, 1, 0))
-            robotEntity.orientation = rotation
-            
-            // Verificar y reproducir la animación "global scene animation"
-            if let animation = robotEntity.availableAnimations.first(where: { $0.name == "global scene animation" }) {
-                robotEntity.playAnimation(animation.repeat(), transitionDuration: 0.5, startsPaused: false)
-            } else {
-                print("No se encontró la animación 'global scene animation'")
-            }
-            
-            anchor.addChild(robotEntity)
-        } catch {
-            print("Error al cargar el modelo animado: \(error.localizedDescription)")
-        }
-
-
-
 
         return anchor
     }
@@ -247,12 +200,68 @@ struct ARViewContainer: UIViewRepresentable {
     class Coordinator: NSObject {
         var locationManager: LocationManager
         var arrowAndTextAnchor: AnchorEntity?
+        var fixedAnchor: AnchorEntity?
         weak var arView: ARView?
         
         init(locationManager: LocationManager) {
             self.locationManager = locationManager
         }
         
+        func setupFixedAnchor() {
+                guard let arView = arView else { return }
+
+            let fixedAnchor = AnchorEntity(world: SIMD3<Float>(-2.0, 0.0, -2.0)) // Posición fija en el espacio global
+            
+            // Crear y añadir el modelo animado de "Manta.usdz"
+            /*do {
+                let robotEntity = try ModelEntity.load(named: "Manta_Ray_Birostris_animated.usdz")
+                robotEntity.scale = SIMD3<Float>(0.005, 0.005, 0.005)
+                robotEntity.position = SIMD3<Float>(0.0, 0.0, -2.0) // Ajusta la posición según sea necesario
+                
+                // Rotar 45 grados (π/4 radianes) alrededor del eje Y
+                let rotation = simd_quatf(angle: .pi / 4, axis: SIMD3<Float>(0, 1, 0))
+                robotEntity.orientation = rotation
+                
+                // Verificar y reproducir la animación "global scene animation"
+                if let animation = robotEntity.availableAnimations.first(where: { $0.name == "global scene animation" }) {
+                    robotEntity.playAnimation(animation.repeat(), transitionDuration: 0.5, startsPaused: false)
+                } else {
+                    print("No se encontró la animación 'global scene animation'")
+                }
+                
+                fixedAnchor.addChild(robotEntity)
+            } catch {
+                print("Error al cargar el modelo animado: \(error.localizedDescription)")
+            }
+            
+            */
+            
+            // Crear y añadir el modelo animado de "Manta.usdz"
+            do {
+                let robotEntity = try ModelEntity.load(named: "Animated_Dragon_Three_Motion_Loops.usdz")
+                robotEntity.scale = SIMD3<Float>(0.07, 0.07, 0.07)
+                robotEntity.position = SIMD3<Float>(-10.0, -25.0, -10.0) // Ajusta la posición según sea necesario
+                
+                // Rotar 45 grados (π/4 radianes) alrededor del eje Y
+                let rotation = simd_quatf(angle: .pi / 4, axis: SIMD3<Float>(0, 1, 0))
+                robotEntity.orientation = rotation
+                
+                // Verificar y reproducir la animación "global scene animation"
+                if let animation = robotEntity.availableAnimations.first(where: { $0.name == "global scene animation" }) {
+                    robotEntity.playAnimation(animation.repeat(), transitionDuration: 0.5, startsPaused: false)
+                } else {
+                    print("No se encontró la animación 'global scene animation'")
+                }
+                
+                fixedAnchor.addChild(robotEntity)
+            } catch {
+                print("Error al cargar el modelo animado: \(error.localizedDescription)")
+            }
+                
+                // Añadir el ancla de la esfera fija a la escena
+                arView.scene.anchors.append(fixedAnchor)
+                self.fixedAnchor = fixedAnchor
+            }
         func updateLocation(xSitum: Double, ySitum: Double, yawSitum: Double) {
             guard let arView = arView else { return }
 
