@@ -105,54 +105,16 @@ struct ARViewContainer: UIViewRepresentable {
         // Crear y añadir la flecha
         do {
             let arrowEntity = try ModelEntity.load(named: "arrow_situm.usdz")
-            arrowEntity.scale = SIMD3<Float>(0.051, 0.051, 0.051)
+            arrowEntity.scale = SIMD3<Float>(0.05, 0.05, 0.05)
             arrowEntity.orientation = simd_quatf(angle: .pi / 2, axis: [1, 0, 0])
             arrowEntity.position = SIMD3<Float>(0.0, 0.0, 0.0)
             anchor.addChild(arrowEntity)
         } catch {
             print("Error al cargar el modelo de la flecha: \(error.localizedDescription)")
         }
-
-        // Crear y añadir el texto
-        let textEntity = createTextEntity()
-        anchor.addChild(textEntity)
-
-        // Añadir los ejes XYZ y sus etiquetas
-        let axisEntities = createAxisEntities()
-        anchor.addChild(axisEntities.xAxis)
-        anchor.addChild(axisEntities.yAxis)
-        anchor.addChild(axisEntities.zAxis)
-
-        let xAxisLabel = createLabelEntity(text: "X", position: [1.1, 0, 0], color: .red)
-        let yAxisLabel = createLabelEntity(text: "Y", position: [0, 1.1, 0], color: .green)
-        let zAxisLabel = createLabelEntity(text: "Z", position: [0, 0, 1.1], color: .blue)
-
-        anchor.addChild(xAxisLabel)
-        anchor.addChild(yAxisLabel)
-        anchor.addChild(zAxisLabel)
+      
 
         return anchor
-    }
-
-
-
-    func createTextEntity() -> ModelEntity {
-        let textMesh = MeshResource.generateText(
-            " Flecha!",
-            extrusionDepth: 0.01,
-            font: .systemFont(ofSize: 0.1),
-            containerFrame: .zero,
-            alignment: .center,
-            lineBreakMode: .byWordWrapping
-        )
-        let material = SimpleMaterial(color: .white, isMetallic: false)
-        let textEntity = ModelEntity(mesh: textMesh, materials: [material])
-        
-        // Posicionar el texto debajo de la flecha
-        textEntity.position = [0.0, -0.5, 0.0]
-        textEntity.scale = SIMD3<Float>(2.0, 2.0, 2.0)
-        
-        return textEntity
     }
 
     func createAxisEntities() -> (xAxis: ModelEntity, yAxis: ModelEntity, zAxis: ModelEntity) {
@@ -250,9 +212,7 @@ struct ARViewContainer: UIViewRepresentable {
             // Actualizar la posición en la vista AR usando la nueva ubicación
             // Aquí podrías actualizar la posición de un marcador en la vista AR, por ejemplo
             
-            //print("X_SITUM:  ", xSitum)
-            //print("Y_SITUM:  ", ySitum)
-            //print("YAW_SITUM:  ", yawSitum)
+            //print("(x,y,yaw) _SITUM:  ", xSitum, ySitum, yawSitum)
             let locationPosition = SIMD3<Float>(Float(xSitum), Float(ySitum), Float(yawSitum))
             
             let newLocation = CLLocation(coordinate: CLLocationCoordinate2D(latitude: ySitum, longitude: xSitum), altitude: 0, horizontalAccuracy: kCLLocationAccuracyBest, verticalAccuracy: kCLLocationAccuracyBest, course: yawSitum, speed: 0, timestamp: Date())
@@ -382,13 +342,9 @@ struct ARViewContainer: UIViewRepresentable {
             
             // Material visible (blanco o color que contraste con el fondo)
             let material = SimpleMaterial(color: .white, isMetallic: false)
-            
             let textEntity = ModelEntity(mesh: mesh, materials: [material])
             
-            // Ajustar la escala del texto para hacerlo más visible
-            textEntity.scale = SIMD3<Float>(1, 1, 1)  // Ajusta la escala según tu escena
-            
-            // Ajustar la posición del texto, ligeramente por encima de la esfera
+            textEntity.scale = SIMD3<Float>(1, 1, 1)
             textEntity.position = SIMD3<Float>(position.x, position.y + 0.5, position.z)
             
             return textEntity
@@ -414,11 +370,6 @@ struct ARViewContainer: UIViewRepresentable {
                 }
             }
         }
-
-
-
-
-
 
     }
 }
