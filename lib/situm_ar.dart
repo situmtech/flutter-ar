@@ -3,14 +3,22 @@ part of 'ar.dart';
 class SitumAr {
   static const MethodChannel _channel = MethodChannel('situm_ar');
 
-  static Future<void> startARView() async {   
+  static Future<void> startARView() async {
     await _channel.invokeMethod('startARView');
   }
 
-  static Future<void> updatePOIs(List<Map<String, dynamic>> poisMap) async {
-    await _channel.invokeMethod('updatePOIs', poisMap);
+  static Future<void> updatePOIs(List<Map<String, dynamic>> poisList, double width) async {
+    // Crea un mapa con la lista de POIs y el ancho
+    final Map<String, dynamic> updatedPoisMap = {
+      'pois': poisList, // Aquí 'poisMap' debe ser una lista de mapas
+      'width': width,
+    };
+
+    // Llama al método de actualización de POIs en el canal
+    await _channel.invokeMethod('updatePOIs', updatedPoisMap);
   }
 }
+
 
 class ARWidget extends StatefulWidget {
   final String buildingIdentifier;
@@ -220,7 +228,9 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
     sdk.fetchBuildingInfo(widget.buildingIdentifier).then((buildingInfo) {            
       var buildingInfoMap = buildingInfo.toMap();   
       var poisMap = buildingInfoMap["indoorPOIs"];        
-        SitumAr.updatePOIs(poisMap).then((_) {          
+      var width = buildingInfoMap["building"]["height"];        
+ 
+        SitumAr.updatePOIs(poisMap, width).then((_) {          
         }).catchError((error) {
           print("Error updating POIs: $error");
         });

@@ -10,9 +10,9 @@ import Foundation
 @objc(SitumARPlugin)
 class SitumARPlugin: NSObject {
     
-    @objc func updatePOIs(poisMap: [String: Any]) {
+    @objc func updatePOIs(poisMap: [String: Any], width: Double) {
         // Enviar una notificación para actualizar los POIs en la vista AR
-        NotificationCenter.default.post(name: .poisUpdated, object: nil, userInfo: ["poisMap": poisMap])
+        NotificationCenter.default.post(name: .poisUpdated, object: nil, userInfo: ["poisMap": poisMap, "width": width])
         print("POIs updated from SitumARPlugin with data: \(poisMap)")
     }
     
@@ -58,24 +58,22 @@ public class SitumArPlugin: NSObject, FlutterPlugin {
                let xSitum = args["xSitum"],
                let ySitum = args["ySitum"],
                let yawSitum = args["yawSitum"] {
-                // Crear un diccionario para los argumentos de ubicación
                 let locationData: [String: Any] = [
                     "xSitum": xSitum,
                     "ySitum": ySitum,
                     "yawSitum": yawSitum
-                ]                
-                // Enviar una notificación para actualizar la ubicación
+                ]
                 NotificationCenter.default.post(name: .locationUpdated, object: nil, userInfo: locationData)
                 result(nil)
             } else {
                 result(FlutterError(code: "INVALID_ARGUMENT", message: "Invalid arguments for updateLocation", details: nil))
             }
         case "updatePOIs":
-            if let pois = call.arguments as? [[String: Any]] {
+            if let args = call.arguments as? [String: Any],
+               let pois = args["pois"] as? [[String: Any]],
+               let width = args["width"] as? Double {
                 poisMap = ["pois": pois]
-                var poisMapString = ""
-
-                // Convertir el diccionario a JSON para poder imprimirlo
+                var poisMapString = ""                
                 if let poisMapData = try? JSONSerialization.data(withJSONObject: poisMap, options: .prettyPrinted),
                    let jsonString = String(data: poisMapData, encoding: .utf8) {
                     poisMapString = jsonString
@@ -84,15 +82,16 @@ public class SitumArPlugin: NSObject, FlutterPlugin {
                 }
                 
                 print("POIs received: \(poisMapString)")
-                NotificationCenter.default.post(name: .poisUpdated, object: nil, userInfo: ["poisMap": poisMap])
+                NotificationCenter.default.post(name: .poisUpdated, object: nil, userInfo: ["poisMap": poisMap, "width": width])
             } else {
-                NSLog("Failed to cast POIs. Received data: %@", String(describing: call.arguments))
+                NSLog("Failed to cast POIs or width. Received data: %@", String(describing: call.arguments))
             }
             result(nil)
         default:
             result(FlutterMethodNotImplemented)
         }
     }
+
 
     private func presentARView(result: @escaping FlutterResult) {
         guard let viewController = UIApplication.shared.delegate?.window??.rootViewController else {
