@@ -86,21 +86,22 @@ class _NavigationBaseState extends State<NavigationBase> {
           onDisposed: onUnityViewDisposed,
           enable3DAmbiences: true,
           debugMode: true,
-          mapView: MapView(
-            key: const Key("situm_map"),
-            configuration: MapViewConfiguration(
-              // Your Situm credentials.
-              // Copy config.dart.example if you haven't already.
-              situmApiKey: situmApiKey,
-              // Set your building identifier:
-              buildingIdentifier: buildingIdentifier,
-              viewerDomain: viewerDomain,
-              apiDomain: apiDomain,
-              remoteIdentifier: remoteIdentifier,
-              persistUnderlyingWidget: true,
-            ),
-            onLoad: onMapViewLoad,
-          ),
+          mapView: null,
+          // mapView: MapView(
+          //   key: const Key("situm_map"),
+          //   configuration: MapViewConfiguration(
+          //     // Your Situm credentials.
+          //     // Copy config.dart.example if you haven't already.
+          //     situmApiKey: situmApiKey,
+          //     // Set your building identifier:
+          //     buildingIdentifier: buildingIdentifier,
+          //     viewerDomain: viewerDomain,
+          //     apiDomain: apiDomain,
+          //     remoteIdentifier: remoteIdentifier,
+          //     persistUnderlyingWidget: true,
+          //   ),
+          //   onLoad: onMapViewLoad,
+          // ),
         ),
       ),
     );

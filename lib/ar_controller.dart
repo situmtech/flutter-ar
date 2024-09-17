@@ -66,10 +66,12 @@ class ARController {
   
 
   void pause() async {
+    print("ATAG > DART> Called pause!!");
     await _channel.invokeMethod("pause", {});
   }
 
   void resume() async {
+    print("ATAG > DART> Called resume!!");
     await _channel.invokeMethod("resume", {});
   }
 

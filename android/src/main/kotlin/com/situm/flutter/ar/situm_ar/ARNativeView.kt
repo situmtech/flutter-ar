@@ -235,15 +235,18 @@ class ARNativeView(
 
 
     private fun unload(arguments: Map<String, Any>, result: MethodChannel.Result) {
+        Log.d("ATAG", "Called unload, sceneView.arCore = ${sceneView?.arCore}")
         sceneView?.arCore?.destroy()
         rootView.removeAllViews()
     }
 
     private fun resume(arguments: Map<String, Any>, result: MethodChannel.Result) {
+        Log.d("ATAG", "Called resume, sceneView.arCore = ${sceneView?.arCore}")
         sceneView?.arCore?.resume(context, null)
     }
 
     private fun pause(arguments: Map<String, Any>, result: MethodChannel.Result) {
+        Log.d("ATAG", "Called pause, sceneView.arCore = ${sceneView?.arCore}")
         sceneView?.arCore?.pause()
     }
 

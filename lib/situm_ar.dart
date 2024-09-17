@@ -75,6 +75,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
     }
 
     ARController()._onARWidgetState(this);
+    arController.load();
   }
 
   void _onARViewCreated(BuildContext context, ARController? controller) {
@@ -101,7 +102,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
       onCreated: (controller) => _onARViewCreated(context, controller),
     );
 
-    //   return arView;
+    // return arView;
     // } else {
     //   return widget.mapView!;
     // }
@@ -203,9 +204,9 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
                 setState(() {
                   isArVisible = !isArVisible;
                 });
-                // isArVisible
-                //     ? arController.onArGone()
-                //     : arController.onArRequested();
+                isArVisible
+                    ? arController.onArRequested()
+                    : arController.onArGone();
               })
             : const SizedBox(),
       ],
