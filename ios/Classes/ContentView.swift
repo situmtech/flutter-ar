@@ -177,6 +177,7 @@ struct ARViewContainer: UIViewRepresentable {
         // Actualizar la ubicación solo una vez
         func updateLocation(xSitum: Double, ySitum: Double, yawSitum: Double) {
             // Comprobar si la ubicación ya ha sido actualizada
+            print ("UPDATE LOCATION")
             guard !locationUpdated else { return }
 
             // Aquí se actualiza la posición solo la primera vez
