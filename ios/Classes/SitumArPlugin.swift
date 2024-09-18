@@ -16,21 +16,18 @@ class SitumARPlugin: NSObject {
         print("POIs updated from SitumARPlugin with data: \(poisMap)")
     }
     
-    @objc func updateLocation(xSitum: Double, ySitum: Double, yawSitum: Double) {
+    @objc func updateLocation(xSitum: Double, ySitum: Double, yawSitum: Double, floorIdentifier: Double) {
         // Enviar una notificación para actualizar la ubicación en la vista AR
-        NotificationCenter.default.post(name: .locationUpdated, object: nil, userInfo: ["xSitum": xSitum, "ySitum": ySitum, "yawSitum": yawSitum])
-        print("Location updated from SitumARPlugin with xSitum: \(xSitum), ySitum: \(ySitum), yawSitum: \(yawSitum)")
+        NotificationCenter.default.post(name: .locationUpdated, object: nil, userInfo: ["xSitum": xSitum, "ySitum": ySitum, "yawSitum": yawSitum, "floorIdentifier": floorIdentifier])
+        print("Location updated from SitumARPlugin with xSitum: \(xSitum), ySitum: \(ySitum), yawSitum: \(yawSitum), floorIdentifier: \(floorIdentifier) ")
     }
 }
 
-// Extensión para definir la notificación de actualización de POIs
+// Extensión para definir las notificaciones
 extension Notification.Name {
     static let poisUpdated = Notification.Name("poisUpdated")
-}
-
-// Añadir a la extensión para la notificación de ubicación actualizada
-extension Notification.Name {
     static let locationUpdated = Notification.Name("locationUpdated")
+    static let buttonPressedNotification = Notification.Name("buttonPressedNotification")
 }
 
 public class SitumArPlugin: NSObject, FlutterPlugin {
@@ -49,49 +46,77 @@ public class SitumArPlugin: NSObject, FlutterPlugin {
 
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         switch call.method {
-        case "getPlatformVersion":
-            result("iOS " + UIDevice.current.systemVersion)
-        case "startARView":
-            presentARView(result: result)
-        case "updateLocation":
-            if let args = call.arguments as? [String: Double],
-               let xSitum = args["xSitum"],
-               let ySitum = args["ySitum"],
-               let yawSitum = args["yawSitum"] {
-                let locationData: [String: Any] = [
-                    "xSitum": xSitum,
-                    "ySitum": ySitum,
-                    "yawSitum": yawSitum
-                ]
-                NotificationCenter.default.post(name: .locationUpdated, object: nil, userInfo: locationData)
-                result(nil)
+            case "getPlatformVersion":
+                result("iOS " + UIDevice.current.systemVersion)
+            case "startARView":
+                presentARView(result: result)
+            case "updateLocation":
+                print("Received arguments for updateLocation:", call.arguments ?? "No arguments")
+                
+                if let args = call.arguments as? [String: Any] { 
+                    
+                    // Intentar obtener los valores como Double o String y luego convertir
+                    if let xSitumValue = args["xSitum"],
+                       let ySitumValue = args["ySitum"],
+                       let yawSitumValue = args["yawSitum"],
+                       let floorIdentifierValue = args["floorIdentifier"] {
+                        
+                        let xSitum = (xSitumValue as? Double) ?? Double("\(xSitumValue)")
+                        let ySitum = (ySitumValue as? Double) ?? Double("\(ySitumValue)")
+                        let yawSitum = (yawSitumValue as? Double) ?? Double("\(yawSitumValue)")
+                        let floorIdentifier = (floorIdentifierValue as? Double) ?? Double("\(floorIdentifierValue)")
+
+                        // Verificar si las conversiones a Double fueron exitosas
+                        if let xSitum = xSitum, let ySitum = ySitum, let yawSitum = yawSitum, let floorIdentifier = floorIdentifier {
+                            let locationData: [String: Any] = [
+                                "xSitum": xSitum,
+                                "ySitum": ySitum,
+                                "yawSitum": yawSitum,
+                                "floorIdentifier": floorIdentifier
+                            ]
+                            
+                            print("LOCATION DATA: ", locationData)
+                            NotificationCenter.default.post(name: .locationUpdated, object: nil, userInfo: locationData)
+                            result(nil)
+                        } else {
+                            result(FlutterError(code: "INVALID_ARGUMENT", message: "Unable to convert arguments to Double", details: nil))
+                        }
+                } else {
+                    result(FlutterError(code: "INVALID_ARGUMENT", message: "Missing arguments for updateLocation", details: nil))
+                }
             } else {
                 result(FlutterError(code: "INVALID_ARGUMENT", message: "Invalid arguments for updateLocation", details: nil))
             }
-        case "updatePOIs":
-            if let args = call.arguments as? [String: Any],
-               let pois = args["pois"] as? [[String: Any]],
-               let width = args["width"] as? Double {
-                poisMap = ["pois": pois]
-                var poisMapString = ""                
-                if let poisMapData = try? JSONSerialization.data(withJSONObject: poisMap, options: .prettyPrinted),
-                   let jsonString = String(data: poisMapData, encoding: .utf8) {
-                    poisMapString = jsonString
+
+
+            case "updatePOIs":
+                if let args = call.arguments as? [String: Any],
+                   let pois = args["pois"] as? [[String: Any]],
+                   let width = args["width"] as? Double {
+                    poisMap = ["pois": pois]
+                    var poisMapString = ""
+                    if let poisMapData = try? JSONSerialization.data(withJSONObject: poisMap, options: .prettyPrinted),
+                       let jsonString = String(data: poisMapData, encoding: .utf8) {
+                        poisMapString = jsonString
+                    } else {
+                        NSLog("Failed to convert POIs to JSON string")
+                    }
+                    
+                    print("POIs received: \(poisMapString)")
+                    NotificationCenter.default.post(name: .poisUpdated, object: nil, userInfo: ["poisMap": poisMap, "width": width])
                 } else {
-                    NSLog("Failed to convert POIs to JSON string")
+                    NSLog("Failed to cast POIs or width. Received data: %@", String(describing: call.arguments))
                 }
-                
-                print("POIs received: \(poisMapString)")
-                NotificationCenter.default.post(name: .poisUpdated, object: nil, userInfo: ["poisMap": poisMap, "width": width])
-            } else {
-                NSLog("Failed to cast POIs or width. Received data: %@", String(describing: call.arguments))
-            }
-            result(nil)
-        default:
-            result(FlutterMethodNotImplemented)
+                result(nil)
+            case "sendNotification":
+                // Enviar una notificación que ContentView.swift pueda observar
+                print("ENVIANDO NOTIFICACION")
+                NotificationCenter.default.post(name: .buttonPressedNotification, object: nil)
+                result(nil)
+            default:
+                result(FlutterMethodNotImplemented)
         }
     }
-
 
     private func presentARView(result: @escaping FlutterResult) {
         guard let viewController = UIApplication.shared.delegate?.window??.rootViewController else {

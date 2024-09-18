@@ -17,8 +17,12 @@ class SitumAr {
     // Llama al método de actualización de POIs en el canal
     await _channel.invokeMethod('updatePOIs', updatedPoisMap);
   }
-}
 
+  // Método para enviar una notificación a ContentView.swift
+  static Future<void> sendNotificationToContentView() async {
+    await _channel.invokeMethod('sendNotification');
+  }
+}
 
 class ARWidget extends StatefulWidget {
   final String buildingIdentifier;
@@ -177,6 +181,19 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
                 ? arController.onArGone()
                 : arController.onArRequested();
           }),
+
+        // ============== Botón para enviar notificación =======================
+        Positioned(
+          bottom: 50,
+          right: 20,
+          child: FloatingActionButton(
+            onPressed: () {
+              // Llamar al método para enviar la notificación
+              SitumAr.sendNotificationToContentView();
+            },
+            child: Icon(Icons.notification_important),
+          ),
+        ),
       ],
     );
   }
@@ -223,23 +240,18 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
   }
 
   void sendPOIs() {
-  
-   var sdk = SitumSdk();      
+    var sdk = SitumSdk();      
     sdk.fetchBuildingInfo(widget.buildingIdentifier).then((buildingInfo) {            
       var buildingInfoMap = buildingInfo.toMap();   
       var poisMap = buildingInfoMap["indoorPOIs"];        
       var width = buildingInfoMap["building"]["height"];        
- 
-        SitumAr.updatePOIs(poisMap, width).then((_) {          
-        }).catchError((error) {
-          print("Error updating POIs: $error");
-        });
 
+      SitumAr.updatePOIs(poisMap, width).then((_) {          
+      }).catchError((error) {
+        print("Error updating POIs: $error");
+      });
     });
-  
-
-}
-
+  }
 
   void updateStatusArRequested() {
     setState(() {

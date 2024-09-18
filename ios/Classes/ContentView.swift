@@ -3,6 +3,8 @@ import RealityKit
 import ARKit
 import CoreLocation
 import simd
+import Combine  // Importar Combine para manejar las suscripciones
+
 
 // Clase LocationManager para manejar la ubicación
 class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
@@ -29,10 +31,10 @@ struct ContentView: View {
     @ObservedObject private var locationManager = LocationManager()
     @State private var poisMap: [String: Any]
     @State private var width: Double = 0.0
+    @State private var showAlert = false  // Estado para mostrar la alerta
 
     init(poisMap: [String: Any]) {
         _poisMap = State(initialValue: poisMap)
-        _width = State(initialValue: 0.0)
     }
 
     var body: some View {
@@ -48,6 +50,13 @@ struct ContentView: View {
                 } else {
                     print("Failed to cast POIs map. UserInfo: \(String(describing: notification.userInfo))")
                 }
+            }
+            // Observa la notificación del botón presionado
+            .onReceive(NotificationCenter.default.publisher(for: .buttonPressedNotification)) { _ in
+                self.showAlert = true
+            }
+            .alert(isPresented: $showAlert) {
+                Alert(title: Text("Actualizando Vista AR"), dismissButton: .default(Text("OK")))
             }
     }
 }
@@ -81,11 +90,9 @@ struct ARViewContainer: UIViewRepresentable {
             if let userInfo = notification.userInfo,
                let xSitum = userInfo["xSitum"] as? Double,
                let ySitum = userInfo["ySitum"] as? Double,
-               let yawSitum = userInfo["yawSitum"] as? Double {
-                print("Datos recibidos: xSitum = \(xSitum), ySitum = \(ySitum), yawSitum = \(yawSitum)")
-
-                // Manejar la actualización de ubicación aquí
-                context.coordinator.updateLocation(xSitum: xSitum, ySitum: ySitum, yawSitum: yawSitum)
+               let yawSitum = userInfo["yawSitum"] as? Double,
+               let floorIdentifier = userInfo["floorIdentifier"] as? Double{                
+                context.coordinator.updateLocation(xSitum: xSitum, ySitum: ySitum, yawSitum: yawSitum, floorIdentifier: floorIdentifier)
             } else {
                 print("Datos inválidos recibidos en la notificación: \(String(describing: notification.userInfo))")
             }
@@ -175,17 +182,19 @@ struct ARViewContainer: UIViewRepresentable {
         }
 
         // Actualizar la ubicación solo una vez
-        func updateLocation(xSitum: Double, ySitum: Double, yawSitum: Double) {
+        func updateLocation(xSitum: Double, ySitum: Double, yawSitum: Double, floorIdentifier: Double) {
             // Comprobar si la ubicación ya ha sido actualizada
-            print ("UPDATE LOCATION")
             guard !locationUpdated else { return }
-
+            print("XSITUM:  ", xSitum)
+            print("YSITUM:  ", ySitum)
+            print("YAWSITUM:  ", yawSitum)
+            print("FLOORIDENTIFIER:  ", floorIdentifier)
             // Aquí se actualiza la posición solo la primera vez
             print("Actualizando la ubicación solo una vez")
-            let locationPosition = SIMD3<Float>(Float(xSitum), Float(ySitum), Float(yawSitum))
+            let locationPosition = SIMD4<Float>(Float(xSitum), Float(ySitum), Float(yawSitum), Float(floorIdentifier))
 
             // Simular la actualización de la ubicación inicial
-            let newLocation = CLLocation(coordinate: CLLocationCoordinate2D(latitude: ySitum, longitude: xSitum), altitude: 0, horizontalAccuracy: kCLLocationAccuracyBest, verticalAccuracy: kCLLocationAccuracyBest, course: yawSitum, speed: 0, timestamp: Date())
+            let newLocation = CLLocation(coordinate: CLLocationCoordinate2D(latitude: ySitum, longitude: xSitum), altitude: floorIdentifier, horizontalAccuracy: kCLLocationAccuracyBest, verticalAccuracy: kCLLocationAccuracyBest, course: yawSitum, speed: 0, timestamp: Date())
             locationManager.initialLocation = newLocation
 
             // Marcar que la ubicación ha sido actualizada
@@ -221,16 +230,15 @@ struct ARViewContainer: UIViewRepresentable {
         }
         
         func updatePOIs(poisMap: [String: Any], width: Double) {
-            print("WIDTH;:!!!!!!!!!!!!!!", width)
+            
             // Verificar si la función ya ha sido ejecutada
             guard !didUpdatePOIs else { return }
             
 
             guard let arView = arView, let initialLocation = locationManager.initialLocation else { return }
-            print("WIDTH;:!!!!!!!!!!!!!!", width)
+            
             // Buscar el ancla fijo por nombre y convertirlo a AnchorEntity
             if let fixedPOIAnchor = arView.scene.anchors.first(where: { $0.name == "fixedPOIAnchor" }) as? AnchorEntity {
-                print("WIDTH;:!!!!!!!!!!!!!***__-!", width)
                 // Eliminar las entidades de POI existentes en el ancla fijo
                 let existingPOIs = fixedPOIAnchor.children.filter {
                     let name = $0.name
@@ -245,7 +253,7 @@ struct ARViewContainer: UIViewRepresentable {
                     print("Error: No se encontró la clave 'pois' en el mapa de POIs")
                     return
                 }
-                print("Before  looppppppppppppp")
+                
                 for (index, poi) in poisList.enumerated() {
                     if let position = poi["position"] as? [String: Any],
                        let cartesianCoordinate = position["cartesianCoordinate"] as? [String: Double],
@@ -253,8 +261,8 @@ struct ARViewContainer: UIViewRepresentable {
                        let x = cartesianCoordinate["x"],
                        let y = cartesianCoordinate["y"],
                        let name = poi["name"] as? String {
-                        print("Before  looppppppppppppp")
-                        if floorIdentifier == "38718" {
+                        print("Before  looppppppppppppp    ", floorIdentifier, "    ", String(initialLocation.altitude))
+                        if floorIdentifier == String(Int(initialLocation.altitude)) {
                             // Transformar la posición
                             let transformedPosition = generateARKitPosition(x: Float(x), y: Float(y), currentLocation: initialLocation, arView: arView)
 

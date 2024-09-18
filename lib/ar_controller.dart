@@ -200,11 +200,12 @@ class ARController {
     try {
       // Envía la ubicación a iOS
 
-     //print("locationMap:    ${locationMap}");
+     //print("locationMap:    ${locationMap}");    
       await platform.invokeMethod('updateLocation', {
         'xSitum': locationMap['cartesianCoordinate']['x'],
         'ySitum': locationMap['cartesianCoordinate']['y'],        
         'yawSitum': locationMap['bearing']['degreesClockwise'],
+        'floorIdentifier':locationMap['floorIdentifier'],
       });
     } on PlatformException catch (e) {
       print("Failed to update location: '${e.message}'.");
