@@ -6,6 +6,10 @@ import simd
 import Combine  // Importar Combine para manejar las suscripciones
 
 
+extension Notification.Name {
+    static let resetCoordinatorFlags = Notification.Name("resetCoordinatorFlags")
+}
+
 // Clase LocationManager para manejar la ubicación
 class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     private let locationManager = CLLocationManager()
@@ -45,7 +49,6 @@ struct ContentView: View {
                     self.poisMap = poisMap
                 }
                 if let width = notification.userInfo?["width"] as? Double {
-                    print("WIDTH:     ", width)
                     self.width = width
                 } else {
                     print("Failed to cast POIs map. UserInfo: \(String(describing: notification.userInfo))")
@@ -54,12 +57,15 @@ struct ContentView: View {
             // Observa la notificación del botón presionado
             .onReceive(NotificationCenter.default.publisher(for: .buttonPressedNotification)) { _ in
                 self.showAlert = true
+                // Envía notificación para resetear flags
+                NotificationCenter.default.post(name: .resetCoordinatorFlags, object: nil)
             }
             .alert(isPresented: $showAlert) {
                 Alert(title: Text("Actualizando Vista AR"), dismissButton: .default(Text("OK")))
             }
     }
 }
+
 
 // Vista ARViewContainer
 @available(iOS 13.0, *)
@@ -91,11 +97,16 @@ struct ARViewContainer: UIViewRepresentable {
                let xSitum = userInfo["xSitum"] as? Double,
                let ySitum = userInfo["ySitum"] as? Double,
                let yawSitum = userInfo["yawSitum"] as? Double,
-               let floorIdentifier = userInfo["floorIdentifier"] as? Double{                
+               let floorIdentifier = userInfo["floorIdentifier"] as? Double{
                 context.coordinator.updateLocation(xSitum: xSitum, ySitum: ySitum, yawSitum: yawSitum, floorIdentifier: floorIdentifier)
             } else {
                 print("Datos inválidos recibidos en la notificación: \(String(describing: notification.userInfo))")
             }
+        }
+        
+        // Suscribirse a la notificación para resetear las banderas
+        NotificationCenter.default.addObserver(forName: .resetCoordinatorFlags, object: nil, queue: .main) { _ in
+            context.coordinator.resetFlags()
         }
         
         return arView
@@ -230,11 +241,8 @@ struct ARViewContainer: UIViewRepresentable {
         }
         
         func updatePOIs(poisMap: [String: Any], width: Double) {
-            
             // Verificar si la función ya ha sido ejecutada
             guard !didUpdatePOIs else { return }
-            
-
             guard let arView = arView, let initialLocation = locationManager.initialLocation else { return }
             
             // Buscar el ancla fijo por nombre y convertirlo a AnchorEntity
@@ -253,7 +261,7 @@ struct ARViewContainer: UIViewRepresentable {
                     print("Error: No se encontró la clave 'pois' en el mapa de POIs")
                     return
                 }
-                
+                print("WIDTH!!!!!!!!!!!!!!:       ", width)
                 for (index, poi) in poisList.enumerated() {
                     if let position = poi["position"] as? [String: Any],
                        let cartesianCoordinate = position["cartesianCoordinate"] as? [String: Double],
@@ -261,16 +269,15 @@ struct ARViewContainer: UIViewRepresentable {
                        let x = cartesianCoordinate["x"],
                        let y = cartesianCoordinate["y"],
                        let name = poi["name"] as? String {
-                        print("Before  looppppppppppppp    ", floorIdentifier, "    ", String(initialLocation.altitude))
+                        
                         if floorIdentifier == String(Int(initialLocation.altitude)) {
                             // Transformar la posición
-                            let transformedPosition = generateARKitPosition(x: Float(x), y: Float(y), currentLocation: initialLocation, arView: arView)
+                            let transformedPosition = generateARKitPosition(x: Float(x), y: Float(width - y), currentLocation: initialLocation, arView: arView)
 
                             // Crear la esfera y añadirla a la escena
                             let poiEntity = createSphereEntity(radius: 1, color: .green)
                             poiEntity.position = transformedPosition
                             poiEntity.name = "poi_\(index)"  // Asignar un nombre único a cada POI
-                            
                             print("POI:   ", name , "    ", poiEntity.position.x , "   ",poiEntity.position.z)
                             
                             // Crear la entidad de texto con el nombre del POI
@@ -295,6 +302,13 @@ struct ARViewContainer: UIViewRepresentable {
             }
             
             didUpdatePOIs = true
+        }
+
+        // Restablecer las banderas de actualización
+        func resetFlags() {
+            didUpdatePOIs = false
+            locationUpdated = false
+            print("Flags reset: didUpdatePOIs and locationUpdated are now false!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!.")
         }
 
         func generateARKitPosition(x: Float, y: Float, currentLocation: CLLocation, arView: ARView) -> SIMD3<Float> {
