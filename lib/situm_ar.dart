@@ -133,20 +133,21 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
           ),
 
         // ============== AR view (frente) =====================================
-        Positioned.fill(
-          child: LayoutBuilder(
-            builder: (BuildContext context, BoxConstraints constraints) {
-              double arHeight = constraints.maxHeight * widget.arHeightRatio;
-              return Align(
-                alignment: Alignment.bottomCenter,
-                child: SizedBox(
-                  height: arHeight,
-                  child: arView,
-                ),
-              );
-            },
+        if (isArVisible) 
+          Positioned.fill(
+            child: LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                double arHeight = constraints.maxHeight * widget.arHeightRatio;
+                return Align(
+                  alignment: Alignment.bottomCenter,
+                  child: SizedBox(
+                    height: arHeight,
+                    child: arView,
+                  ),
+                );
+              },
+            ),
           ),
-        ),
 
         // ============== Expand/collapse AR ===================================
         if (widget.mapView != null)
@@ -191,7 +192,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
               // Llamar al método para enviar la notificación             
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text("Actualizando Vista AR"),
+                  content: Text("Updating AR View"),
                   duration: Duration(seconds: 2), // El Snackbar desaparecerá después de 2 segundos
                 ),
               );
