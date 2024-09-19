@@ -54,6 +54,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
   bool isArVisible = false;
   bool isMapCollapsed = false;
   bool loadingArMessage = false;
+  bool isFakeViewerVisible = true;
   Timer? loadingArMessageTimer;
   ScrollController scrollController = ScrollController();
   static const int animationMillis = 200;
@@ -75,15 +76,23 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
     }
 
     ARController()._onARWidgetState(this);
-    arController.load();
+    // arController.load();
+
+    // Timer(const Duration(seconds: 20), () {
+    //   setState(() {
+    //     isFakeViewerVisible = false;
+    //   });
+    // });
   }
 
-  void _onARViewCreated(BuildContext context, ARController? controller) {
-    if (widget.mapView == null) {
-      arController.resume();
-    } else {
-      arController.pause();
-    }
+  void _onARViewCreated(BuildContext context, ARController? controller) async {
+    // await arController.load();
+    // await arController.resume();
+    // if (widget.mapView == null) {
+    //   arController.resume();
+    // } else {
+    //   arController.pause();
+    // }
   }
 
   @override
@@ -107,9 +116,73 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
     //   return widget.mapView!;
     // }
 
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 1000),
+      transitionBuilder: (Widget child, Animation<double> animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: child,
+        );
+        // final offsetAnimation = Tween<Offset>(
+        //   begin: const Offset(1.0, 0.0),
+        //   end: Offset.zero, //
+        // ).animate(animation);
+        //
+        // return SlideTransition(
+        //   position: offsetAnimation,
+        //   child: child,
+        // );
+      },
+      child: isArVisible ? _buildArStack(arView) : _buildMapStack(),
+    );
+
+    // return IndexedStack(
+    //   index: isArVisible ? 1 : 0,
+    //   children: [
+    //     Stack(
+    //       children: [
+    //         widget.mapView!,
+    //         _createDebugModeSwitchButton(() {
+    //           setState(() {
+    //             isArVisible = !isArVisible;
+    //           });
+    //           isArVisible
+    //               ? arController.onArRequested()
+    //               : arController.onArGone();
+    //           // if (isArVisible) {
+    //           //   Timer(const Duration(seconds: 5), () async {
+    //           //     await arController.load();
+    //           //     Timer(const Duration(seconds: 5), () async {
+    //           //       await arController.resume();
+    //           //     });
+    //           //   });
+    //           // }
+    //         })
+    //       ],
+    //     ),
+    //     Stack(children: [
+    //       arView,
+    //       _createDebugModeSwitchButton(() {
+    //         arController.onArGone();
+    //       }),
+    //       if (loadingArMessage) const ARLoadingWidget(),
+    //     ]),
+    //   ],
+    // );
+
     // return Stack(
     //   children: [
-    //     arView
+    //     arView,
+    //     if (isFakeViewerVisible)
+    //       widget.mapView!,
+    //       // SizedBox.expand(
+    //       //   child: Container(
+    //       //     color: Colors.blue,
+    //       //     child: const Text("Eu son un viewer e molo mogollón"),
+    //       //   ),
+    //       // ),
+    //     // if (!isFakeViewerVisible)
+    //     //   arView,
     //   ],
     // );
 
@@ -204,11 +277,92 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
                 setState(() {
                   isArVisible = !isArVisible;
                 });
-                isArVisible
-                    ? arController.onArRequested()
-                    : arController.onArGone();
+                // isArVisible
+                //     ? arController.onArRequested()
+                //     : arController.onArGone();
+                if (isArVisible) {
+                  Timer(const Duration(seconds: 1), () async {
+                    await arController.load();
+                    Timer(const Duration(seconds: 5), () async {
+                      await arController.resume();
+                    });
+                  });
+                }
               })
             : const SizedBox(),
+      ],
+    );
+  }
+
+  Widget _buildMapStack() {
+    return Stack(
+      key: const ValueKey(0),
+      // Asegúrate de asignar chaves distintas para diferenciar as pilas
+      children: [
+        widget.mapView!,
+        _createDebugModeSwitchButton(() {
+          setState(() {
+            isArVisible = !isArVisible;
+          });
+          isArVisible ? arController.onArRequested() : arController.onArGone();
+        })
+      ],
+    );
+  }
+
+  Widget _buildArStack(arView) {
+    return Stack(
+      key: const ValueKey(1),
+      children: [
+        arView,
+        _createDebugModeSwitchButton(() {
+          setState(() {
+            isArVisible = !isArVisible;
+          });
+          arController.onArGone();
+        }),
+        if (loadingArMessage) const ARLoadingWidget(),
+        // Align(
+        //   alignment: Alignment.bottomCenter,
+        //   child: LayoutBuilder(
+        //     // Let us know about the container's height.
+        //     builder: (BuildContext context, BoxConstraints constraints) {
+        //       double visibleMapHeight = isArVisible
+        //       // If the AR is visible, make the MapView height depend on the
+        //       // state collapsed/expanded:
+        //           ? (isMapCollapsed
+        //           ? 0
+        //           : constraints.maxHeight * (1 - widget.arHeightRatio))
+        //       // If the AR is not visible, make the MapView full height:
+        //           : constraints.maxHeight;
+        //       return AbsorbPointer(
+        //         absorbing: isArVisible,
+        //         child: AnimatedContainer(
+        //           // NOTE: visibleMapHeight must be a property of AnimatedContainer
+        //           // as it will not animate changes on a child.
+        //           duration: animationDuration,
+        //           curve: Curves.decelerate,
+        //           height: visibleMapHeight,
+        //           child: SingleChildScrollView(
+        //             // Add ScrollView to center the map: TODO fix MapView resizing on iOS.
+        //             controller: scrollController,
+        //             physics: const NeverScrollableScrollPhysics(),
+        //             child: Container(
+        //               // This opaque Container prevents the AR widget from being
+        //               // visible while the map is not loaded.
+        //               color: Colors.grey[200],
+        //               child: SizedBox(
+        //                 // Set the map height equals to the container.
+        //                 height: constraints.maxHeight,
+        //                 child: widget.mapView!,
+        //               ),
+        //             ),
+        //           ),
+        //         ),
+        //       );
+        //     },
+        //   ),
+        // ),
       ],
     );
   }

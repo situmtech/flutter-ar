@@ -5,6 +5,7 @@ class ARController {
 
   _ARWidgetState? _widgetState;
   MapViewController? _mapViewController;
+  bool _isArLoaded = false;
 
   final MethodChannel _channel = const MethodChannel(CHANNEL_ID);
 
@@ -44,7 +45,6 @@ class ARController {
   // === Sleep/Wake actions:
 
   void onArRequested() {
-    resume();
     _widgetState?.updateStatusArRequested();
     _mapViewController?.updateAugmentedRealityStatus(ARStatus.success);
     _mapViewController?.followUser();
@@ -55,22 +55,32 @@ class ARController {
     });
     // Notify the client callback:
     _widgetState?.widget.onARVisibilityChanged?.call(ARVisibility.visible);
+
+    // TODO!!! Wait until a GL Context is available using some API!
+    Timer(const Duration(milliseconds: 2000), () async {
+      if (!_isArLoaded) {
+        // await load();
+        _isArLoaded = true;
+      }
+      await load();
+      await resume();
+    });
   }
 
   void onArGone() {
+    pause();
+    unload();
     _widgetState?.updateStatusArGone();
     _mapViewController?.updateAugmentedRealityStatus(ARStatus.finished);
-    pause();
     _widgetState?.widget.onARVisibilityChanged?.call(ARVisibility.gone);
   }
-  
 
   void pause() async {
     print("ATAG > DART> Called pause!!");
     await _channel.invokeMethod("pause", {});
   }
 
-  void resume() async {
+  Future<void> resume() async {
     print("ATAG > DART> Called resume!!");
     await _channel.invokeMethod("resume", {});
   }

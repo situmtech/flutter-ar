@@ -5,16 +5,22 @@ import android.app.Activity
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.util.AttributeSet
 import android.util.Log
+import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import androidx.core.view.LayoutInflaterCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.google.ar.core.Anchor
 import com.google.ar.core.Config
 import com.google.ar.core.Plane
+import com.google.ar.core.Session
 import com.google.ar.core.TrackingFailureReason
 import dev.romainguy.kotlin.math.Quaternion
 import io.flutter.plugin.common.BinaryMessenger
@@ -44,6 +50,7 @@ class ARNativeView(
     private val TAG = "ARNativeView"
     private var sceneView: ARSceneView? = null
     private val rootView = createFullSizeFrameLayout(context)
+    private lateinit var targetView: FrameLayout
 
 
     private val _mainScope = CoroutineScope(Dispatchers.Main)
@@ -75,13 +82,18 @@ class ARNativeView(
         }
 
     private fun createFullSizeFrameLayout(context: Context): FrameLayout {
-        val frameLayout = FrameLayout(context)
-        val layoutParams = FrameLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.MATCH_PARENT
-        )
-        frameLayout.layoutParams = layoutParams
-        return frameLayout
+//        val frameLayout = FrameLayout(context)
+//        frameLayout.fitsSystemWindows = true
+//        val layoutParams = FrameLayout.LayoutParams(
+//            ViewGroup.LayoutParams.MATCH_PARENT,
+//            ViewGroup.LayoutParams.MATCH_PARENT
+//        )
+//        frameLayout.layoutParams = layoutParams
+//        return frameLayout
+        val frameLayout = LayoutInflater.from(context)
+            .inflate(R.layout.view_ar, null, false)
+        targetView = frameLayout.findViewById(R.id.situm_ar_target)
+        return frameLayout as FrameLayout
     }
 
     override fun getView(): View {
@@ -99,22 +111,22 @@ class ARNativeView(
             throw RuntimeException("Calling sceneView before initialization.")
         }
         sceneView?.apply {
-            Log.d("ARView", "setp scene view")
+            Log.d("ARView", "ATAG> setup scene view")
 
             planeRenderer.isEnabled = true
 
 
             onSessionResumed = { session ->
-                Log.i(TAG, "onSessionCreated")
+                Log.i(TAG, "ATAG> onSessionCreated")
             }
             onSessionFailed = { exception ->
-                Log.e(TAG, "onSessionFailed : $exception")
+                Log.e(TAG, "ATAG> onSessionFailed : $exception")
             }
             onSessionCreated = { session ->
-                Log.i(TAG, "onSessionCreated")
+                Log.i(TAG, "ATAG> onSessionCreated")
             }
             onTrackingFailureChanged = { reason ->
-                Log.i(TAG, "onTrackingFailureChanged: $reason");
+                Log.i(TAG, "ATAG> onTrackingFailureChanged: $reason");
             }
 
             onSessionUpdated = { _, frame ->
@@ -130,7 +142,7 @@ class ARNativeView(
             onTrackingFailureChanged = { reason ->
                 //this@ARView.trackingFailureReason = reason
             }
-            Log.d("ARView", "setp scene view 2")
+            Log.d("ARView", "ATAG> setp scene view 2")
             //  light {
             //     isEnabled = true
             //     intensity = 1.0f
@@ -139,7 +151,7 @@ class ARNativeView(
 
         }
         (activity as? LifecycleOwner)?.lifecycleScope?.launch {
-            Log.d("ARView", "buildAndAddArrowNode 3")
+            Log.d("ARView", "ATAG> buildAndAddArrowNode 3")
 
             if (lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
                 // Actualiza el nodo en cada frame
@@ -202,42 +214,53 @@ class ARNativeView(
 
     private fun load(arguments: Map<String, Any>, result: MethodChannel.Result) {
         rootView.post {
+            Log.d("ATAG", "Called load (native side)")
             sceneView = ARSceneView(context,
-                sharedLifecycle = lifecycle,
+                // Este paviño non o podemos pasar aquí.
+                // sharedLifecycle = lifecycle,
                 sessionConfiguration = { session, config ->
-                    config.depthMode = if (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
-                        Config.DepthMode.AUTOMATIC
-                    } else {
-                        Config.DepthMode.DISABLED
-                    }
+                    config.depthMode =
+                        if (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
+                            Config.DepthMode.AUTOMATIC
+                        } else {
+                            Config.DepthMode.DISABLED
+                        }
                     config.instantPlacementMode = Config.InstantPlacementMode.DISABLED
                     config.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
                 }
             )
-            rootView.addView(
-                sceneView,
-                ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT
-                )
+            Log.d("ATAG", "Instantiated ArSceneView")
+            targetView.addView(
+                sceneView
             )
+
+            Log.d("ATAG", "Added ArSceneView to TARGET VIEW")
+            // Unha vez temos a vista na xerarquía (paso anterior), daquela si que si:
+            sceneView?.lifecycle = lifecycle
+            Log.d("ATAG", "Assigned lifecycle")
             setupSceneView()
+            Log.d("ATAG", "Called setupSceneView()")
+
+
             result.success("DONE")
-            Log.d("ATAG", """@#################################################@
+            Log.d(
+                "ATAG", """@#################################################@
                 |@#################################################@
                 |@#################################################@
                 | Supostamente a vista AR está en pantalla.
                 |@#################################################@
                 |@#################################################@
-            """.trimMargin())
+            """.trimMargin()
+            )
         }
     }
 
 
     private fun unload(arguments: Map<String, Any>, result: MethodChannel.Result) {
         Log.d("ATAG", "Called unload, sceneView.arCore = ${sceneView?.arCore}")
-        sceneView?.arCore?.destroy()
-        rootView.removeAllViews()
+        targetView.removeAllViews()
+//        sceneView?.arCore?.destroy()
+//        sceneView?.destroy()
     }
 
     private fun resume(arguments: Map<String, Any>, result: MethodChannel.Result) {
@@ -332,6 +355,16 @@ class ARNativeView(
                 isPositionEditable = true
             }
             sceneView!!.addChildNode(arrowNode!!)
+        }
+    }
+
+    class MyArSceneView(
+        context: Context,
+        sessionConfiguration: ((session: Session, Config) -> Unit)?
+    ) :
+        ARSceneView(context, sessionConfiguration = sessionConfiguration) {
+        fun create() {
+            arCore.create(context, activity, setOf())
         }
     }
 }

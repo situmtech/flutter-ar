@@ -75,10 +75,16 @@ class _ARViewState extends State<ARView> {
 
   @override
   Widget build(BuildContext context) {
+    return SafeArea(
+      child: _build(context),
+    );
+  }
+
+  Widget _build(BuildContext context) {
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return _buildHybrid(context);
-        // return _buildNormal();
+      // return _buildNormal();
       case TargetPlatform.iOS:
         return UiKitView(
           viewType: CHANNEL_ID,
@@ -90,7 +96,7 @@ class _ARViewState extends State<ARView> {
   }
 
   void onPlatformViewCreated(int id) async {
-    await controller.load();
+    // await controller.load();
     if (widget.onCreated != null) {
       widget.onCreated!(controller);
     }
