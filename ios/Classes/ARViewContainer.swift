@@ -14,17 +14,21 @@ struct ARViewContainer: UIViewRepresentable {
         configuration.planeDetection = []
         arView.session.run(configuration)
 
-        let arrowAndTextAnchor = createArrowAndTextAnchor()
-        arView.scene.anchors.append(arrowAndTextAnchor)
+        let arrowAnchor = createArrowAnchor()
+        arView.scene.anchors.append(arrowAnchor)
 
         context.coordinator.arView = arView
         arView.session.delegate = context.coordinator
 
-        context.coordinator.arrowAndTextAnchor = arrowAndTextAnchor
+        context.coordinator.arrowAnchor = arrowAnchor
         context.coordinator.setupFixedAnchor()
 
         NotificationCenter.default.addObserver(forName: .locationUpdated, object: nil, queue: .main) { notification in
             context.coordinator.handleLocationUpdate(notification)
+        }
+        
+        NotificationCenter.default.addObserver(forName: .pointUpdated, object: nil, queue: .main) { notification in
+            context.coordinator.handlePointUpdate(notification)
         }
 
         NotificationCenter.default.addObserver(forName: .resetCoordinatorFlags, object: nil, queue: .main) { _ in
@@ -47,7 +51,7 @@ struct ARViewContainer: UIViewRepresentable {
         Coordinator(locationManager: locationManager)
     }
 
-    func createArrowAndTextAnchor() -> AnchorEntity {
+    func createArrowAnchor() -> AnchorEntity {
         let anchor = AnchorEntity()
 
         do {

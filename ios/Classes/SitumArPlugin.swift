@@ -19,7 +19,12 @@ class SitumARPlugin: NSObject {
     @objc func updateLocation(xSitum: Double, ySitum: Double, yawSitum: Double, floorIdentifier: Double) {
         // Enviar una notificación para actualizar la ubicación en la vista AR
         NotificationCenter.default.post(name: .locationUpdated, object: nil, userInfo: ["xSitum": xSitum, "ySitum": ySitum, "yawSitum": yawSitum, "floorIdentifier": floorIdentifier])
-        print("Location updated from SitumARPlugin with xSitum: \(xSitum), ySitum: \(ySitum), yawSitum: \(yawSitum), floorIdentifier: \(floorIdentifier) ")
+        //print("Location updated from SitumARPlugin with xSitum: \(xSitum), ySitum: \(ySitum), yawSitum: \(yawSitum), floorIdentifier: \(floorIdentifier) ")
+    }
+    
+    @objc func updatePoint(point: [String: Any]) {
+        // Enviar una notificación para actualizar los POIs en la vista AR
+        NotificationCenter.default.post(name: .pointUpdated, object: nil, userInfo: ["ToPoint": point])
     }
 }
 
@@ -28,6 +33,7 @@ extension Notification.Name {
     static let poisUpdated = Notification.Name("poisUpdated")
     static let locationUpdated = Notification.Name("locationUpdated")
     static let buttonPressedNotification = Notification.Name("buttonPressedNotification")
+    static let pointUpdated = Notification.Name("pointUpdated")
 }
 
 public class SitumArPlugin: NSObject, FlutterPlugin {
@@ -48,8 +54,34 @@ public class SitumArPlugin: NSObject, FlutterPlugin {
         switch call.method {
             case "getPlatformVersion":
                 result("iOS " + UIDevice.current.systemVersion)
+            
             case "startARView":
                 presentARView(result: result)
+            
+            case "updatePoint":
+            print("Received arguments for updatePOINT:", call.arguments ?? "No arguments")
+            if let argumentString = call.arguments as? String,
+                    let data = argumentString.data(using: .utf8), // Convertimos a Data
+                    let args = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] { // Parseamos a diccionario
+ 
+                    if let xPoint = args["x"] as? Double,
+                       let yPoint = args["y"] as? Double {
+                        
+                        // Crea el punto con las coordenadas desenvueltas
+                        let point: [String: Any] = [
+                            "xPoint": xPoint,
+                            "yPoint": yPoint
+                        ]                     
+                        // Envía la notificación
+                        NotificationCenter.default.post(name: .pointUpdated, object: nil, userInfo: point)
+                        result(nil)
+                    } else {
+                        result(FlutterError(code: "INVALID_ARGUMENT", message: "Unable to convert arguments to Double", details: nil))
+                    }
+                }
+
+                                        
+            
             case "updateLocation":
                 print("Received arguments for updateLocation:", call.arguments ?? "No arguments")
                 
@@ -74,8 +106,7 @@ public class SitumArPlugin: NSObject, FlutterPlugin {
                                 "yawSitum": yawSitum,
                                 "floorIdentifier": floorIdentifier
                             ]
-                            
-                            print("LOCATION DATA: ", locationData)
+   
                             NotificationCenter.default.post(name: .locationUpdated, object: nil, userInfo: locationData)
                             result(nil)
                         } else {
@@ -102,7 +133,7 @@ public class SitumArPlugin: NSObject, FlutterPlugin {
                         NSLog("Failed to convert POIs to JSON string")
                     }
                     
-                    print("POIs received: \(poisMapString)")
+                    //print("POIs received: \(poisMapString)")
                     NotificationCenter.default.post(name: .poisUpdated, object: nil, userInfo: ["poisMap": poisMap, "width": width])
                 } else {
                     NSLog("Failed to cast POIs or width. Received data: %@", String(describing: call.arguments))
@@ -110,7 +141,6 @@ public class SitumArPlugin: NSObject, FlutterPlugin {
                 result(nil)
             case "sendNotification":
                 // Enviar una notificación que ContentView.swift pueda observar
-                print("ENVIANDO NOTIFICACION")
                 NotificationCenter.default.post(name: .buttonPressedNotification, object: nil)
                 result(nil)
             default:

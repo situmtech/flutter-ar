@@ -261,35 +261,39 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
   }
 
   void updateStatusArRequested() {
-    setState(() {
-      isArVisible = true;
-      isMapCollapsed = false;
-    });
-    centerAction() {
-      // "Center" the MapView into the ScrollView:
-      if (isArVisible) {
-        scrollController
-            .jumpTo(scrollController.position.maxScrollExtent * 2 / 5);
-      }
+  setState(() {
+    isArVisible = true;
+    isMapCollapsed = false;
+  });
+  
+  centerAction() {
+    // Verificar si el ScrollController tiene clientes (es decir, está adjunto a un ScrollView)
+    if (isArVisible && scrollController.hasClients) {
+      scrollController.jumpTo(scrollController.position.maxScrollExtent * 2 / 5);
+    } else {
+      print("ScrollController no está adjunto a ninguna vista de scroll.");
     }
-
-    // Use animationDurationWithDelay to move the scroll that contains the MapView
-    // This ensures it has been completely resized (after animationDuration).
-    Future.delayed(animationDurationWithDelay, centerAction);
-    // Watchdog:
-    Future.delayed(const Duration(milliseconds: 1500), centerAction);
-
-    // Create a "AR Loading" message that disappears after 10s.:
-    setState(() {
-      loadingArMessage = true;
-    });
-    loadingArMessageTimer = Timer(const Duration(seconds: 10), () {
-      setState(() {
-        loadingArMessageTimer = null;
-        loadingArMessage = false;
-      });
-    });
   }
+
+  // Usa animationDurationWithDelay para mover el scroll que contiene el MapView
+  Future.delayed(animationDurationWithDelay, centerAction);
+
+  // Watchdog para asegurarse de que el ScrollController se actualiza correctamente
+  Future.delayed(const Duration(milliseconds: 1500), centerAction);
+
+  // Crear un mensaje de "AR Loading" que desaparece después de 10 segundos
+  setState(() {
+    loadingArMessage = true;
+  });
+  
+  loadingArMessageTimer = Timer(const Duration(seconds: 10), () {
+    setState(() {
+      loadingArMessageTimer = null;
+      loadingArMessage = false;
+    });
+  });
+}
+
 
   void updateStatusArGone() {
     loadingArMessageTimer?.cancel();

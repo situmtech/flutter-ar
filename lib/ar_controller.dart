@@ -274,31 +274,29 @@ class ARController {
     }
   }
 
-  void updateArArrowGuide(RouteProgress progress) {
+  void updateArArrowGuide(RouteProgress progress) async {
     dynamic progressContent = jsonDecode(jsonEncode(progress.rawContent));
     String nextCoordinates = findNextCoordinates(progressContent);
+   
+   
     if (nextCoordinates == "floorChange") {
-//       _unityViewController?.send(
-//           "MessageManager", "SendDisableArrowGuide", "null");
       navigationLastCoordinates = nextCoordinates;
-
       ARModeDebugValues.nextIndicationUp.value =
           getFloorChangeDirection(progressContent);
       ARModeDebugValues.nextIndicationChangeFloor.value = true;
     } else if (navigationLastCoordinates != nextCoordinates &&
         nextCoordinates != "") {
       if (navigationLastCoordinates == "floorChange") {
-        // After floor change , enable arrow
-//         _unityViewController?.send(
-//             "MessageManager", "SendEnableArrowGuide", "null");
         ARModeDebugValues.nextIndicationChangeFloor.value = false;
       }
-
       navigationLastCoordinates = nextCoordinates;
-//       _unityViewController?.send(
-//           "MessageManager", "SendArrowTarget", nextCoordinates);
-//       _unityViewController?.send(
-//           "MessageManager", "SendEnableArrowGuide", "null");
+    }
+
+ try {
+      // Envía posición del poi     
+      await platform.invokeMethod('updatePoint', nextCoordinates);
+    } on PlatformException catch (e) {
+      print("Failed to update location: '${e.message}'.");
     }
   }
 

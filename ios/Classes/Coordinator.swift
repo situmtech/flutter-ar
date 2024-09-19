@@ -4,7 +4,7 @@ import CoreLocation
 
 class Coordinator: NSObject, ARSessionDelegate {
     var locationManager: LocationManager
-    var arrowAndTextAnchor: AnchorEntity?
+    var arrowAnchor: AnchorEntity?
     var fixedAnchor: AnchorEntity?
     weak var arView: ARView?
     
@@ -15,9 +15,19 @@ class Coordinator: NSObject, ARSessionDelegate {
         self.locationManager = locationManager
     }
     
+    
+    func handlePointUpdate(_ notification: Notification) {
+        
+        if let userInfo = notification.userInfo,
+           let xPoint = userInfo["x"] as? Double,
+           let yPoint = userInfo["y"] as? Double{
+            print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@############################")
+            updatePoint(xPoint: xPoint,  yPoint: yPoint)
+        }
+    }
+    
     func handleLocationUpdate(_ notification: Notification) {
-            print("Notificación de ubicación actualizada recibida")
-            
+        
             if let userInfo = notification.userInfo,
                let xSitum = userInfo["xSitum"] as? Double,
                let ySitum = userInfo["ySitum"] as? Double,
@@ -26,7 +36,9 @@ class Coordinator: NSObject, ARSessionDelegate {
                 
                 // Llama al método que actualiza la ubicación en la escena
                 updateLocation(xSitum: xSitum, ySitum: ySitum, yawSitum: yawSitum, floorIdentifier: floorIdentifier)
-            } else {
+            }
+           
+            else {
                 print("Datos inválidos recibidos en la notificación: \(String(describing: notification.userInfo))")
             }
         }
@@ -36,7 +48,7 @@ class Coordinator: NSObject, ARSessionDelegate {
     }
 
     func updateArrowPositionAndDirection() {
-        guard let arView = arView, let arrowAndTextAnchor = arrowAndTextAnchor else { return }
+        guard let arView = arView, let arrowAnchor = arrowAnchor else { return }
         
         let cameraTransform = arView.cameraTransform
         let cameraPosition = cameraTransform.translation
@@ -47,15 +59,15 @@ class Coordinator: NSObject, ARSessionDelegate {
                                           cameraTransform.matrix.columns.2.z)
 
         let forwardPosition = cameraPosition + forwardVector * distance
-        arrowAndTextAnchor.position = forwardPosition
+        arrowAnchor.position = forwardPosition
 
-        if let heading = locationManager.heading {
+        /*if let heading = locationManager.heading {
             let headingRadians = Float(heading.trueHeading + 90) * .pi / 180
             let northOrientation = simd_quatf(angle: headingRadians, axis: [0, -1, 0])
-            if let arrowEntity = arrowAndTextAnchor.children.first {
+            if let arrowEntity = arrowAnchor.children.first {
                 arrowEntity.orientation = simd_quatf(angle: .pi / 2, axis: [1, 0, 0]) * northOrientation
             }
-        }
+        }*/
     }
 
     func setupFixedAnchor() {
@@ -85,16 +97,19 @@ class Coordinator: NSObject, ARSessionDelegate {
         self.fixedAnchor = fixedAnchor
     }
     
+    func updatePoint(xPoint: Double, yPoint: Double){
+        print("X Point to point@@@@@@@@@@@@:    ", xPoint)
+        print("Y Point to point@@@@@@@@@@@@:    ", yPoint)
+    }
+    
     func updateLocation(xSitum: Double, ySitum: Double, yawSitum: Double, floorIdentifier: Double) {
             // Comprobar si la ubicación ya ha sido actualizada
             guard !locationUpdated else { return }
             print("XSITUM:  ", xSitum)
             print("YSITUM:  ", ySitum)
             print("YAWSITUM:  ", yawSitum)
-            print("FLOORIDENTIFIER:  ", floorIdentifier)
-            
-            // Aquí se actualiza la posición solo la primera vez
-            print("Actualizando la ubicación solo una vez")
+            print("FLOORIDENTIFIER:  ", floorIdentifier)            
+    
             let locationPosition = SIMD4<Float>(Float(xSitum), Float(ySitum), Float(yawSitum), Float(floorIdentifier))
 
             // Simular la actualización de la ubicación inicial
