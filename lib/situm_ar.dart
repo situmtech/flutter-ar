@@ -157,8 +157,8 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
               opacity: isArVisible ? 1 : 0,
               duration: animationDuration,
               child: SizedBox(
-                height: 32,
-                width: 32,
+                height: 52,
+                width: 52,
                 child: FloatingActionButton(
                   onPressed: () {
                     setState(() {
