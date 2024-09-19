@@ -59,10 +59,7 @@ struct ContentView: View {
                 self.showAlert = true
                 // Envía notificación para resetear flags
                 NotificationCenter.default.post(name: .resetCoordinatorFlags, object: nil)
-            }
-            .alert(isPresented: $showAlert) {
-                Alert(title: Text("Actualizando Vista AR"), dismissButton: .default(Text("OK")))
-            }
+            }            
     }
 }
 
@@ -87,7 +84,7 @@ struct ARViewContainer: UIViewRepresentable {
         
         // Asigna el arView al coordinador
         context.coordinator.arView = arView
-        arView.session.delegate = context.coordinator  // Ahora es posible sin errores
+        arView.session.delegate = context.coordinator
 
         context.coordinator.arrowAndTextAnchor = arrowAndTextAnchor
         context.coordinator.setupFixedAnchor()
@@ -264,7 +261,7 @@ struct ARViewContainer: UIViewRepresentable {
                     print("Error: No se encontró la clave 'pois' en el mapa de POIs")
                     return
                 }
-                print("WIDTH!!!!!!!!!!!!!!:       ", width)
+               
                 for (index, poi) in poisList.enumerated() {
                     if let position = poi["position"] as? [String: Any],
                        let cartesianCoordinate = position["cartesianCoordinate"] as? [String: Double],

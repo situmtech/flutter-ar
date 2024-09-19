@@ -188,7 +188,13 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
           right: 20,
           child: FloatingActionButton(
             onPressed: () {
-              // Llamar al método para enviar la notificación
+              // Llamar al método para enviar la notificación             
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text("Actualizando Vista AR"),
+                  duration: Duration(seconds: 2), // El Snackbar desaparecerá después de 2 segundos
+                ),
+              );
               SitumAr.sendNotificationToContentView();
             },
             child: Icon(Icons.notification_important),
