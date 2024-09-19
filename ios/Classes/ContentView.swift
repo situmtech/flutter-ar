@@ -85,32 +85,35 @@ struct ARViewContainer: UIViewRepresentable {
         let arrowAndTextAnchor = createArrowAndTextAnchor()
         arView.scene.anchors.append(arrowAndTextAnchor)
         
-        context.coordinator.arrowAndTextAnchor = arrowAndTextAnchor
+        // Asigna el arView al coordinador
         context.coordinator.arView = arView
-        
+        arView.session.delegate = context.coordinator  // Ahora es posible sin errores
+
+        context.coordinator.arrowAndTextAnchor = arrowAndTextAnchor
         context.coordinator.setupFixedAnchor()
 
-        // Suscribirse a la notificación de ubicación actualizada
+        // Suscribirse a las notificaciones
         NotificationCenter.default.addObserver(forName: .locationUpdated, object: nil, queue: .main) { notification in
             print("Notificación de ubicación actualizada recibida")
             if let userInfo = notification.userInfo,
                let xSitum = userInfo["xSitum"] as? Double,
                let ySitum = userInfo["ySitum"] as? Double,
                let yawSitum = userInfo["yawSitum"] as? Double,
-               let floorIdentifier = userInfo["floorIdentifier"] as? Double{
+               let floorIdentifier = userInfo["floorIdentifier"] as? Double {
                 context.coordinator.updateLocation(xSitum: xSitum, ySitum: ySitum, yawSitum: yawSitum, floorIdentifier: floorIdentifier)
             } else {
                 print("Datos inválidos recibidos en la notificación: \(String(describing: notification.userInfo))")
             }
         }
-        
-        // Suscribirse a la notificación para resetear las banderas
+
         NotificationCenter.default.addObserver(forName: .resetCoordinatorFlags, object: nil, queue: .main) { _ in
             context.coordinator.resetFlags()
         }
-        
+
         return arView
     }
+
+
     
     func updateUIView(_ uiView: ARView, context: Context) {
         context.coordinator.updateArrowPositionAndDirection()
@@ -123,8 +126,9 @@ struct ARViewContainer: UIViewRepresentable {
     }
     
     func makeCoordinator() -> Coordinator {
-        Coordinator(locationManager: locationManager)
+        return Coordinator(locationManager: locationManager)
     }
+
     
     func createArrowAndTextAnchor() -> AnchorEntity {
         let anchor = AnchorEntity()
@@ -143,7 +147,7 @@ struct ARViewContainer: UIViewRepresentable {
         return anchor
     }
 
-    class Coordinator: NSObject {
+    class Coordinator: NSObject, ARSessionDelegate {
         var locationManager: LocationManager
         var arrowAndTextAnchor: AnchorEntity?
         var fixedAnchor: AnchorEntity?
@@ -158,6 +162,32 @@ struct ARViewContainer: UIViewRepresentable {
         init(locationManager: LocationManager) {
             self.locationManager = locationManager
         }
+        
+        func session(_ session: ARSession, didUpdate frame: ARFrame) {
+                updateArrowPositionAndDirection()
+            }
+        
+        func updateArrowPositionAndDirection() {
+                guard let arView = arView, let arrowAndTextAnchor = arrowAndTextAnchor else { return }
+                
+                let cameraTransform = arView.cameraTransform
+                let cameraPosition = cameraTransform.translation
+
+                // Mantener la flecha a una distancia fija frente a la cámara
+                let distance: Float = 2.0
+                let forwardVector = -cameraTransform.matrix.columns.2.xyz
+                let forwardPosition = cameraPosition + forwardVector * distance
+                arrowAndTextAnchor.position = forwardPosition
+
+                // Ajustar la orientación para que la flecha apunte siempre al norte global
+                if let heading = locationManager.heading {
+                    let headingRadians = Float(heading.trueHeading + 90) * .pi / 180
+                    let northOrientation = simd_quatf(angle: headingRadians, axis: [0, -1, 0])
+                    if let arrowEntity = arrowAndTextAnchor.children.first {
+                        arrowEntity.orientation = simd_quatf(angle: .pi / 2, axis: [1, 0, 0]) * northOrientation
+                    }
+                }
+            }
         
         func setupFixedAnchor() {
             guard let arView = arView else { return }
@@ -211,34 +241,7 @@ struct ARViewContainer: UIViewRepresentable {
             // Marcar que la ubicación ha sido actualizada
             locationUpdated = true
         }
-        
-        func updateArrowPositionAndDirection() {
-            guard let arView = arView, let arrowAndTextAnchor = arrowAndTextAnchor else { return }
-            
-            // Obtener la posición y rotación de la cámara
-            let cameraTransform = arView.cameraTransform
-            let cameraPosition = cameraTransform.translation
-            
-            // Mantener la flecha y el texto a una distancia fija frente a la cámara
-            let distance: Float = 2.0
-            let forwardVector = -cameraTransform.matrix.columns.2.xyz
-            let forwardPosition = cameraPosition + forwardVector * distance
-            arrowAndTextAnchor.position = forwardPosition
-            
-            // **Ajustar la orientación para que la flecha apunte siempre al norte global**
-            if let heading = locationManager.heading {
-                let headingRadians = Float(heading.trueHeading + 90) * .pi / 180
                 
-                // Crear una orientación que apunte al norte global
-                let northOrientation = simd_quatf(angle: headingRadians, axis: [0, -1, 0])
-                
-                // Establecer la orientación correcta para apuntar al norte global
-                // El ángulo de la orientación se ajusta para que la flecha apunte correctamente
-                if let arrowEntity = arrowAndTextAnchor.children.first {
-                    arrowEntity.orientation = simd_quatf(angle: .pi / 2, axis: [1, 0, 0]) * northOrientation
-                }
-            }
-        }
         
         func updatePOIs(poisMap: [String: Any], width: Double) {
             // Verificar si la función ya ha sido ejecutada
