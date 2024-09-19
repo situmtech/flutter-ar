@@ -113,7 +113,7 @@ struct ARViewContainer: UIViewRepresentable {
     }
     
     func updateUIView(_ uiView: ARView, context: Context) {
-        context.coordinator.updateArrowAndTextPositionAndDirection()
+        context.coordinator.updateArrowPositionAndDirection()
         context.coordinator.updateTextOrientation()
         
         // Llamar a updatePOIs solo una vez cuando los datos estén disponibles
@@ -212,7 +212,7 @@ struct ARViewContainer: UIViewRepresentable {
             locationUpdated = true
         }
         
-        func updateArrowAndTextPositionAndDirection() {
+        func updateArrowPositionAndDirection() {
             guard let arView = arView, let arrowAndTextAnchor = arrowAndTextAnchor else { return }
             
             // Obtener la posición y rotación de la cámara
@@ -308,7 +308,7 @@ struct ARViewContainer: UIViewRepresentable {
         func resetFlags() {
             didUpdatePOIs = false
             locationUpdated = false
-            print("Flags reset: didUpdatePOIs and locationUpdated are now false!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!.")
+            print("Flags reset: didUpdatePOIs and locationUpdated are now false.")
         }
 
         func generateARKitPosition(x: Float, y: Float, currentLocation: CLLocation, arView: ARView) -> SIMD3<Float> {
@@ -363,7 +363,7 @@ struct ARViewContainer: UIViewRepresentable {
             let mesh = MeshResource.generateText(
                 text,
                 extrusionDepth: 0.02,  // Profundidad del texto para mayor visibilidad
-                font: .systemFont(ofSize: 1.0),  // Aumentar el tamaño de la fuente
+                font: .systemFont(ofSize: 1.3),  // Aumentar el tamaño de la fuente
                 containerFrame: .zero,
                 alignment: .center,
                 lineBreakMode: .byWordWrapping
