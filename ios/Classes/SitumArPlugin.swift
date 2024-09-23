@@ -68,12 +68,12 @@ public class SitumArPlugin: NSObject, FlutterPlugin {
                        let yPoint = args["y"] as? Double {
                         
                         // Crea el punto con las coordenadas desenvueltas
-                        let point: [String: Any] = [
+                        let pointData: [String: Any] = [
                             "xPoint": xPoint,
                             "yPoint": yPoint
-                        ]                     
+                        ]
                         // Envía la notificación
-                        NotificationCenter.default.post(name: .pointUpdated, object: nil, userInfo: point)
+                        NotificationCenter.default.post(name: .pointUpdated, object: nil, userInfo: pointData)
                         result(nil)
                     } else {
                         result(FlutterError(code: "INVALID_ARGUMENT", message: "Unable to convert arguments to Double", details: nil))

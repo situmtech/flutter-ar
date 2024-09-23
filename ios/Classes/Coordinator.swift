@@ -11,17 +11,20 @@ class Coordinator: NSObject, ARSessionDelegate {
     var didUpdatePOIs = false
     var locationUpdated = false
     
+    var width = 0.0
+    var targetX = 0.0
+    var targetY = 0.0
+ 
+      
     init(locationManager: LocationManager) {
         self.locationManager = locationManager
     }
     
     
     func handlePointUpdate(_ notification: Notification) {
-        
         if let userInfo = notification.userInfo,
-           let xPoint = userInfo["x"] as? Double,
-           let yPoint = userInfo["y"] as? Double{
-            print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@############################")
+           let xPoint = userInfo["xPoint"] as? Double,
+           let yPoint = userInfo["yPoint"] as? Double{
             updatePoint(xPoint: xPoint,  yPoint: yPoint)
         }
     }
@@ -43,32 +46,57 @@ class Coordinator: NSObject, ARSessionDelegate {
             }
         }
 
-    func session(_ session: ARSession, didUpdate frame: ARFrame) {
+   /* func session(_ session: ARSession, didUpdate frame: ARFrame) {
         updateArrowPositionAndDirection()
+    }*/
+    
+    func setWidth(_width: Double){
+        width = _width
     }
 
     func updateArrowPositionAndDirection() {
         guard let arView = arView, let arrowAnchor = arrowAnchor else { return }
         
+        // Obtener la posición de la cámara
         let cameraTransform = arView.cameraTransform
         let cameraPosition = cameraTransform.translation
 
-        let distance: Float = 2.0
-        let forwardVector = -SIMD3<Float>(cameraTransform.matrix.columns.2.x,
+        let forwardVector: SIMD3<Float>
+        
+        if targetX == 0 && targetY == 0 {
+            print("TargetX y targetY = cero")
+            // Si targetX y targetY son cero, apuntar en la dirección hacia adelante de la cámara
+            forwardVector = -SIMD3<Float>(cameraTransform.matrix.columns.2.x,
                                           cameraTransform.matrix.columns.2.y,
                                           cameraTransform.matrix.columns.2.z)
+        } else {
+            print("TargetX y targetY distinto de cero  ", targetX)
+            print("TargetX y targetY distinto de cero  ", Float(cameraPosition.y))
+            print("TargetX y targetY distinto de cero  ", Float(targetY))
+            // Si se ha especificado un objetivo (targetX, targetY), calcular la dirección hacia él
+            let targetPosition = SIMD3<Float>(Float(targetX), Float(cameraPosition.y), Float(targetY)) // Mantener la misma altura (y) que la cámara
+            forwardVector = normalize(targetPosition - cameraPosition)
+        }
 
+        // Establecer una distancia fija (por ejemplo, 2 metros) desde la cámara
+        let distance: Float = 2.0
         let forwardPosition = cameraPosition + forwardVector * distance
+
+        // Actualizar la posición del ancla de la flecha
         arrowAnchor.position = forwardPosition
 
-        /*if let heading = locationManager.heading {
-            let headingRadians = Float(heading.trueHeading + 90) * .pi / 180
-            let northOrientation = simd_quatf(angle: headingRadians, axis: [0, -1, 0])
-            if let arrowEntity = arrowAnchor.children.first {
-                arrowEntity.orientation = simd_quatf(angle: .pi / 2, axis: [1, 0, 0]) * northOrientation
-            }
-        }*/
+        // Calcular la rotación hacia el objetivo o hacia adelante
+        let angleToTarget = atan2(forwardVector.x, forwardVector.z)
+        let rotationToTarget = simd_quatf(angle: angleToTarget, axis: [0, 1, 0])
+
+        // Aplicar la rotación a la flecha, ajustando para que apunte hacia adelante
+        if let arrowEntity = arrowAnchor.children.first {
+            arrowEntity.orientation = simd_quatf(angle: .pi / 2, axis: [1, 0, 0]) * rotationToTarget
+        }
     }
+
+
+
 
     func setupFixedAnchor() {
         guard let arView = arView else { return }
@@ -79,7 +107,7 @@ class Coordinator: NSObject, ARSessionDelegate {
         do {
             let robotEntity = try ModelEntity.load(named: "Animated_Dragon_Three_Motion_Loops.usdz")
             robotEntity.scale = SIMD3<Float>(0.025, 0.025, 0.025)
-            robotEntity.position = SIMD3<Float>(-1.0, -10.0, -2.0)
+            robotEntity.position = SIMD3<Float>(-1.0, -10.0, -8.0)
 
             let rotation = simd_quatf(angle: .pi / 4, axis: SIMD3<Float>(0, 1, 0))
             robotEntity.orientation = rotation
@@ -100,6 +128,15 @@ class Coordinator: NSObject, ARSessionDelegate {
     func updatePoint(xPoint: Double, yPoint: Double){
         print("X Point to point@@@@@@@@@@@@:    ", xPoint)
         print("Y Point to point@@@@@@@@@@@@:    ", yPoint)
+        guard let arView = arView, let initialLocation = locationManager.initialLocation else { return }
+        let transformedPosition = generateARKitPosition(x: Float(xPoint), y: Float(yPoint), currentLocation: initialLocation, arView: arView)
+        
+        print("X Point transformed:    ", transformedPosition.x)
+        print("Y Point transformed:    ", transformedPosition.z)
+        targetX = Double(transformedPosition.x)
+        targetY = Double(transformedPosition.z)
+        updateArrowPositionAndDirection()
+
     }
     
     func updateLocation(xSitum: Double, ySitum: Double, yawSitum: Double, floorIdentifier: Double) {
@@ -108,9 +145,12 @@ class Coordinator: NSObject, ARSessionDelegate {
             print("XSITUM:  ", xSitum)
             print("YSITUM:  ", ySitum)
             print("YAWSITUM:  ", yawSitum)
-            print("FLOORIDENTIFIER:  ", floorIdentifier)            
-    
+            print("FLOORIDENTIFIER:  ", floorIdentifier)      
+        
+
             let locationPosition = SIMD4<Float>(Float(xSitum), Float(ySitum), Float(yawSitum), Float(floorIdentifier))
+            //let locationPosition = SIMD4<Float>(Float(152.5569763183594), Float(29.70142555236816), Float(36.68222045898438), Float(38718))
+
 
             // Simular la actualización de la ubicación inicial
             let newLocation = CLLocation(
@@ -151,19 +191,34 @@ class Coordinator: NSObject, ARSessionDelegate {
                    let y = cartesianCoordinate["y"],
                    let name = poi["name"] as? String,
                    floorIdentifier == String(Int(initialLocation.altitude)) {
+                   
+                    let transformedPosition = generateARKitPosition(x: Float(x), y: Float(y), currentLocation: initialLocation, arView: arView)
 
-                    let transformedPosition = generateARKitPosition(x: Float(x), y: Float(width - y), currentLocation: initialLocation, arView: arView)
+                        // Si el POI está muy lejos de la cámara, lo escalamos a cero o lo eliminamos.
+                       let maxDistance: Float = 10.0 // Puedes ajustar este valor según sea necesario
 
-                    let poiEntity = createSphereEntity(radius: 1, color: .green)
-                    poiEntity.position = transformedPosition
-                    poiEntity.name = "poi_\(index)"
+                       // Usamos solo la profundidad en el eje Z (distancia hacia adelante)
+                       let distanceInZ = abs(transformedPosition.z - arView.cameraTransform.translation.z)
 
-                    let textEntity = createTextEntity(text: name, position: transformedPosition)
-                    textEntity.name = "text_\(index)"
+                       // Solo mostrar los POIs dentro de la distancia máxima
+                       if distanceInZ <= maxDistance {
+                           let poiEntity = createSphereEntity(radius: 0.5, color: .green)
+                           poiEntity.position = transformedPosition
 
-                    fixedPOIAnchor.addChild(poiEntity)
-                    fixedPOIAnchor.addChild(textEntity)
-                }
+                           // Escalar en función de la distancia
+                           let scaleFactor = 1.0 - (distanceInZ / maxDistance) // Escala inversamente con la distancia
+                           poiEntity.scale = SIMD3<Float>(scaleFactor, scaleFactor, scaleFactor)
+
+                           poiEntity.name = "poi_\(index)"
+
+                           let textEntity = createTextEntity(text: name, position: transformedPosition)
+                           textEntity.scale = SIMD3<Float>(scaleFactor, scaleFactor, scaleFactor) // También ajustar el texto
+                           textEntity.name = "text_\(index)"
+
+                           fixedPOIAnchor.addChild(poiEntity)
+                           fixedPOIAnchor.addChild(textEntity)
+                       }
+                   }
             }
 
             if !arView.scene.anchors.contains(where: { $0 as? AnchorEntity == fixedPOIAnchor }) {
@@ -193,7 +248,7 @@ class Coordinator: NSObject, ARSessionDelegate {
         guard situmBearingDegrees >= 0 else {
             return SIMD3<Float>(0, 0, 0)
         }
-        let situmBearing = Float(situmBearingDegrees) + 90.0
+        let situmBearing = Float(situmBearingDegrees) - 90.0
         let situmBearingMinusRotation = simd_quatf(angle: situmBearing * .pi / 180.0, axis: SIMD3<Float>(0, -1, 0))
 
         let relativePoiPosition = SIMD3<Float>(
@@ -206,7 +261,11 @@ class Coordinator: NSObject, ARSessionDelegate {
         var positionRotatedAndTranslatedToCamera = cameraHorizontalRotation.act(positionsMinusSitumRotated)
         positionRotatedAndTranslatedToCamera += cameraPosition
         positionRotatedAndTranslatedToCamera.y = 0
-
+        
+        // Postprocesado para corregir el flipping respecto al eje Z
+        positionRotatedAndTranslatedToCamera.z *= -1
+        //positionRotatedAndTranslatedToCamera.x *= -1
+        
         return positionRotatedAndTranslatedToCamera
     }
 
@@ -230,7 +289,7 @@ class Coordinator: NSObject, ARSessionDelegate {
         let material = SimpleMaterial(color: .white, isMetallic: false)
         let textEntity = ModelEntity(mesh: mesh, materials: [material])
 
-        textEntity.scale = SIMD3<Float>(0.5, 0.5, 0.5)
+        textEntity.scale = SIMD3<Float>(0.3, 0.3, 0.3)
         textEntity.position = SIMD3<Float>(position.x, position.y + 0.5, position.z)
 
         return textEntity
