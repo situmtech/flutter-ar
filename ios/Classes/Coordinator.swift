@@ -55,7 +55,7 @@ class Coordinator: NSObject, ARSessionDelegate {
     }
 
     func updateArrowPositionAndDirection() {
-        guard let arView = arView, let arrowAnchor = arrowAnchor else { return }
+       /* guard let arView = arView, let arrowAnchor = arrowAnchor else { return }
         
         // Obtener la posición de la cámara
         let cameraTransform = arView.cameraTransform
@@ -92,7 +92,7 @@ class Coordinator: NSObject, ARSessionDelegate {
         // Aplicar la rotación a la flecha, ajustando para que apunte hacia adelante
         if let arrowEntity = arrowAnchor.children.first {
             arrowEntity.orientation = simd_quatf(angle: .pi / 2, axis: [1, 0, 0]) * rotationToTarget
-        }
+        }*/
     }
 
 
@@ -126,7 +126,7 @@ class Coordinator: NSObject, ARSessionDelegate {
     }
     
     func updatePoint(xPoint: Double, yPoint: Double){
-        print("X Point to point@@@@@@@@@@@@:    ", xPoint)
+     /*   print("X Point to point@@@@@@@@@@@@:    ", xPoint)
         print("Y Point to point@@@@@@@@@@@@:    ", yPoint)
         guard let arView = arView, let initialLocation = locationManager.initialLocation else { return }
         let transformedPosition = generateARKitPosition(x: Float(xPoint), y: Float(yPoint), currentLocation: initialLocation, arView: arView)
@@ -135,7 +135,7 @@ class Coordinator: NSObject, ARSessionDelegate {
         print("Y Point transformed:    ", transformedPosition.z)
         targetX = Double(transformedPosition.x)
         targetY = Double(transformedPosition.z)
-        updateArrowPositionAndDirection()
+        updateArrowPositionAndDirection()*/
 
     }
     
@@ -182,6 +182,24 @@ class Coordinator: NSObject, ARSessionDelegate {
                 print("Error: No se encontró la clave 'pois' en el mapa de POIs")
                 return
             }
+            
+            // Eliminar cualquier POI anterior (si existe)
+            if let fixedPOIAnchor = arView.scene.anchors.first(where: { $0.name == "fixedPOIAnchor" }) as? AnchorEntity {
+                fixedPOIAnchor.children.filter { $0.name.starts(with: "poi_") || $0.name.starts(with: "text_") }
+                    .forEach { $0.removeFromParent() }
+            } else {
+                // Crear un nuevo ancla fijo si no existe
+                let fixedPOIAnchor = AnchorEntity(world: SIMD3<Float>(0, 0, 0)) // Puedes ajustar la posición inicial del ancla
+                fixedPOIAnchor.name = "fixedPOIAnchor"
+                arView.scene.addAnchor(fixedPOIAnchor)
+            }
+
+            guard let fixedPOIAnchor = arView.scene.anchors.first(where: { $0.name == "fixedPOIAnchor" }) as? AnchorEntity else {
+                print("Error: No se pudo crear o encontrar el ancla 'fixedPOIAnchor'")
+                return
+            }
+
+
 
             for (index, poi) in poisList.enumerated() {
                 if let position = poi["position"] as? [String: Any],
@@ -191,33 +209,22 @@ class Coordinator: NSObject, ARSessionDelegate {
                    let y = cartesianCoordinate["y"],
                    let name = poi["name"] as? String,
                    floorIdentifier == String(Int(initialLocation.altitude)) {
-                   
-                    let transformedPosition = generateARKitPosition(x: Float(x), y: Float(y), currentLocation: initialLocation, arView: arView)
+                   let transformedPosition = generateARKitPosition(x: Float(x), y: Float(y), currentLocation: initialLocation, arView: arView)
 
-                        // Si el POI está muy lejos de la cámara, lo escalamos a cero o lo eliminamos.
-                       let maxDistance: Float = 10.0 // Puedes ajustar este valor según sea necesario
+                    // Si el POI está muy lejos de la cámara, lo escalamos a cero o lo eliminamos.
+                      
+                   let poiEntity = createSphereEntity(radius: 0.5, color: .green)
+                   poiEntity.position = transformedPosition
+               
+                   poiEntity.name = "poi_\(index)"
 
-                       // Usamos solo la profundidad en el eje Z (distancia hacia adelante)
-                       let distanceInZ = abs(transformedPosition.z - arView.cameraTransform.translation.z)
+                   let textEntity = createTextEntity(text: name, position: transformedPosition)
+                   textEntity.name = "text_\(index)"
 
-                       // Solo mostrar los POIs dentro de la distancia máxima
-                       if distanceInZ <= maxDistance {
-                           let poiEntity = createSphereEntity(radius: 0.5, color: .green)
-                           poiEntity.position = transformedPosition
-
-                           // Escalar en función de la distancia
-                           let scaleFactor = 1.0 - (distanceInZ / maxDistance) // Escala inversamente con la distancia
-                           poiEntity.scale = SIMD3<Float>(scaleFactor, scaleFactor, scaleFactor)
-
-                           poiEntity.name = "poi_\(index)"
-
-                           let textEntity = createTextEntity(text: name, position: transformedPosition)
-                           textEntity.scale = SIMD3<Float>(scaleFactor, scaleFactor, scaleFactor) // También ajustar el texto
-                           textEntity.name = "text_\(index)"
-
-                           fixedPOIAnchor.addChild(poiEntity)
-                           fixedPOIAnchor.addChild(textEntity)
-                       }
+                    print("POI:  ", name, "  ", transformedPosition.x, "  ",transformedPosition.z)
+                    fixedPOIAnchor.addChild(poiEntity)
+                    fixedPOIAnchor.addChild(textEntity)
+                      
                    }
             }
 
@@ -259,7 +266,8 @@ class Coordinator: NSObject, ARSessionDelegate {
 
         let positionsMinusSitumRotated = situmBearingMinusRotation.act(relativePoiPosition)
         var positionRotatedAndTranslatedToCamera = cameraHorizontalRotation.act(positionsMinusSitumRotated)
-        positionRotatedAndTranslatedToCamera += cameraPosition
+        positionRotatedAndTranslatedToCamera.x += cameraPosition.x
+        positionRotatedAndTranslatedToCamera.z -= cameraPosition.z
         positionRotatedAndTranslatedToCamera.y = 0
         
         // Postprocesado para corregir el flipping respecto al eje Z
