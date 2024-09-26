@@ -271,7 +271,7 @@ class Coordinator: NSObject, ARSessionDelegate {
         positionRotatedAndTranslatedToCamera.y = 0
         
         // Postprocesado para corregir el flipping respecto al eje Z
-       // positionRotatedAndTranslatedToCamera.z *= -1
+        positionRotatedAndTranslatedToCamera.z *= -1
         //positionRotatedAndTranslatedToCamera.x *= -1
         
         return positionRotatedAndTranslatedToCamera
