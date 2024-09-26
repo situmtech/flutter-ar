@@ -104,7 +104,7 @@ class Coordinator: NSObject, ARSessionDelegate {
         let fixedAnchor = AnchorEntity(world: SIMD3<Float>(0.0, 0.0, 0.0))
         fixedAnchor.name = "fixedPOIAnchor"
 
-        do {
+        /*do {
             let robotEntity = try ModelEntity.load(named: "Animated_Dragon_Three_Motion_Loops.usdz")
             robotEntity.scale = SIMD3<Float>(0.025, 0.025, 0.025)
             robotEntity.position = SIMD3<Float>(-1.0, -10.0, -8.0)
@@ -119,7 +119,7 @@ class Coordinator: NSObject, ARSessionDelegate {
             fixedAnchor.addChild(robotEntity)
         } catch {
             print("Error al cargar el modelo animado: \(error.localizedDescription)")
-        }
+        }*/
 
         arView.scene.anchors.append(fixedAnchor)
         self.fixedAnchor = fixedAnchor
@@ -271,7 +271,7 @@ class Coordinator: NSObject, ARSessionDelegate {
         positionRotatedAndTranslatedToCamera.y = 0
         
         // Postprocesado para corregir el flipping respecto al eje Z
-        positionRotatedAndTranslatedToCamera.z *= -1
+       // positionRotatedAndTranslatedToCamera.z *= -1
         //positionRotatedAndTranslatedToCamera.x *= -1
         
         return positionRotatedAndTranslatedToCamera
