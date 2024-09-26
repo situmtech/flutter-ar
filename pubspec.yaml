@@ -16,7 +16,10 @@ dependencies:
 
   situm_flutter_unity: ^0.0.3
 
-  situm_flutter: ^3.20.0
+  situm_flutter:
+    git:
+      url: https://github.com/situmtech/flutter.git
+      ref: feature/pub-publish-lint
   pointer_interceptor: ^0.10.1+2
 
 dev_dependencies:
