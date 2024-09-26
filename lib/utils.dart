@@ -1,7 +1,13 @@
 part of 'ar.dart';
 
-Widget _createTempBackButton(VoidCallback onPressed) {
-  return Positioned(
+class ArScreenBackButton extends StatelessWidget {
+  final VoidCallback onPressed;
+
+  const ArScreenBackButton({super.key, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
       top: Platform.isAndroid ? 31.0 : 28.0,
       left: 8.0,
       child: Container(
@@ -20,11 +26,13 @@ Widget _createTempBackButton(VoidCallback onPressed) {
           child: const Center(
             child: Icon(
               Icons.arrow_back,
-              color: Colors.white, // Color del icono
+              color: Colors.white,
             ),
           ),
         ),
-      ));
+      ),
+    );
+  }
 }
 
 Widget _createDebugModeSwitchButton(VoidCallback onPressed) {
@@ -38,33 +46,6 @@ Widget _createDebugModeSwitchButton(VoidCallback onPressed) {
           backgroundColor: Colors.white,
           foregroundColor: Colors.black54,
           child: const Icon(Icons.camera_outlined)),
-    ),
-  );
-}
-
-void _showToast(BuildContext context, String message, Duration duration) {
-  final scaffold = ScaffoldMessenger.of(context);
-  scaffold.showSnackBar(
-    SnackBar(
-      content: Container(
-        decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 27, 50, 120),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: ListTile(
-          leading: const Icon(Icons.view_in_ar, color: Colors.white),
-          title: Text(
-            message,
-            style: const TextStyle(color: Colors.white),
-          ),
-        ),
-      ),
-      duration: duration,
-      padding: EdgeInsets.zero,
-      behavior: SnackBarBehavior.floating,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(8)),
-      ),
     ),
   );
 }

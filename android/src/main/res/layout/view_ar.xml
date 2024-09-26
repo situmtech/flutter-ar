@@ -5,15 +5,16 @@
     android:background="#444444"
     android:fitsSystemWindows="true">
 
+    <com.situm.flutter.ar.situm_ar.CustomARSceneView
+        android:id="@+id/situm_ar_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
     <ImageView
+        android:id="@+id/situm_ar_loading_view"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:src="@drawable/view_in_ar" />
-
-    <FrameLayout
-        android:id="@+id/situm_ar_target"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
 
 </FrameLayout>

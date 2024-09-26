@@ -5,7 +5,6 @@ class ARController {
 
   _ARWidgetState? _widgetState;
   MapViewController? _mapViewController;
-  bool _isArLoaded = false;
 
   final MethodChannel _channel = const MethodChannel(CHANNEL_ID);
 
@@ -44,7 +43,7 @@ class ARController {
 
   // === Sleep/Wake actions:
 
-  void onArRequested() {
+  Future<void> onArRequested() async {
     _widgetState?.updateStatusArRequested();
     _mapViewController?.updateAugmentedRealityStatus(ARStatus.success);
     _mapViewController?.followUser();
@@ -55,38 +54,42 @@ class ARController {
     });
     // Notify the client callback:
     _widgetState?.widget.onARVisibilityChanged?.call(ARVisibility.visible);
-
-    // TODO!!! Wait until a GL Context is available using some API!
-    Timer(const Duration(milliseconds: 2000), () async {
-      if (!_isArLoaded) {
-        // await load();
-        _isArLoaded = true;
-      }
-      await load();
-      await resume();
-    });
+    await load(); // Safe call, even if the AR is already loaded.
+    await resume();
   }
 
-  void onArGone() {
-    pause();
-    unload();
+  Future<void> onArGone() async {
+    await pause();
+    // TODO: optimize native side so the AR can be completely unloaded.
+    // await unload();
     _widgetState?.updateStatusArGone();
     _mapViewController?.updateAugmentedRealityStatus(ARStatus.finished);
     _widgetState?.widget.onARVisibilityChanged?.call(ARVisibility.gone);
   }
 
-  void pause() async {
-    print("ATAG > DART> Called pause!!");
+  Future<void> pause() async {
+    debugPrint("Situm > AR> Pause AR.");
     await _channel.invokeMethod("pause", {});
   }
 
   Future<void> resume() async {
-    print("ATAG > DART> Called resume!!");
+    debugPrint("Situm > AR> Resume AR.");
     await _channel.invokeMethod("resume", {});
+  }
+
+  Future<void> unload() async {
+    debugPrint("Situm > AR> Unload AR.");
+    await _channel.invokeMethod("unload", {});
+  }
+
+  Future<void> load() async {
+    debugPrint("Situm > AR> Load AR.");
+    await _channel.invokeMethod("load", {});
   }
 
   // === Set of methods to keep the AR module updated regarding position and navigation.
   Future<void> _methodCallHandler(InternalCall call) async {
+    // TODO: restore.
     switch (call.type) {
       case InternalCallType.location:
         // _onLocationChanged(call.get());
@@ -116,13 +119,5 @@ class ARController {
         debugPrint("Unhandled call: ${call.type}");
         break;
     }
-  }
-
-  Future<void> unload() async {
-    await _channel.invokeMethod("unload", {});
-  }
-
-  Future<void> load() async {
-    await _channel.invokeMethod("load", {});
   }
 }

@@ -28,7 +28,6 @@ class NavigationBarApp extends StatelessWidget {
     ];
     if (Platform.isAndroid) {
       permissions.addAll([
-        //Permission.storage,
         Permission.bluetoothConnect,
         Permission.bluetoothScan,
       ]);
@@ -55,7 +54,6 @@ class _NavigationBaseState extends State<NavigationBase> {
     sdk.init();
     sdk.setDashboardURL(apiDomain);
     sdk.setApiKey(situmApiKey);
-
     startPositioning();
   }
 
@@ -98,6 +96,9 @@ class _NavigationBaseState extends State<NavigationBase> {
               apiDomain: apiDomain,
               remoteIdentifier: remoteIdentifier,
               persistUnderlyingWidget: true,
+              // NOTE! displayWithHybridComposition must be set to false in
+              // order to work with AR.
+              displayWithHybridComposition: false,
             ),
             onLoad: onMapViewLoad,
           ),

@@ -33,46 +33,6 @@ class _ARViewState extends State<ARView> {
     super.dispose();
   }
 
-  // https://github.com/flutter/flutter/wiki/Android-Platform-Views
-  Widget _buildHybrid(BuildContext context) {
-    print("Situm> Using hybrid components");
-    return PlatformViewLink(
-      viewType: CHANNEL_ID,
-      surfaceFactory: (context, controller) {
-        return AndroidViewSurface(
-          controller: controller as AndroidViewController,
-          gestureRecognizers: const <Factory<OneSequenceGestureRecognizer>>{},
-          hitTestBehavior: PlatformViewHitTestBehavior.opaque,
-        );
-      },
-      onCreatePlatformView: (params) {
-        final AndroidViewController controller =
-            PlatformViewsService.initSurfaceAndroidView(
-          id: params.id,
-          viewType: CHANNEL_ID,
-          layoutDirection: TextDirection.ltr,
-          creationParamsCodec: const StandardMessageCodec(),
-          onFocus: () {
-            params.onFocusChanged(true);
-          },
-        );
-        controller
-            .addOnPlatformViewCreatedListener(params.onPlatformViewCreated);
-        controller.addOnPlatformViewCreatedListener(onPlatformViewCreated);
-        controller.create();
-        return controller;
-      },
-    );
-  }
-
-  Widget _buildNormal() {
-    return AndroidView(
-      viewType: CHANNEL_ID,
-      creationParamsCodec: const StandardMessageCodec(),
-      onPlatformViewCreated: onPlatformViewCreated,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -83,8 +43,44 @@ class _ARViewState extends State<ARView> {
   Widget _build(BuildContext context) {
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
-        return _buildHybrid(context);
-      // return _buildNormal();
+        // return AndroidView(
+        //   viewType: CHANNEL_ID,
+        //   creationParamsCodec: const StandardMessageCodec(),
+        //   onPlatformViewCreated: onPlatformViewCreated,
+        // );
+
+        return PlatformViewLink(
+          viewType: CHANNEL_ID,
+          surfaceFactory: (context, controller) {
+            return AndroidViewSurface(
+              controller: controller as AndroidViewController,
+              gestureRecognizers: const <Factory<
+                  OneSequenceGestureRecognizer>>{},
+              hitTestBehavior: PlatformViewHitTestBehavior.opaque,
+            );
+          },
+          onCreatePlatformView: (params) {
+            // WARNING! AR SurfaceView will fight with
+            // initExpensiveAndroidView while using Skia rendering engine. Using
+            // Impeller the result is similar for both methods (for now, only
+            // simple appreciation tests have been done - no profiling).
+            final AndroidViewController controller =
+                PlatformViewsService.initAndroidView(
+              id: params.id,
+              viewType: CHANNEL_ID,
+              layoutDirection: TextDirection.ltr,
+              creationParamsCodec: const StandardMessageCodec(),
+              onFocus: () {
+                params.onFocusChanged(true);
+              },
+            );
+            controller
+                .addOnPlatformViewCreatedListener(params.onPlatformViewCreated);
+            controller.addOnPlatformViewCreatedListener(onPlatformViewCreated);
+            controller.create();
+            return controller;
+          },
+        );
       case TargetPlatform.iOS:
         return UiKitView(
           viewType: CHANNEL_ID,
@@ -96,7 +92,6 @@ class _ARViewState extends State<ARView> {
   }
 
   void onPlatformViewCreated(int id) async {
-    // await controller.load();
     if (widget.onCreated != null) {
       widget.onCreated!(controller);
     }

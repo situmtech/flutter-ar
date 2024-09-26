@@ -12,12 +12,12 @@ dependencies:
   flutter:
     sdk: flutter
 
-  permission_handler: ^11.1.0
   plugin_platform_interface: ^2.0.2
-  #  flutter_plugin_android_lifecycle: ^2.0.20
-  #situm_flutter_unity: ^0.0.3
 
-  situm_flutter: ^3.16.3
+  situm_flutter:
+    git:
+      url: https://github.com/situmtech/flutter
+      ref: feature/new-ar-features
 
 dev_dependencies:
   flutter_test:

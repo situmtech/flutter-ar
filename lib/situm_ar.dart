@@ -39,8 +39,11 @@ class ARWidget extends StatefulWidget {
     this.arHeightRatio = 2 / 3,
     this.debugMode = false,
     this.apiDomain = "https://dashboard.situm.com",
+    // TODO: restore.
     this.enable3DAmbiences = false,
+    // TODO: restore.
     this.occlusionAndroid = true,
+    // TODO: restore.
     this.occlusionIOS = true,
   });
 
@@ -54,7 +57,6 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
   bool isArVisible = false;
   bool isMapCollapsed = false;
   bool loadingArMessage = false;
-  bool isFakeViewerVisible = true;
   Timer? loadingArMessageTimer;
   ScrollController scrollController = ScrollController();
   static const int animationMillis = 200;
@@ -66,6 +68,12 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    if (widget.mapView != null &&
+        widget.mapView?.configuration.displayWithHybridComposition != false) {
+      // TODO: this is not necessary when using Impeller rendering engine.
+      throw Exception(
+          "You must set displayWithHybridComposition to false in the MapView configuration.");
+    }
     WidgetsBinding.instance.addObserver(this);
     var validations = _Validations();
     apiDomain = validations.validateApiDomain(widget.apiDomain);
@@ -76,119 +84,22 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
     }
 
     ARController()._onARWidgetState(this);
-    // arController.load();
-
-    // Timer(const Duration(seconds: 20), () {
-    //   setState(() {
-    //     isFakeViewerVisible = false;
-    //   });
-    // });
   }
 
   void _onARViewCreated(BuildContext context, ARController? controller) async {
-    // await arController.load();
-    // await arController.resume();
-    // if (widget.mapView == null) {
-    //   arController.resume();
-    // } else {
-    //   arController.pause();
-    // }
+    // Do nothing. TODO: delete?
   }
 
   @override
   Widget build(BuildContext context) {
-    // Create the AR widget:
-//     var unityView = UnityView(
-//       onCreated: (controller) => onUnityViewCreated(context, controller),
-//       onReattached: onUnityViewReattached,
-//       onMessage: onUnityViewMessage,
-//     );
-    // var arView = ARViewWidget().build(context);
-    // If there is not a MapView, return it immediately:
-
-    // if (isArVisible || widget.mapView == null) {
     var arView = ARView(
       onCreated: (controller) => _onARViewCreated(context, controller),
     );
 
-    // return arView;
-    // } else {
-    //   return widget.mapView!;
-    // }
-
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 1000),
-      transitionBuilder: (Widget child, Animation<double> animation) {
-        return FadeTransition(
-          opacity: animation,
-          child: child,
-        );
-        // final offsetAnimation = Tween<Offset>(
-        //   begin: const Offset(1.0, 0.0),
-        //   end: Offset.zero, //
-        // ).animate(animation);
-        //
-        // return SlideTransition(
-        //   position: offsetAnimation,
-        //   child: child,
-        // );
-      },
-      child: isArVisible ? _buildArStack(arView) : _buildMapStack(),
-    );
-
-    // return IndexedStack(
-    //   index: isArVisible ? 1 : 0,
-    //   children: [
-    //     Stack(
-    //       children: [
-    //         widget.mapView!,
-    //         _createDebugModeSwitchButton(() {
-    //           setState(() {
-    //             isArVisible = !isArVisible;
-    //           });
-    //           isArVisible
-    //               ? arController.onArRequested()
-    //               : arController.onArGone();
-    //           // if (isArVisible) {
-    //           //   Timer(const Duration(seconds: 5), () async {
-    //           //     await arController.load();
-    //           //     Timer(const Duration(seconds: 5), () async {
-    //           //       await arController.resume();
-    //           //     });
-    //           //   });
-    //           // }
-    //         })
-    //       ],
-    //     ),
-    //     Stack(children: [
-    //       arView,
-    //       _createDebugModeSwitchButton(() {
-    //         arController.onArGone();
-    //       }),
-    //       if (loadingArMessage) const ARLoadingWidget(),
-    //     ]),
-    //   ],
-    // );
-
-    // return Stack(
-    //   children: [
-    //     arView,
-    //     if (isFakeViewerVisible)
-    //       widget.mapView!,
-    //       // SizedBox.expand(
-    //       //   child: Container(
-    //       //     color: Colors.blue,
-    //       //     child: const Text("Eu son un viewer e molo mogollón"),
-    //       //   ),
-    //       // ),
-    //     // if (!isFakeViewerVisible)
-    //     //   arView,
-    //   ],
-    // );
-
     if (widget.mapView == null) {
       return arView;
     }
+
     // Else integrate AR and MapView:
     assert(widget.arHeightRatio >= 0 && widget.arHeightRatio <= 1,
         'arHeightRatio must be a value between 0 and 1');
@@ -200,7 +111,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
             // Add the AR Widget at the bottom of the stack. It will start
             // loading even when it is not visible.
             arView,
-            _createTempBackButton(() {
+            ArScreenBackButton(onPressed: () {
               arController.onArGone();
             }),
             if (loadingArMessage) const ARLoadingWidget()
@@ -272,97 +183,15 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
             ),
           ),
         ),
-        widget.debugMode
-            ? _createDebugModeSwitchButton(() {
-                setState(() {
-                  isArVisible = !isArVisible;
-                });
-                // isArVisible
-                //     ? arController.onArRequested()
-                //     : arController.onArGone();
-                if (isArVisible) {
-                  Timer(const Duration(seconds: 1), () async {
-                    await arController.load();
-                    Timer(const Duration(seconds: 5), () async {
-                      await arController.resume();
-                    });
-                  });
-                }
-              })
-            : const SizedBox(),
-      ],
-    );
-  }
-
-  Widget _buildMapStack() {
-    return Stack(
-      key: const ValueKey(0),
-      // Asegúrate de asignar chaves distintas para diferenciar as pilas
-      children: [
-        widget.mapView!,
-        _createDebugModeSwitchButton(() {
-          setState(() {
-            isArVisible = !isArVisible;
-          });
-          isArVisible ? arController.onArRequested() : arController.onArGone();
-        })
-      ],
-    );
-  }
-
-  Widget _buildArStack(arView) {
-    return Stack(
-      key: const ValueKey(1),
-      children: [
-        arView,
-        _createDebugModeSwitchButton(() {
-          setState(() {
-            isArVisible = !isArVisible;
-          });
-          arController.onArGone();
-        }),
-        if (loadingArMessage) const ARLoadingWidget(),
-        // Align(
-        //   alignment: Alignment.bottomCenter,
-        //   child: LayoutBuilder(
-        //     // Let us know about the container's height.
-        //     builder: (BuildContext context, BoxConstraints constraints) {
-        //       double visibleMapHeight = isArVisible
-        //       // If the AR is visible, make the MapView height depend on the
-        //       // state collapsed/expanded:
-        //           ? (isMapCollapsed
-        //           ? 0
-        //           : constraints.maxHeight * (1 - widget.arHeightRatio))
-        //       // If the AR is not visible, make the MapView full height:
-        //           : constraints.maxHeight;
-        //       return AbsorbPointer(
-        //         absorbing: isArVisible,
-        //         child: AnimatedContainer(
-        //           // NOTE: visibleMapHeight must be a property of AnimatedContainer
-        //           // as it will not animate changes on a child.
-        //           duration: animationDuration,
-        //           curve: Curves.decelerate,
-        //           height: visibleMapHeight,
-        //           child: SingleChildScrollView(
-        //             // Add ScrollView to center the map: TODO fix MapView resizing on iOS.
-        //             controller: scrollController,
-        //             physics: const NeverScrollableScrollPhysics(),
-        //             child: Container(
-        //               // This opaque Container prevents the AR widget from being
-        //               // visible while the map is not loaded.
-        //               color: Colors.grey[200],
-        //               child: SizedBox(
-        //                 // Set the map height equals to the container.
-        //                 height: constraints.maxHeight,
-        //                 child: widget.mapView!,
-        //               ),
-        //             ),
-        //           ),
-        //         ),
-        //       );
-        //     },
-        //   ),
-        // ),
+        if (widget.debugMode)
+          _createDebugModeSwitchButton(() {
+            setState(() {
+              isArVisible = !isArVisible;
+            });
+            isArVisible
+                ? arController.onArRequested()
+                : arController.onArGone();
+          }),
       ],
     );
   }
@@ -384,8 +213,11 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
         debugPrint("Situm> AR> LIFECYCLE> App is $state");
         break;
       case AppLifecycleState.inactive:
-        debugPrint("Situm> AR> LIFECYCLE> INACTIVE --> PAUSE AR");
-//         arController.onArGone();
+        debugPrint("Situm> AR> LIFECYCLE> INACTIVE");
+        // This behavior was disabled because it was too aggressive. For
+        // example, simply sliding down the Android notification panel was
+        // enough to hide the AR.
+        // arController.onArGone();
         break;
     }
   }
