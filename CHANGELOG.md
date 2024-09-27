@@ -1,3 +1,9 @@
+## 0.0.20 - September 27, 2024
+
+### Changed:
+
+- Updated Situm Flutter SDK to version 3.20.6. This version improves floor changes when positioning using BY_FOOT_VISUAL_ODOMETRY motion mode.
+
 ## 0.0.18 - September 10, 2024
 
 ### Changed:
