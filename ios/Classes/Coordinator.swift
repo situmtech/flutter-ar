@@ -6,7 +6,8 @@ class Coordinator: NSObject, ARSessionDelegate {
     var locationManager: LocationManager
     var arrowAnchor: AnchorEntity?
     var fixedAnchor: AnchorEntity?
-    weak var arView: ARView?
+    var arView: ARView?    
+    var yawLabel: UILabel?
     
     var didUpdatePOIs = false
     var locationUpdated = false
@@ -19,6 +20,20 @@ class Coordinator: NSObject, ARSessionDelegate {
     init(locationManager: LocationManager) {
         self.locationManager = locationManager
     }
+    
+    // Esta función se llama en cada actualización del frame de la cámara
+    func session(_ session: ARSession, didUpdate frame: ARFrame) {
+         // Obtener el yaw respecto al norte
+         if let yaw = getCameraYawRespectToNorth() {
+             // Convertir el yaw de radianes a grados
+             let yawDegrees = yaw * (180.0 / .pi)
+             
+             // Actualizar el valor del label en la interfaz de usuario
+             DispatchQueue.main.async {
+                 self.yawLabel?.text = String(format: "Yaw: %.2f°", yawDegrees)
+             }
+         }
+     }
     
     
     func handlePointUpdate(_ notification: Notification) {
@@ -241,7 +256,22 @@ class Coordinator: NSObject, ARSessionDelegate {
         locationUpdated = false
     }
 
+    func getCameraYawRespectToNorth() -> Float? {
+        return arView?.session.currentFrame?.camera.eulerAngles.y
+
+    }
+    
     func generateARKitPosition(x: Float, y: Float, currentLocation: CLLocation, arView: ARView) -> SIMD3<Float> {
+        
+        if let yaw = getCameraYawRespectToNorth() {
+            // Actualizar la etiqueta con el valor del yaw
+            DispatchQueue.main.async {
+                self.yawLabel?.text = "Yaw: \(yaw * (180.0 / .pi))°"
+
+            }
+
+        }    
+        
         let cameraTransform = arView.cameraTransform
         let cameraPosition = cameraTransform.translation
         let cameraOrientation = cameraTransform.rotation
