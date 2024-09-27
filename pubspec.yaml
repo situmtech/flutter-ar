@@ -1,6 +1,6 @@
 name: situm_flutter_ar
 description: "Bring AR to Situm Wayfinding."
-version: 0.0.19
+version: 0.0.20
 homepage: https://github.com/situmtech/flutter-ar
 repository: https://github.com/situmtech/flutter-ar
 
@@ -16,7 +16,7 @@ dependencies:
 
   situm_flutter_unity: ^0.0.3
 
-  situm_flutter: ^3.20.0
+  situm_flutter: ^3.20.6
   pointer_interceptor: ^0.10.1+2
 
 dev_dependencies:
