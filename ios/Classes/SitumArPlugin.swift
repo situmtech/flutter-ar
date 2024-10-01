@@ -22,9 +22,9 @@ class SitumARPlugin: NSObject {
         //print("Location updated from SitumARPlugin with xSitum: \(xSitum), ySitum: \(ySitum), yawSitum: \(yawSitum), floorIdentifier: \(floorIdentifier) ")
     }
     
-    @objc func updatePoint(point: [String: Any]) {
+    @objc func updatePointsList(pointsList: [String: Any]) {
         // Enviar una notificación para actualizar los POIs en la vista AR
-        NotificationCenter.default.post(name: .pointUpdated, object: nil, userInfo: ["ToPoint": point])
+        NotificationCenter.default.post(name: .updatePointsList, object: nil, userInfo: ["pointsList": pointsList])
     }
 }
 
@@ -33,7 +33,7 @@ extension Notification.Name {
     static let poisUpdated = Notification.Name("poisUpdated")
     static let locationUpdated = Notification.Name("locationUpdated")
     static let buttonPressedNotification = Notification.Name("buttonPressedNotification")
-    static let pointUpdated = Notification.Name("pointUpdated")
+    static let updatePointsList = Notification.Name("updatePointsList")
 }
 
 public class SitumArPlugin: NSObject, FlutterPlugin {
@@ -59,25 +59,41 @@ public class SitumArPlugin: NSObject, FlutterPlugin {
                 presentARView(result: result)
             
             case "updatePoint":
-            print("Received arguments for updatePOINT:", call.arguments ?? "No arguments")
-            if let argumentString = call.arguments as? String,
-                    let data = argumentString.data(using: .utf8), // Convertimos a Data
-                    let args = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] { // Parseamos a diccionario
- 
-                    if let xPoint = args["x"] as? Double,
-                       let yPoint = args["y"] as? Double {
+                //print("Received arguments for updatePOINT:", call.arguments ?? "No arguments")
+                
+                // Verificar que los argumentos sean una lista de diccionarios
+                if let argumentList = call.arguments as? [[String: Any]] {
+                    
+                    // Lista para almacenar los puntos con x, y y floorIdentifier
+                    var pointsList = [[String: Any]]()
+                    
+                    for args in argumentList {
+                        // Verificar y extraer las coordenadas cartesianas
+                        guard let cartesianCoordinate = args["cartesianCoordinate"] as? [String: Any],
+                              let xPoint = cartesianCoordinate["x"] as? Double ?? Double(cartesianCoordinate["x"] as? String ?? ""),
+                              let yPoint = cartesianCoordinate["y"] as? Double ?? Double(cartesianCoordinate["y"] as? String ?? ""),
+                              let floorIdentifier = args["floorIdentifier"] as? Int ?? Int(args["floorIdentifier"] as? String ?? "") else {
+                            print("Invalid point data:", args)
+                            result(FlutterError(code: "INVALID_ARGUMENT", message: "Invalid cartesian coordinates or floorIdentifier", details: nil))
+                            return
+                        }
                         
-                        // Crea el punto con las coordenadas desenvueltas
+                        // Crear el punto con las coordenadas y el floorIdentifier
                         let pointData: [String: Any] = [
-                            "xPoint": xPoint,
-                            "yPoint": yPoint
+                            "x": xPoint,
+                            "y": yPoint,
+                            "floorIdentifier": floorIdentifier
                         ]
-                        // Envía la notificación
-                        NotificationCenter.default.post(name: .pointUpdated, object: nil, userInfo: pointData)
-                        result(nil)
-                    } else {
-                        result(FlutterError(code: "INVALID_ARGUMENT", message: "Unable to convert arguments to Double", details: nil))
+                        
+                        // Agregar el punto a la lista
+                        pointsList.append(pointData)
                     }
+                    NotificationCenter.default.post(name: .updatePointsList, object: nil, userInfo: ["pointsList": pointsList])
+                    result(nil)
+          
+                    
+                } else {
+                    result(FlutterError(code: "INVALID_ARGUMENT", message: "Invalid argument format", details: nil))
                 }
 
                                         

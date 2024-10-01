@@ -200,11 +200,11 @@ class ARController {
     try {
       // Envía la ubicación a iOS
 
-     //print("locationMap:    ${locationMap}");    
+     print("locationMap:    ${locationMap}");    
       await platform.invokeMethod('updateLocation', {
         'xSitum': locationMap['cartesianCoordinate']['x'],
         'ySitum': locationMap['cartesianCoordinate']['y'],        
-        'yawSitum': locationMap['bearing']['degreesClockwise'],
+        'yawSitum': locationMap['bearing']['radians'],
         'floorIdentifier':locationMap['floorIdentifier'],
       });
     } on PlatformException catch (e) {
@@ -277,7 +277,7 @@ class ARController {
   void updateArArrowGuide(RouteProgress progress) async {
     dynamic progressContent = jsonDecode(jsonEncode(progress.rawContent));
     String nextCoordinates = findNextCoordinates(progressContent);
-   
+    //print("progressContent:    ${progressContent}");
    
     if (nextCoordinates == "floorChange") {
       navigationLastCoordinates = nextCoordinates;
@@ -294,7 +294,7 @@ class ARController {
 
  try {
       // Envía posición del poi     
-      await platform.invokeMethod('updatePoint', nextCoordinates);
+      await platform.invokeMethod('updatePoint', progressContent["points"]);
     } on PlatformException catch (e) {
       print("Failed to update location: '${e.message}'.");
     }

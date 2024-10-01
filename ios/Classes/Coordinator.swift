@@ -11,6 +11,7 @@ class Coordinator: NSObject, ARSessionDelegate {
     
     var didUpdatePOIs = false
     var locationUpdated = false
+    var didUpdatePath = false
     
     var width = 0.0
     var targetX = 0.0
@@ -37,12 +38,18 @@ class Coordinator: NSObject, ARSessionDelegate {
     
     
     func handlePointUpdate(_ notification: Notification) {
-        if let userInfo = notification.userInfo,
-           let xPoint = userInfo["xPoint"] as? Double,
-           let yPoint = userInfo["yPoint"] as? Double{
-            updatePoint(xPoint: xPoint,  yPoint: yPoint)
+        // Verificar que userInfo no sea nil
+        
+        if let userInfo = notification.userInfo {
+            // Verificar que userInfo contenga una lista de diccionarios en el formato correcto
+            if let pointsList = userInfo["pointsList"] as? [[String: Any]] {
+                updatePointsList(pointsList: pointsList)
+            } else {
+                print("Invalid data format in userInfo")
+            }
         }
     }
+
     
     func handleLocationUpdate(_ notification: Notification) {
         
@@ -140,19 +147,48 @@ class Coordinator: NSObject, ARSessionDelegate {
         self.fixedAnchor = fixedAnchor
     }
     
-    func updatePoint(xPoint: Double, yPoint: Double){
-     /*   print("X Point to point@@@@@@@@@@@@:    ", xPoint)
-        print("Y Point to point@@@@@@@@@@@@:    ", yPoint)
-        guard let arView = arView, let initialLocation = locationManager.initialLocation else { return }
-        let transformedPosition = generateARKitPosition(x: Float(xPoint), y: Float(yPoint), currentLocation: initialLocation, arView: arView)
-        
-        print("X Point transformed:    ", transformedPosition.x)
-        print("Y Point transformed:    ", transformedPosition.z)
-        targetX = Double(transformedPosition.x)
-        targetY = Double(transformedPosition.z)
-        updateArrowPositionAndDirection()*/
+    func updatePointsList(pointsList: [[String: Any]]){
+        guard !didUpdatePath, let arView = arView, let initialLocation = locationManager.initialLocation else {
+            print("ARView or initialLocation is nil")
+            return
+        }
 
+        // Buscar el ancla existente
+        if let fixedPOIAnchor = arView.scene.anchors.first(where: { $0.name == "fixedPOIAnchor" }) as? AnchorEntity {
+            
+            // Eliminar todas las esferas anteriores
+            fixedPOIAnchor.children.filter { $0.name.starts(with: "point_") }.forEach { $0.removeFromParent() }
+
+            for (index, point) in pointsList.enumerated() {
+                // Extraer el x y el y de cada punto
+                if let xPoint = point["x"] as? Double, let yPoint = point["y"] as? Double {
+                    
+                    // Aplicar generateARKitPosition a cada punto
+                    let transformedPosition = generateARKitPosition(
+                        x: Float(xPoint),
+                        y: Float(yPoint),
+                        currentLocation: initialLocation,
+                        arView: arView
+                    )
+                    
+                    // Crear una nueva esfera
+                    let poiEntity = createSphereEntity(radius: 0.15, color: .magenta)
+                    poiEntity.position = transformedPosition
+                    poiEntity.name = "point_\(index)" // Dar un nombre único a cada esfera
+
+                    // Agregar la esfera al ancla
+                    fixedPOIAnchor.addChild(poiEntity)
+                } else {
+                    print("Invalid point data: \(point)")
+                }
+            }
+            
+            didUpdatePath = true
+        } else {
+            print("No se encontró el ancla 'fixedPOIAnchor'")
+        }
     }
+
     
     func updateLocation(xSitum: Double, ySitum: Double, yawSitum: Double, floorIdentifier: Double) {
             // Comprobar si la ubicación ya ha sido actualizada
@@ -254,38 +290,50 @@ class Coordinator: NSObject, ARSessionDelegate {
     func resetFlags() {
         didUpdatePOIs = false
         locationUpdated = false
+        didUpdatePath = false
     }
 
     func getCameraYawRespectToNorth() -> Float? {
-        return arView?.session.currentFrame?.camera.eulerAngles.y
+        // Obtener el yaw original de la cámara
+            guard let yaw = arView?.session.currentFrame?.camera.eulerAngles.y else {
+                return nil
+            }
+
+            // Ajustar el yaw para que siga tus necesidades:
+            // 0° será frente, +90° derecha, -90° izquierda, y 180° atrás
+            let adjustedYaw = -yaw // Cambiamos el signo del yaw para invertir izquierda y derecha
+
+            // Asegurarnos de que el valor ajustado esté dentro del rango [-π, π]
+            let normalizedYaw = fmod(adjustedYaw + .pi, 2 * .pi) - .pi
+
+            return normalizedYaw
 
     }
     
     func generateARKitPosition(x: Float, y: Float, currentLocation: CLLocation, arView: ARView) -> SIMD3<Float> {
         
-        if let yaw = getCameraYawRespectToNorth() {
-            // Actualizar la etiqueta con el valor del yaw
-            DispatchQueue.main.async {
-                self.yawLabel?.text = "Yaw: \(yaw * (180.0 / .pi))°"
-
-            }
-
-        }    
+        // Obtener el yaw de la cámara respecto al norte
+        guard let yaw = getCameraYawRespectToNorth() else {
+            return SIMD3<Float>(0, 0, 0) // Retorna un valor por defecto si no se pudo obtener el yaw
+        }
+      
         
         let cameraTransform = arView.cameraTransform
         let cameraPosition = cameraTransform.translation
-        let cameraOrientation = cameraTransform.rotation
+        
+        print("camera position:   ", cameraPosition.x," ", cameraPosition.y, "   ", cameraPosition.z )
 
-        let forwardVector = cameraOrientation.act(SIMD3<Float>(0, 0, -1))
-        let cameraBearing = atan2(forwardVector.x, forwardVector.z)
-
+        let cameraBearing = yaw
+        print("yaw cameraBearing!!!!!!!!!!!!!!!!!!!!!!!!:   ", cameraBearing)
         let cameraHorizontalRotation = simd_quatf(angle: cameraBearing, axis: SIMD3<Float>(0, 1, 0))
 
-        let situmBearingDegrees = currentLocation.course
-        guard situmBearingDegrees >= 0 else {
-            return SIMD3<Float>(0, 0, 0)
-        }
-        let situmBearing = Float(situmBearingDegrees) - 90.0
+        let situmBearingDegrees = currentLocation.course * (180.0 / .pi)
+        
+        print("yaw situmBearingDegrees!!!!!!!!!!!!!!!!!!!!!!!!:   ", situmBearingDegrees)
+     
+        let situmBearing = Float(situmBearingDegrees + 90.0)
+        
+        
         let situmBearingMinusRotation = simd_quatf(angle: situmBearing * .pi / 180.0, axis: SIMD3<Float>(0, -1, 0))
 
         let relativePoiPosition = SIMD3<Float>(
@@ -294,15 +342,24 @@ class Coordinator: NSObject, ARSessionDelegate {
             y - Float(currentLocation.coordinate.latitude)
         )
 
-        let positionsMinusSitumRotated = situmBearingMinusRotation.act(relativePoiPosition)
-        var positionRotatedAndTranslatedToCamera = cameraHorizontalRotation.act(positionsMinusSitumRotated)
-        positionRotatedAndTranslatedToCamera.x += cameraPosition.x
-        positionRotatedAndTranslatedToCamera.z -= cameraPosition.z
-        positionRotatedAndTranslatedToCamera.y = 0
         
-        // Postprocesado para corregir el flipping respecto al eje Z
-        positionRotatedAndTranslatedToCamera.z *= -1
-        //positionRotatedAndTranslatedToCamera.x *= -1
+        let positionsMinusSitumRotated = situmBearingMinusRotation.act(relativePoiPosition)
+               
+        // Rotar la posición ajustada basándose en la rotación horizontal de la cámara
+        var positionRotatedAndTranslatedToCamera = cameraHorizontalRotation.act(positionsMinusSitumRotated)
+               
+        // Trasladar la posición al sistema de la cámara
+        //positionRotatedAndTranslatedToCamera += cameraPosition
+        positionRotatedAndTranslatedToCamera.x = cameraPosition.x + positionRotatedAndTranslatedToCamera.x
+        positionRotatedAndTranslatedToCamera.z = cameraPosition.z - positionRotatedAndTranslatedToCamera.z
+
+        
+                
+        //positionRotatedAndTranslatedToCamera.z = -positionRotatedAndTranslatedToCamera.z
+               
+        // Establecer la altura en 0 (ajusta si es necesario)
+        positionRotatedAndTranslatedToCamera.y = -1
+
         
         return positionRotatedAndTranslatedToCamera
     }

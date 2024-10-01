@@ -49,7 +49,7 @@ struct ARViewContainer: UIViewRepresentable {
             context.coordinator.handleLocationUpdate(notification)
         }
         
-        NotificationCenter.default.addObserver(forName: .pointUpdated, object: nil, queue: .main) { notification in
+        NotificationCenter.default.addObserver(forName: .updatePointsList, object: nil, queue: .main) { notification in
             context.coordinator.handlePointUpdate(notification)
         }
 
