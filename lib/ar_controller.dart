@@ -31,6 +31,7 @@ class ARController {
   ARController._() {
     _arModeManager = ARModeManager(arModeChanged);
     SitumSdk().internalSetMethodCallARDelegate(_methodCallHandler);
+   
   }
 
   factory ARController() {

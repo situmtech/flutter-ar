@@ -262,19 +262,18 @@ class Coordinator: NSObject, ARSessionDelegate {
                    floorIdentifier == String(Int(initialLocation.altitude)) {
                    let transformedPosition = generateARKitPosition(x: Float(x), y: Float(y), currentLocation: initialLocation, arView: arView)
 
-                    // Si el POI está muy lejos de la cámara, lo escalamos a cero o lo eliminamos.
-                      
+                  
+                   print("POI:  ", name, "  ", transformedPosition.x, "  ",transformedPosition.z)
+                    
                    let poiEntity = createSphereEntity(radius: 0.5, color: .green)
                    poiEntity.position = transformedPosition
-               
                    poiEntity.name = "poi_\(index)"
 
                    let textEntity = createTextEntity(text: name, position: transformedPosition)
                    textEntity.name = "text_\(index)"
-
-                    print("POI:  ", name, "  ", transformedPosition.x, "  ",transformedPosition.z)
-                    fixedPOIAnchor.addChild(poiEntity)
-                    fixedPOIAnchor.addChild(textEntity)
+                   
+                   fixedPOIAnchor.addChild(poiEntity)
+                   fixedPOIAnchor.addChild(textEntity)
                       
                    }
             }
@@ -313,7 +312,7 @@ class Coordinator: NSObject, ARSessionDelegate {
     func generateARKitPosition(x: Float, y: Float, currentLocation: CLLocation, arView: ARView) -> SIMD3<Float> {
         
         // Obtener el yaw de la cámara respecto al norte
-        guard let yaw = getCameraYawRespectToNorth() else {
+        guard let cameraBearing = getCameraYawRespectToNorth() else {
             return SIMD3<Float>(0, 0, 0) // Retorna un valor por defecto si no se pudo obtener el yaw
         }
       
@@ -321,27 +320,22 @@ class Coordinator: NSObject, ARSessionDelegate {
         let cameraTransform = arView.cameraTransform
         let cameraPosition = cameraTransform.translation
         
-        print("camera position:   ", cameraPosition.x," ", cameraPosition.y, "   ", cameraPosition.z )
-
-        let cameraBearing = yaw
-        print("yaw cameraBearing!!!!!!!!!!!!!!!!!!!!!!!!:   ", cameraBearing)
-        let cameraHorizontalRotation = simd_quatf(angle: cameraBearing, axis: SIMD3<Float>(0, 1, 0))
-
-        let situmBearingDegrees = currentLocation.course * (180.0 / .pi)
-        
-        print("yaw situmBearingDegrees!!!!!!!!!!!!!!!!!!!!!!!!:   ", situmBearingDegrees)
+        //print("camera position:   ", cameraPosition.x," ", cameraPosition.y, "   ", cameraPosition.z )
      
-        let situmBearing = Float(situmBearingDegrees + 90.0)
+        let cameraHorizontalRotation = simd_quatf(angle: cameraBearing, axis: SIMD3<Float>(0.0, 1.0, 0.0))
+      
+
+        let situmBearingDegrees = currentLocation.course * (180.0 / .pi) + 90.0
+        let situmBearingInRadians = Float(situmBearingDegrees) * (.pi / 180.0)
+        print("yaw situmBearingDegrees!!!!!!!!!!!!!!!!!!!!!!!!:   ", situmBearingDegrees - 90.0)
         
-        
-        let situmBearingMinusRotation = simd_quatf(angle: situmBearing * .pi / 180.0, axis: SIMD3<Float>(0, -1, 0))
+        let situmBearingMinusRotation = simd_quatf(angle: (situmBearingInRadians), axis: SIMD3<Float>(0.0, -1.0, 0.0))
 
         let relativePoiPosition = SIMD3<Float>(
             x - Float(currentLocation.coordinate.longitude),
             0,
             y - Float(currentLocation.coordinate.latitude)
         )
-
         
         let positionsMinusSitumRotated = situmBearingMinusRotation.act(relativePoiPosition)
                
@@ -349,15 +343,8 @@ class Coordinator: NSObject, ARSessionDelegate {
         var positionRotatedAndTranslatedToCamera = cameraHorizontalRotation.act(positionsMinusSitumRotated)
                
         // Trasladar la posición al sistema de la cámara
-        //positionRotatedAndTranslatedToCamera += cameraPosition
         positionRotatedAndTranslatedToCamera.x = cameraPosition.x + positionRotatedAndTranslatedToCamera.x
         positionRotatedAndTranslatedToCamera.z = cameraPosition.z - positionRotatedAndTranslatedToCamera.z
-
-        
-                
-        //positionRotatedAndTranslatedToCamera.z = -positionRotatedAndTranslatedToCamera.z
-               
-        // Establecer la altura en 0 (ajusta si es necesario)
         positionRotatedAndTranslatedToCamera.y = -1
 
         
