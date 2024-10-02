@@ -17,7 +17,8 @@ dependencies:
   #  flutter_plugin_android_lifecycle: ^2.0.20
   #situm_flutter_unity: ^0.0.3
 
-  situm_flutter: ../flutter-SITUM/flutter/
+  situm_flutter: 
+    path: ../flutter-SITUM/flutter/
 
 dev_dependencies:
   flutter_test:

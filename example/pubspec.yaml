@@ -22,7 +22,8 @@ dependencies:
 
   #situm_flutter_unity: ^0.0.3
 
-  situm_flutter: ../../flutter-SITUM/flutter/
+  situm_flutter: 
+    path: ../../flutter-SITUM/flutter/
 
   io: ^1.0.4
 

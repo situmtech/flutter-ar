@@ -98,6 +98,7 @@ class _NavigationBaseState extends State<NavigationBase> {
               apiDomain: apiDomain,
               remoteIdentifier: remoteIdentifier,
               persistUnderlyingWidget: true,
+              enableDebugging: true
             ),
             onLoad: onMapViewLoad,
           ),

@@ -324,8 +324,18 @@ class Coordinator: NSObject, ARSessionDelegate {
      
         let cameraHorizontalRotation = simd_quatf(angle: cameraBearing, axis: SIMD3<Float>(0.0, 1.0, 0.0))
       
+        ///////////////
+        let course = -currentLocation.course // Cambiamos el signo del yaw para invertir izquierda y derecha
 
-        let situmBearingDegrees = currentLocation.course * (180.0 / .pi) + 90.0
+        // Asegurarnos de que el valor ajustado esté dentro del rango [-π, π]
+        let courseNormalized = fmod(course + .pi, 2 * .pi) - .pi
+
+        
+        
+       ///////////////
+        
+        
+        let situmBearingDegrees = courseNormalized * (180.0 / .pi) + 90.0
         let situmBearingInRadians = Float(situmBearingDegrees) * (.pi / 180.0)
         print("yaw situmBearingDegrees!!!!!!!!!!!!!!!!!!!!!!!!:   ", situmBearingDegrees - 90.0)
         

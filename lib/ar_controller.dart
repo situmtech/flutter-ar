@@ -205,7 +205,7 @@ class ARController {
       await platform.invokeMethod('updateLocation', {
         'xSitum': locationMap['cartesianCoordinate']['x'],
         'ySitum': locationMap['cartesianCoordinate']['y'],        
-        'yawSitum': locationMap['bearing']['radians'],
+        'yawSitum': locationMap['cartesianBearing']['radians'],
         'floorIdentifier':locationMap['floorIdentifier'],
       });
     } on PlatformException catch (e) {
