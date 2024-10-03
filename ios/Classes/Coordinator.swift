@@ -68,37 +68,28 @@ class Coordinator: NSObject, ARSessionDelegate {
             }
         }
 
-   /* func session(_ session: ARSession, didUpdate frame: ARFrame) {
+    func session(_ session: ARSession) {
         updateArrowPositionAndDirection()
-    }*/
+    }
     
     func setWidth(_width: Double){
         width = _width
     }
 
     func updateArrowPositionAndDirection() {
-       /* guard let arView = arView, let arrowAnchor = arrowAnchor else { return }
-        
+        guard let arView = arView, let arrowAnchor = arrowAnchor else { return }
+
         // Obtener la posición de la cámara
         let cameraTransform = arView.cameraTransform
         let cameraPosition = cameraTransform.translation
 
         let forwardVector: SIMD3<Float>
         
-        if targetX == 0 && targetY == 0 {
-            print("TargetX y targetY = cero")
-            // Si targetX y targetY son cero, apuntar en la dirección hacia adelante de la cámara
-            forwardVector = -SIMD3<Float>(cameraTransform.matrix.columns.2.x,
-                                          cameraTransform.matrix.columns.2.y,
-                                          cameraTransform.matrix.columns.2.z)
-        } else {
-            print("TargetX y targetY distinto de cero  ", targetX)
-            print("TargetX y targetY distinto de cero  ", Float(cameraPosition.y))
-            print("TargetX y targetY distinto de cero  ", Float(targetY))
-            // Si se ha especificado un objetivo (targetX, targetY), calcular la dirección hacia él
-            let targetPosition = SIMD3<Float>(Float(targetX), Float(cameraPosition.y), Float(targetY)) // Mantener la misma altura (y) que la cámara
-            forwardVector = normalize(targetPosition - cameraPosition)
-        }
+        print("TargetX y targetY = cero")
+        // Si targetX y targetY son cero, apuntar en la dirección hacia adelante de la cámara
+        forwardVector = -SIMD3<Float>(cameraTransform.matrix.columns.2.x,
+                                      cameraTransform.matrix.columns.2.y,
+                                      cameraTransform.matrix.columns.2.z)
 
         // Establecer una distancia fija (por ejemplo, 2 metros) desde la cámara
         let distance: Float = 2.0
@@ -114,10 +105,8 @@ class Coordinator: NSObject, ARSessionDelegate {
         // Aplicar la rotación a la flecha, ajustando para que apunte hacia adelante
         if let arrowEntity = arrowAnchor.children.first {
             arrowEntity.orientation = simd_quatf(angle: .pi / 2, axis: [1, 0, 0]) * rotationToTarget
-        }*/
+        }
     }
-
-
 
 
     func setupFixedAnchor() {

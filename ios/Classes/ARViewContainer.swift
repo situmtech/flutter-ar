@@ -36,13 +36,13 @@ struct ARViewContainer: UIViewRepresentable {
         arView.session.delegate = context.coordinator
         
 
-        //let arrowAnchor = createArrowAnchor()
-        //arView.scene.anchors.append(arrowAnchor)
-
+       /* let arrowAnchor = createArrowAnchor()
+        arView.scene.anchors.append(arrowAnchor)
+*/
         context.coordinator.arView = arView
         arView.session.delegate = context.coordinator
 
-        //context.coordinator.arrowAnchor = arrowAnchor
+  //      context.coordinator.arrowAnchor = arrowAnchor
        
 
         NotificationCenter.default.addObserver(forName: .locationUpdated, object: nil, queue: .main) { notification in
