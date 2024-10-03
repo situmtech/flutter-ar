@@ -83,30 +83,34 @@ class Coordinator: NSObject, ARSessionDelegate {
         let cameraTransform = arView.cameraTransform
         let cameraPosition = cameraTransform.translation
 
-        let forwardVector: SIMD3<Float>
+        // Calcular una posición fija en frente de la cámara
+        let distanceInFrontOfCamera: Float = 1.0 // Define la distancia fija frente a la cámara
+        let forwardDirection = cameraTransform.matrix.columns.2 // Vector hacia adelante de la cámara
+
+        // Calcular la nueva posición de la flecha
+        let forwardVector = SIMD3<Float>(forwardDirection.x, forwardDirection.y, forwardDirection.z) * distanceInFrontOfCamera
+        let arrowPosition = cameraPosition - forwardVector
+
+
+
+
+        // Obtener el yaw (rotación en el eje Y) de la cámara
+         guard let yaw = arView.session.currentFrame?.camera.eulerAngles.y else {
+             return
+         }
+
+         // Aplicar la rotación a la flecha, ajustando para que apunte hacia adelante en la dirección de la cámara
+         if let arrowEntity = arrowAnchor.children.first {
+             let rotationQuat = simd_quatf(angle: yaw, axis: [0, 1, 0])
+             arrowEntity.orientation = rotationQuat * simd_quatf(angle: .pi / 2, axis: [1, 0, 0]) // Ajuste de orientación
+         }
         
-        print("TargetX y targetY = cero")
-        // Si targetX y targetY son cero, apuntar en la dirección hacia adelante de la cámara
-        forwardVector = -SIMD3<Float>(cameraTransform.matrix.columns.2.x,
-                                      cameraTransform.matrix.columns.2.y,
-                                      cameraTransform.matrix.columns.2.z)
-
-        // Establecer una distancia fija (por ejemplo, 2 metros) desde la cámara
-        let distance: Float = 2.0
-        let forwardPosition = cameraPosition + forwardVector * distance
-
         // Actualizar la posición del ancla de la flecha
-        arrowAnchor.position = forwardPosition
-
-        // Calcular la rotación hacia el objetivo o hacia adelante
-        let angleToTarget = atan2(forwardVector.x, forwardVector.z)
-        let rotationToTarget = simd_quatf(angle: angleToTarget, axis: [0, 1, 0])
-
-        // Aplicar la rotación a la flecha, ajustando para que apunte hacia adelante
-        if let arrowEntity = arrowAnchor.children.first {
-            arrowEntity.orientation = simd_quatf(angle: .pi / 2, axis: [1, 0, 0]) * rotationToTarget
-        }
+        arrowAnchor.position = SIMD3<Float>(arrowPosition.x, cameraPosition.y , arrowPosition.z )
     }
+
+
+
 
 
     func setupFixedAnchor() {

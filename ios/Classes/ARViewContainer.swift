@@ -34,15 +34,14 @@ struct ARViewContainer: UIViewRepresentable {
         context.coordinator.setupFixedAnchor()
         // Establecer el delegado de la sesión para recibir actualizaciones
         arView.session.delegate = context.coordinator
-        
 
-       /* let arrowAnchor = createArrowAnchor()
-        arView.scene.anchors.append(arrowAnchor)
-*/
         context.coordinator.arView = arView
         arView.session.delegate = context.coordinator
-
-  //      context.coordinator.arrowAnchor = arrowAnchor
+        
+        //Arrow
+        let arrowAnchor = createArrowAnchor()
+        arView.scene.anchors.append(arrowAnchor)
+        context.coordinator.arrowAnchor = arrowAnchor
        
 
         NotificationCenter.default.addObserver(forName: .locationUpdated, object: nil, queue: .main) { notification in
@@ -80,7 +79,7 @@ struct ARViewContainer: UIViewRepresentable {
             let arrowEntity = try ModelEntity.load(named: "arrow_situm.usdz")
             arrowEntity.scale = SIMD3<Float>(0.05, 0.05, 0.05)
             arrowEntity.orientation = simd_quatf(angle: .pi / 2, axis: [1, 0, 0])
-            arrowEntity.position = SIMD3<Float>(0.0, 0.0, 0.0)
+            arrowEntity.position = SIMD3<Float>(0.0, -0.5, 0.0)
             anchor.addChild(arrowEntity)
         } catch {
             print("Error al cargar el modelo de la flecha: \(error.localizedDescription)")
