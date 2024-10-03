@@ -1,11 +1,14 @@
 package com.situm.flutter.ar.situm_ar
 
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 import com.situm.flutter.ar.situm_ar.scene.ARSceneHandler
+import android.util.Log
 
 class ARController(
     private val arView: SitumARPlatformView,
     private val arSceneHandler: ARSceneHandler,
-) {
+) : DefaultLifecycleObserver {
     companion object {
         const val TAG = "Situm> AR>"
     }
@@ -14,32 +17,47 @@ class ARController(
     private var isLoading = false
 
     fun load() {
+        Log.d(TAG, "Situm> AR> L&U> CALLED LOAD")
         if (isLoaded || isLoading) {
             return
         }
+        Log.d(TAG, "\tSitum> AR> L&U> ACTUALLY LOADED")
         isLoading = true
-        arView.showLoading(true)
         arView.load()
         // Now arView.sceneView is safe to use even if we change the behavior to instantiate it in
         // the load() call.
         arSceneHandler.setupSceneView(arView.sceneView)
         isLoaded = true
         isLoading = false
-        arView.showLoading(false)
     }
 
     fun unload() {
-        arView.pause()
-        arView.unload()
-        isLoading = false
-        isLoaded = false
+        Log.d(TAG, "Situm> AR> L&U> CALLED UNLOAD")
+        if (isLoaded) {
+            Log.d(TAG, "\tSitum> AR> L&U> ACTUALLY UNLOADED")
+            arView.unload()
+            isLoading = false
+            isLoaded = false
+        }
     }
 
     fun resume() {
-        arView.resume()
+        Log.d(TAG, "Situm> AR> L&U> CALLED RESUME")
+        arView.load()
     }
 
     fun pause() {
-        arView.pause()
+        Log.d(TAG, "Situm> AR> L&U> CALLED PAUSE")
+        arView.unload()
+    }
+
+    // -- Android Lifecycle:
+
+    override fun onResume(owner: LifecycleOwner) {
+        Log.d(TAG, "Situm> AR> L&U> Lifecycle> onResume")
+    }
+
+    override fun onPause(owner: LifecycleOwner) {
+        Log.d(TAG, "Situm> AR> L&U> Lifecycle> onPause")
     }
 }

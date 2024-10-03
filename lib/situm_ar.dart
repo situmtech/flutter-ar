@@ -207,9 +207,9 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
     super.didChangeAppLifecycleState(state);
     switch (state) {
       case AppLifecycleState.paused:
-      case AppLifecycleState.resumed:
       case AppLifecycleState.hidden:
       case AppLifecycleState.detached:
+      case AppLifecycleState.resumed:
         debugPrint("Situm> AR> LIFECYCLE> App is $state");
         break;
       case AppLifecycleState.inactive:
@@ -217,7 +217,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
         // This behavior was disabled because it was too aggressive. For
         // example, simply sliding down the Android notification panel was
         // enough to hide the AR.
-        // arController.onArGone();
+        arController.onArGone();
         break;
     }
   }

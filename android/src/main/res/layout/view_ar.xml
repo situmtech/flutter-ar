@@ -1,12 +1,13 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#444444"
     android:fitsSystemWindows="true">
 
-    <com.situm.flutter.ar.situm_ar.CustomARSceneView
-        android:id="@+id/situm_ar_view"
+    <!-- Adding this (unused) SurfaceView to the layout allows us to add/remove-->
+    <!-- the AR view respecting the z-ordering in flutter.-->
+    <SurfaceView
+        android:id="@+id/situm_ar_balsamo"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 

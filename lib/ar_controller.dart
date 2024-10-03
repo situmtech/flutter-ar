@@ -54,14 +54,13 @@ class ARController {
     });
     // Notify the client callback:
     _widgetState?.widget.onARVisibilityChanged?.call(ARVisibility.visible);
-    await load(); // Safe call, even if the AR is already loaded.
-    await resume();
+    await load();
+    // await resume();
   }
 
   Future<void> onArGone() async {
-    await pause();
-    // TODO: optimize native side so the AR can be completely unloaded.
-    // await unload();
+    // await pause();
+    await unload();
     _widgetState?.updateStatusArGone();
     _mapViewController?.updateAugmentedRealityStatus(ARStatus.finished);
     _widgetState?.widget.onARVisibilityChanged?.call(ARVisibility.gone);

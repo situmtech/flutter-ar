@@ -16,7 +16,7 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.platform.PlatformView
 
 class SitumARPlatformView(
-    context: Context,
+    private val context: Context,
     activity: Activity,
     private val lifecycle: Lifecycle,
     messenger: BinaryMessenger,
@@ -38,6 +38,7 @@ class SitumARPlatformView(
         // Initializations & DI:
         val sceneHandler = ARSceneHandler(activity, lifecycle)
         controller = ARController(this, sceneHandler)
+        lifecycle.addObserver(controller)
         methodCallHandler = ARMethodCallHandler(controller)
         _channel.setMethodCallHandler(this)
         generateAndroidViews(context)
@@ -46,7 +47,6 @@ class SitumARPlatformView(
     private fun generateAndroidViews(context: Context) {
         rootView = LayoutInflater.from(context)
             .inflate(R.layout.view_ar, null, false) as FrameLayout
-        sceneView = rootView.findViewById(R.id.situm_ar_view)
         loadingView = rootView.findViewById(R.id.situm_ar_loading_view)
     }
 
@@ -55,8 +55,7 @@ class SitumARPlatformView(
     }
 
     override fun dispose() {
-        sceneView.pause()
-        sceneView.destroy()
+        unload()
     }
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
@@ -65,6 +64,7 @@ class SitumARPlatformView(
     }
 
     fun load() {
+        sceneView = CustomARSceneView(context)
         sceneView.sessionConfiguration = { session, config ->
             config.depthMode =
                 if (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
@@ -77,24 +77,15 @@ class SitumARPlatformView(
         }
         // This call will make the AR visible:
         sceneView.lifecycle = lifecycle
+        rootView.addView(sceneView)
+        // This call is critical to avoid crashes going into background and back again.
+        sceneView.removeLifecycle()
         Log.d(TAG, "Lifecycle assigned, AR session should start now.")
     }
 
     fun unload() {
         sceneView.pause()
         sceneView.destroy()
+        rootView.removeView(sceneView)
     }
-
-    fun resume() {
-        sceneView.resume()
-    }
-
-    fun pause() {
-        sceneView.pause()
-    }
-
-    fun showLoading(isLoading: Boolean) {
-        loadingView.visibility = if (isLoading) View.VISIBLE else View.GONE
-    }
-
 }
