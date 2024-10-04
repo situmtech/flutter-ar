@@ -35,13 +35,18 @@ struct ARViewContainer: UIViewRepresentable {
         // Establecer el delegado de la sesión para recibir actualizaciones
         arView.session.delegate = context.coordinator
 
-        context.coordinator.arView = arView
+       // context.coordinator.arView = arView
         arView.session.delegate = context.coordinator
         
         //Arrow
         let arrowAnchor = createArrowAnchor()
         arView.scene.anchors.append(arrowAnchor)
         context.coordinator.arrowAnchor = arrowAnchor
+        
+        //Dinamyc model
+        let fixedAnchorModel = setupDynamicModel()
+        arView.scene.anchors.append(fixedAnchorModel)
+        //context.coordinator.arrowAnchor = arrowAnchor
        
 
         NotificationCenter.default.addObserver(forName: .locationUpdated, object: nil, queue: .main) { notification in
@@ -73,7 +78,7 @@ struct ARViewContainer: UIViewRepresentable {
     }
 
     func createArrowAnchor() -> AnchorEntity {
-        let anchor = AnchorEntity() //El ancla sigue a la camara
+        let anchor = AnchorEntity()
 
         do {
             let arrowEntity = try ModelEntity.load(named: "arrow_situm.usdz")
@@ -87,124 +92,27 @@ struct ARViewContainer: UIViewRepresentable {
 
         return anchor
     }
+    
+    func setupDynamicModel() -> AnchorEntity{
+        let fixedAnchorModel = AnchorEntity(world: SIMD3<Float>(0.0, 0.0, 0.0))
+        do {
+            let robotEntity = try ModelEntity.load(named: "Animated_Dragon_Three_Motion_Loops.usdz")
+            robotEntity.scale = SIMD3<Float>(0.015, 0.015, 0.015)
+            robotEntity.position = SIMD3<Float>(1.0, -0.25, -3.0)
+
+            let rotation = simd_quatf(angle: .pi / 4, axis: SIMD3<Float>(0, 1, 0))
+            robotEntity.orientation = rotation
+
+            if let animation = robotEntity.availableAnimations.first(where: { $0.name == "global scene animation" }) {
+                robotEntity.playAnimation(animation.repeat(), transitionDuration: 0.5, startsPaused: false)
+            }
+            fixedAnchorModel.addChild(robotEntity)
+        } catch {
+            print("Error al cargar el modelo animado: \(error.localizedDescription)")
+        }
+        
+        return fixedAnchorModel
+    }
+    
+    
 }
-
-
-
-/*
-import SwiftUI
-
- import RealityKit
-
- import ARKit
-
- import Combine
- 
-struct ContentView: View {
-
-     var body: some View {
-
-         ARViewContainer().edgesIgnoringSafeArea(.all)
-
-     }
-
- }
- 
-struct ARViewContainer: UIViewRepresentable {
-
-     class Coordinator: NSObject, ARSessionDelegate {
-
-         var arView: ARView?
-
-         var yawLabel: UILabel?
-
-         var cancellable: AnyCancellable?
-
-         func session(_ session: ARSession, didUpdate frame: ARFrame) {
-
-             // Obtener el yaw de la cámara respecto al norte
-
-             if let yaw = getCameraYawRespectToNorth() {
-
-                 // Actualizar la etiqueta con el valor del yaw
-
-                 DispatchQueue.main.async {
-
-                     self.yawLabel?.text = "Yaw: \(yaw * (180.0 / .pi))°"
-
-                 }
-
-             }
-
-         }
-
-         func getCameraYawRespectToNorth() -> Float? {
-             return arView?.session.currentFrame?.camera.eulerAngles.y
-   
-         }
-
-     }
-
-     func makeUIView(context: Context) -> ARView {
-
-         let arView = ARView(frame: .zero)
-
-         arView.cameraMode = .ar
-
-         arView.automaticallyConfigureSession = false
- 
-        // Configuración de la sesión con gravityAndHeading
-
-         let config = ARWorldTrackingConfiguration()
-
-         config.worldAlignment = .gravity
-
-         arView.session.run(config)
-
-         // Crear y añadir la etiqueta para mostrar el yaw
-
-         let yawLabel = UILabel()
-
-         yawLabel.frame = CGRect(x: 20, y: 50, width: 200, height: 50)
-
-         yawLabel.textColor = .white
-
-         yawLabel.backgroundColor = UIColor.black.withAlphaComponent(0.5)
-
-         yawLabel.textAlignment = .center
-
-         yawLabel.text = "Yaw: 0.0°"
-
-         // Añadir la etiqueta al ARView
-
-         arView.addSubview(yawLabel)
-
-         // Guardar referencias para actualizar el yaw
-
-         context.coordinator.arView = arView
-
-         context.coordinator.yawLabel = yawLabel
-
-         // Establecer el delegado de la sesión para recibir actualizaciones
-
-         arView.session.delegate = context.coordinator
-
-         return arView
-
-     }
-
-     func updateUIView(_ uiView: ARView, context: Context) {
-
-         // Actualización de la vista
-
-     }
-
-     func makeCoordinator() -> Coordinator {
-
-         return Coordinator()
-
-     }
-
- }
- 
-*/

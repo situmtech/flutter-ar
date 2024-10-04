@@ -91,9 +91,6 @@ class Coordinator: NSObject, ARSessionDelegate {
         let forwardVector = SIMD3<Float>(forwardDirection.x, forwardDirection.y, forwardDirection.z) * distanceInFrontOfCamera
         let arrowPosition = cameraPosition - forwardVector
 
-
-
-
         // Obtener el yaw (rotación en el eje Y) de la cámara
          guard let yaw = arView.session.currentFrame?.camera.eulerAngles.y else {
              return
@@ -109,32 +106,13 @@ class Coordinator: NSObject, ARSessionDelegate {
         arrowAnchor.position = SIMD3<Float>(arrowPosition.x, cameraPosition.y , arrowPosition.z )
     }
 
-
-
-
+    
 
     func setupFixedAnchor() {
         guard let arView = arView else { return }
 
         let fixedAnchor = AnchorEntity(world: SIMD3<Float>(0.0, 0.0, 0.0))
         fixedAnchor.name = "fixedPOIAnchor"
-
-        /*do {
-            let robotEntity = try ModelEntity.load(named: "Animated_Dragon_Three_Motion_Loops.usdz")
-            robotEntity.scale = SIMD3<Float>(0.025, 0.025, 0.025)
-            robotEntity.position = SIMD3<Float>(-1.0, -10.0, -8.0)
-
-            let rotation = simd_quatf(angle: .pi / 4, axis: SIMD3<Float>(0, 1, 0))
-            robotEntity.orientation = rotation
-
-            if let animation = robotEntity.availableAnimations.first(where: { $0.name == "global scene animation" }) {
-                robotEntity.playAnimation(animation.repeat(), transitionDuration: 0.5, startsPaused: false)
-            }
-            
-            fixedAnchor.addChild(robotEntity)
-        } catch {
-            print("Error al cargar el modelo animado: \(error.localizedDescription)")
-        }*/
 
         arView.scene.anchors.append(fixedAnchor)
         self.fixedAnchor = fixedAnchor
