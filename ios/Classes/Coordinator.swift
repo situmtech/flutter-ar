@@ -34,6 +34,9 @@ class Coordinator: NSObject, ARSessionDelegate {
                  self.yawLabel?.text = String(format: "Yaw: %.2f°", yawDegrees)
              }
          }
+        
+        // Actualizar la posición y dirección de la flecha
+        updateArrowPositionAndDirection()
      }
     
     
@@ -68,9 +71,6 @@ class Coordinator: NSObject, ARSessionDelegate {
             }
         }
 
-    func session(_ session: ARSession) {
-        updateArrowPositionAndDirection()
-    }
     
     func setWidth(_width: Double){
         width = _width

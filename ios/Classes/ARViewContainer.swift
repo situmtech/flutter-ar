@@ -73,7 +73,7 @@ struct ARViewContainer: UIViewRepresentable {
     }
 
     func createArrowAnchor() -> AnchorEntity {
-        let anchor = AnchorEntity()
+        let anchor = AnchorEntity() //El ancla sigue a la camara
 
         do {
             let arrowEntity = try ModelEntity.load(named: "arrow_situm.usdz")
