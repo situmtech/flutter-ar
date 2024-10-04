@@ -216,8 +216,11 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
         debugPrint("Situm> AR> LIFECYCLE> INACTIVE");
         // This behavior was disabled because it was too aggressive. For
         // example, simply sliding down the Android notification panel was
-        // enough to hide the AR.
-        arController.onArGone();
+        // enough to hide the AR. It was moved to the native side:
+        // Android -> onStop() lifecycle method is perfect to detect when the
+        // app goes to background or the phone is locked, but is not called
+        // if the app is only partially covered.
+        // arController.onArGone();
         break;
     }
   }

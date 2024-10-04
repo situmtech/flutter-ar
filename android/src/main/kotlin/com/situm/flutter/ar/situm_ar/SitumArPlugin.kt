@@ -12,7 +12,7 @@ object Constants {
     const val CHANNEL_ID = "SitumARView"
 }
 
-/** SceneviewFlutterPlugin */
+/** SitumArPlugin */
 class SitumArPlugin : FlutterPlugin, ActivityAware {
 
     private val TAG = "SceneviewFlutterPlugin"

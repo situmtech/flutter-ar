@@ -3,6 +3,9 @@ package com.situm.flutter.ar.situm_ar
 import android.util.Log
 import io.flutter.plugin.common.MethodChannel
 
+/**
+ * MethodCall wrapper/adapter. Use this class to handle Dart messages.
+ */
 class ARMethodCallHandler(
     private val controller: ARController
 ) {

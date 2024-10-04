@@ -1,13 +1,17 @@
 package com.situm.flutter.ar.situm_ar
 
+import android.util.Log
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import com.situm.flutter.ar.situm_ar.scene.ARSceneHandler
-import android.util.Log
 
+/**
+ * Plugin controller.
+ */
 class ARController(
     private val arView: SitumARPlatformView,
     private val arSceneHandler: ARSceneHandler,
+    private val arMethodCallSender: ARMethodCallSender,
 ) : DefaultLifecycleObserver {
     companion object {
         const val TAG = "Situm> AR>"
@@ -59,5 +63,12 @@ class ARController(
 
     override fun onPause(owner: LifecycleOwner) {
         Log.d(TAG, "Situm> AR> L&U> Lifecycle> onPause")
+    }
+
+    override fun onStop(owner: LifecycleOwner) {
+        Log.d(TAG, "Situm> AR> L&U> Lifecycle> onStop")
+        if (isLoaded) {
+            arMethodCallSender.sendArGoneRequired()
+        }
     }
 }

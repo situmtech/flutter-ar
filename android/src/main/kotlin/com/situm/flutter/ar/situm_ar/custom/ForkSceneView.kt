@@ -1,24 +1,21 @@
-package com.situm.flutter.ar.situm_ar
+package com.situm.flutter.ar.situm_ar.custom
 
 import android.content.Context
 import android.util.AttributeSet
+import android.util.Log
 import android.util.Size
 import android.view.MotionEvent
-import android.widget.FrameLayout
 import androidx.activity.ComponentActivity
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import com.google.android.filament.Engine
 import com.google.android.filament.IndirectLight
-import com.google.android.filament.MaterialInstance
-import com.google.android.filament.RenderableManager
 import com.google.android.filament.Renderer
 import com.google.android.filament.Scene
 import com.google.android.filament.View
 import com.google.ar.core.Camera
 import com.google.ar.core.CameraConfig
-import com.google.ar.core.CameraConfig.FacingDirection
 import com.google.ar.core.Config
 import com.google.ar.core.Frame
 import com.google.ar.core.HitResult
@@ -30,7 +27,6 @@ import com.google.ar.core.TrackingState
 import io.github.sceneview.SceneView
 import io.github.sceneview.ar.arcore.configure
 import io.github.sceneview.ar.arcore.firstByTypeOrNull
-import io.github.sceneview.ar.arcore.getUpdatedTrackables
 import io.github.sceneview.ar.arcore.isTracking
 import io.github.sceneview.ar.camera.ARCameraStream
 import io.github.sceneview.ar.light.LightEstimator
@@ -43,11 +39,8 @@ import io.github.sceneview.gesture.GestureDetector
 import io.github.sceneview.loaders.EnvironmentLoader
 import io.github.sceneview.loaders.MaterialLoader
 import io.github.sceneview.loaders.ModelLoader
-import io.github.sceneview.model.Model
-import io.github.sceneview.model.ModelInstance
 import io.github.sceneview.node.LightNode
-import io.github.sceneview.node.Node
-import io.github.sceneview.node.ViewNode2.WindowManager
+import io.github.sceneview.node.ViewNode2
 import java.util.concurrent.Executors
 
 /**
@@ -192,7 +185,7 @@ open class ForkSceneView @JvmOverloads constructor(
      * Additionally, this manages the lifecycle of the window to help ensure that the window is
      * added/removed from the WindowManager at the appropriate times.
      */
-    viewNodeWindowManager: WindowManager? = null,
+    viewNodeWindowManager: ViewNode2.WindowManager? = null,
     /**
      * The session is ready to be accessed.
      */
@@ -405,11 +398,6 @@ open class ForkSceneView @JvmOverloads constructor(
             value?.addObserver(lifecycleObserver)
         }
 
-    fun removeLifecycle() {
-        super.lifecycle?.removeObserver(lifecycleObserver)
-        lifecycle?.removeObserver(lifecycleObserver)
-    }
-
     private var _onSessionCreated = mutableListOf<(session: Session) -> Unit>()
 
     private var defaultCameraNode: ARCameraNode? = null
@@ -468,7 +456,8 @@ open class ForkSceneView @JvmOverloads constructor(
 
     fun onSessionConfigChanged(session: Session, config: Config) {
         // Feature config, therefore facing direction, can only be configured once per session.
-        isFrontFaceWindingInverted = session.cameraConfig.facingDirection == FacingDirection.FRONT
+        isFrontFaceWindingInverted =
+            session.cameraConfig.facingDirection == CameraConfig.FacingDirection.FRONT
 
         onSessionConfigChanged?.invoke(session, config)
     }
@@ -581,17 +570,69 @@ open class ForkSceneView @JvmOverloads constructor(
         planePoseInPolygon, minCameraDistance, predicate
     )
 
+
+    // TODO: finally not necessary?
+//    fun removeLifecycle() {
+//        super.lifecycle?.removeObserver(lifecycleObserver)
+//        lifecycle?.removeObserver(lifecycleObserver)
+//    }
+
+    /**
+     * Pauses the underlying ARCore session of this scene view.
+     */
+    fun pause() {
+        arCore.pause()
+    }
+
+    // Original method:
+//    override fun destroy() {
+//        if (!isDestroyed) {
+//            defaultCameraNode?.destroy()
+//            defaultCameraStream?.destroy()
+//
+//            lightEstimator?.destroy()
+//            planeRenderer.destroy()
+//            destroyArCore()
+//        }
+//
+//        super.destroy()
+//    }
+
     override fun destroy() {
         if (!isDestroyed) {
-            defaultCameraNode?.destroy()
-            defaultCameraStream?.destroy()
-
-            lightEstimator?.destroy()
-            planeRenderer.destroy()
-            destroyArCore()
+            val destroyCalls = listOf(
+                ::destroyCameraNode,
+                ::destroyCameraStream,
+                ::destroyLightEstimator,
+                ::destroyPlaneRenderer,
+                ::destroyArCore,
+                ::destroyParent
+            )
+            // TODO: these functions are causing unexpected/random exceptions. Why?
+            destroyCalls.forEach {
+                try {
+                    it()
+                } catch (e: Exception) {
+                    Log.e("Situm> AR>", "[!] Destroy error captured: $e")
+                }
+            }
         }
+    }
 
-        super.destroy()
+    private fun destroyCameraNode() {
+        defaultCameraNode?.destroy()
+    }
+
+    private fun destroyCameraStream() {
+        defaultCameraStream?.destroy()
+    }
+
+    private fun destroyLightEstimator() {
+        lightEstimator?.destroy()
+    }
+
+    private fun destroyPlaneRenderer() {
+        planeRenderer.destroy()
     }
 
     private fun destroyArCore() {
@@ -599,6 +640,10 @@ open class ForkSceneView @JvmOverloads constructor(
             // destroy should be called off the main thread since it hangs for many seconds
             arCore.destroy()
         }
+    }
+
+    private fun destroyParent() {
+        super.destroy()
     }
 
     private inner class LifeCycleObserver : DefaultLifecycleObserver {
@@ -620,7 +665,8 @@ open class ForkSceneView @JvmOverloads constructor(
     }
 
     companion object {
-        fun createARCameraNode(engine: Engine): ARCameraNode = ARCameraNode(engine).also { it.setExposure(16.0f, 1.0f / 125.0f, 100.0f) }
+        fun createARCameraNode(engine: Engine): ARCameraNode =
+            ARCameraNode(engine).also { it.setExposure(16.0f, 1.0f / 125.0f, 100.0f) }
 
         fun createARCameraStream(materialLoader: MaterialLoader) = ARCameraStream(materialLoader)
 

@@ -1,4 +1,4 @@
-package com.situm.flutter.ar.situm_ar
+package com.situm.flutter.ar.situm_ar.custom
 
 import android.Manifest
 import android.content.Context
@@ -19,6 +19,7 @@ import com.google.ar.core.Config
 import com.google.ar.core.Session
 import com.google.ar.core.TrackingFailureReason
 import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException
+import com.situm.flutter.ar.situm_ar.R
 import io.github.sceneview.ar.arcore.ARSession
 
 /**

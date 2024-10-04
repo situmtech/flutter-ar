@@ -28,26 +28,24 @@ class SitumARPlatformView(
 
     lateinit var sceneView: CustomARSceneView
     private lateinit var rootView: FrameLayout
-    private lateinit var loadingView: View
 
-    private val _channel: MethodChannel = MethodChannel(messenger, Constants.CHANNEL_ID)
-    private val controller: ARController
-    private val methodCallHandler: ARMethodCallHandler
+    private val flutterMethodChannel: MethodChannel = MethodChannel(messenger, Constants.CHANNEL_ID)
+    private val arController: ARController
+    private val arMethodCallHandler: ARMethodCallHandler
 
     init {
         // Initializations & DI:
+        val arMethodCallSender = ARMethodCallSender(flutterMethodChannel)
         val sceneHandler = ARSceneHandler(activity, lifecycle)
-        controller = ARController(this, sceneHandler)
-        lifecycle.addObserver(controller)
-        methodCallHandler = ARMethodCallHandler(controller)
-        _channel.setMethodCallHandler(this)
+        arController = ARController(this, sceneHandler, arMethodCallSender)
+        arMethodCallHandler = ARMethodCallHandler(arController)
+        flutterMethodChannel.setMethodCallHandler(this)
         generateAndroidViews(context)
     }
 
     private fun generateAndroidViews(context: Context) {
         rootView = LayoutInflater.from(context)
             .inflate(R.layout.view_ar, null, false) as FrameLayout
-        loadingView = rootView.findViewById(R.id.situm_ar_loading_view)
     }
 
     override fun getView(): View {
@@ -60,10 +58,11 @@ class SitumARPlatformView(
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         val arguments = (call.arguments ?: emptyMap<String, Any>()) as Map<String, Any>
-        methodCallHandler.handle(call.method, arguments, result)
+        arMethodCallHandler.handle(call.method, arguments, result)
     }
 
     fun load() {
+        lifecycle.addObserver(arController)
         sceneView = CustomARSceneView(context)
         sceneView.sessionConfiguration = { session, config ->
             config.depthMode =
@@ -78,14 +77,14 @@ class SitumARPlatformView(
         // This call will make the AR visible:
         sceneView.lifecycle = lifecycle
         rootView.addView(sceneView)
-        // This call is critical to avoid crashes going into background and back again.
-        sceneView.removeLifecycle()
         Log.d(TAG, "Lifecycle assigned, AR session should start now.")
     }
 
     fun unload() {
         sceneView.pause()
-        sceneView.destroy()
+        // sceneView.destroy() will be called anyway after removeView(sceneView). destroy() was
+        // modified to avoid multiple crashes.
         rootView.removeView(sceneView)
+        lifecycle.removeObserver(arController)
     }
 }

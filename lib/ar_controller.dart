@@ -9,7 +9,8 @@ class ARController {
   final MethodChannel _channel = const MethodChannel(CHANNEL_ID);
 
   ARController._() {
-    SitumSdk().internalSetMethodCallARDelegate(_methodCallHandler);
+    SitumSdk().internalSetMethodCallARDelegate(_situmSDKMethodCallHandler);
+    _channel.setMethodCallHandler(_nativeARMethodCallHandler);
   }
 
   factory ARController() {
@@ -87,7 +88,7 @@ class ARController {
   }
 
   // === Set of methods to keep the AR module updated regarding position and navigation.
-  Future<void> _methodCallHandler(InternalCall call) async {
+  Future<void> _situmSDKMethodCallHandler(InternalCall call) async {
     // TODO: restore.
     switch (call.type) {
       case InternalCallType.location:
@@ -116,6 +117,20 @@ class ARController {
         break;
       default:
         debugPrint("Unhandled call: ${call.type}");
+        break;
+    }
+  }
+
+  // === Handle native method calls from this plugin.
+
+  Future<void> _nativeARMethodCallHandler(MethodCall call) async {
+    debugPrint("Situm> AR> _nativeARMethodCallHandler ${call.method}");
+    switch (call.method) {
+      case "ArGoneRequired":
+        onArGone();
+        break;
+      default:
+        debugPrint("Unhandled call: ${call.method}");
         break;
     }
   }
