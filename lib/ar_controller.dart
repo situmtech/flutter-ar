@@ -201,7 +201,7 @@ class ARController {
     try {
       // Envía la ubicación a iOS
 
-     print("locationMap:    ${locationMap}");    
+     //print("locationMap:    ${locationMap}");    
       await platform.invokeMethod('updateLocation', {
         'xSitum': locationMap['cartesianCoordinate']['x'],
         'ySitum': locationMap['cartesianCoordinate']['y'],        
@@ -294,6 +294,7 @@ class ARController {
     }
 
  try {
+  print("UPDATE AR ARROW ${progressContent["points"]}");
       // Envía posición del poi     
       await platform.invokeMethod('updatePoint', progressContent["points"]);
     } on PlatformException catch (e) {

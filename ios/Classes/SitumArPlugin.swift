@@ -13,7 +13,7 @@ class SitumARPlugin: NSObject {
     @objc func updatePOIs(poisMap: [String: Any], width: Double) {
         // Enviar una notificación para actualizar los POIs en la vista AR
         NotificationCenter.default.post(name: .poisUpdated, object: nil, userInfo: ["poisMap": poisMap, "width": width])
-        print("POIs updated from SitumARPlugin with data: \(poisMap)")
+        //print("POIs updated from SitumARPlugin with data: \(poisMap)")
     }
     
     @objc func updateLocation(xSitum: Double, ySitum: Double, yawSitum: Double, floorIdentifier: Double) {
@@ -73,7 +73,7 @@ public class SitumArPlugin: NSObject, FlutterPlugin {
                               let xPoint = cartesianCoordinate["x"] as? Double ?? Double(cartesianCoordinate["x"] as? String ?? ""),
                               let yPoint = cartesianCoordinate["y"] as? Double ?? Double(cartesianCoordinate["y"] as? String ?? ""),
                               let floorIdentifier = args["floorIdentifier"] as? Int ?? Int(args["floorIdentifier"] as? String ?? "") else {
-                            print("Invalid point data:", args)
+                            
                             result(FlutterError(code: "INVALID_ARGUMENT", message: "Invalid cartesian coordinates or floorIdentifier", details: nil))
                             return
                         }
@@ -99,7 +99,7 @@ public class SitumArPlugin: NSObject, FlutterPlugin {
                                         
             
             case "updateLocation":
-                print("Received arguments for updateLocation:", call.arguments ?? "No arguments")
+                //print("Received arguments for updateLocation:", call.arguments ?? "No arguments")
                 
                 if let args = call.arguments as? [String: Any] { 
                     

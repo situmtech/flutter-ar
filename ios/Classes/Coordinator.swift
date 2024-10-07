@@ -13,9 +13,14 @@ class Coordinator: NSObject, ARSessionDelegate {
     var locationUpdated = false
     var didUpdatePath = false
     
-    var width = 0.0
+    //var width = 0.0
     var targetX = 0.0
-    var targetY = 0.0
+    var targetZ = 0.0
+    var targetFloorIdentifier = 0
+    
+    var pointsList: [[String: Any]] = []
+    
+
  
       
     init(locationManager: LocationManager) {
@@ -37,20 +42,20 @@ class Coordinator: NSObject, ARSessionDelegate {
         
         // Actualizar la posición y dirección de la flecha
         updateArrowPositionAndDirection()
+       
+        
      }
-    
-    
+        
     func handlePointUpdate(_ notification: Notification) {
         // Verificar que userInfo no sea nil
-        
         if let userInfo = notification.userInfo {
             // Verificar que userInfo contenga una lista de diccionarios en el formato correcto
-            if let pointsList = userInfo["pointsList"] as? [[String: Any]] {
-                updatePointsList(pointsList: pointsList)
-            } else {
-                print("Invalid data format in userInfo")
+                if let pointsList = userInfo["pointsList"] as? [[String: Any]] {
+                    self.pointsList = pointsList
+                } else {
+                    print("Invalid data format in userInfo")
+                }
             }
-        }
     }
 
     
@@ -70,15 +75,40 @@ class Coordinator: NSObject, ARSessionDelegate {
                 print("Datos inválidos recibidos en la notificación: \(String(describing: notification.userInfo))")
             }
         }
-
     
-    func setWidth(_width: Double){
-        width = _width
+    
+    func calculateAngleToTarget() -> Float? {
+        guard let cameraAngleXZ = getCameraYawRespectToNorth() else { return nil }
+        
+        guard let arView = arView else { return nil }
+        
+        // Obtener la posición de la cámara
+        let cameraTransform = arView.cameraTransform
+        let cameraPosition = cameraTransform.translation
+        
+        // Crear el vector desde la cámara hasta el objetivo en el plano XZ
+        let directionToTarget = SIMD2<Float>(Float(self.targetX) - cameraPosition.x, Float(self.targetZ) - cameraPosition.z)
+        
+        // Normalizar el vector hacia el objetivo
+        let normalizedDirectionToTarget = normalize(directionToTarget)
+        
+        // Calcular el ángulo hacia el objetivo
+        let angleToTarget = atan2(normalizedDirectionToTarget.y, normalizedDirectionToTarget.x)
+       
+        // Calcular la diferencia entre el ángulo de la cámara y el ángulo hacia el objetivo
+        let angleDifference = angleToTarget //- cameraAngleXZ
+        
+        print("Ángulo hacia el objetivo: \(cameraAngleXZ * 180.0 / .pi) grados")
+        //print("Ángulo hacia el objetivo: \(angleToTarget * 180.0 / .pi) grados")
+        print("Diferencia de ángulo: \(angleDifference * 180.0 / .pi) grados")
+        
+        return angleDifference
     }
+   
 
     func updateArrowPositionAndDirection() {
         guard let arView = arView, let arrowAnchor = arrowAnchor else { return }
-
+        
         // Obtener la posición de la cámara
         let cameraTransform = arView.cameraTransform
         let cameraPosition = cameraTransform.translation
@@ -95,10 +125,26 @@ class Coordinator: NSObject, ARSessionDelegate {
          guard let yaw = arView.session.currentFrame?.camera.eulerAngles.y else {
              return
          }
-
+        
+        var yawPoint: Float = 0.0
+        
+        if !self.pointsList.isEmpty {
+            //print("Route is not empty")
+            yawPoint = calculateAngleToTarget() ?? 0.0
+            
+        }
+        print("YAW POINT!!    ", yawPoint * 180.0 / .pi)
          // Aplicar la rotación a la flecha, ajustando para que apunte hacia adelante en la dirección de la cámara
          if let arrowEntity = arrowAnchor.children.first {
-             let rotationQuat = simd_quatf(angle: yaw, axis: [0, 1, 0])
+             var rotationQuat: simd_quatf
+             
+             if yawPoint != 0.0 {
+                 rotationQuat = simd_quatf(angle: yawPoint, axis: [0, 1, 0])
+                 
+             }else{
+                 rotationQuat = simd_quatf(angle: yaw, axis: [0, 1, 0])
+             }
+             
              arrowEntity.orientation = rotationQuat * simd_quatf(angle: .pi / 2, axis: [1, 0, 0]) // Ajuste de orientación
          }
         
@@ -118,19 +164,35 @@ class Coordinator: NSObject, ARSessionDelegate {
         self.fixedAnchor = fixedAnchor
     }
     
-    func updatePointsList(pointsList: [[String: Any]]){
-        guard !didUpdatePath, let arView = arView, let initialLocation = locationManager.initialLocation else {
-            print("ARView or initialLocation is nil")
+            
+    func setTargetCoordinates(_ x: Float, _ z: Float ){
+            
+            self.targetX = Double(x)
+            self.targetZ = Double(z)
+            //self.targetFloorIdentifier = Int(floorIdentifier)
+            
+        print("x: \(self.targetX), z: \(self.targetZ)")//, floorIdentifier: \(self.targetFloorIdentifier)")
+      
+    }
+    
+    func updatePointsList() {
+        guard let arView = arView, let initialLocation = locationManager.initialLocation else {
+            //print("ARView or initialLocation is nil")
             return
         }
 
         // Buscar el ancla existente
         if let fixedPOIAnchor = arView.scene.anchors.first(where: { $0.name == "fixedPOIAnchor" }) as? AnchorEntity {
             
-            // Eliminar todas las esferas anteriores
-            fixedPOIAnchor.children.filter { $0.name.starts(with: "point_") }.forEach { $0.removeFromParent() }
+            // Eliminar todas las esferas anteriores que empiezan con "point_"
+            for child in fixedPOIAnchor.children {
+                if child.name.starts(with: "point_") {
+                    child.removeFromParent()
+                }
+            }
 
-            for (index, point) in pointsList.enumerated() {
+            // Añadir los nuevos puntos
+            for (index, point) in self.pointsList.enumerated() {
                 // Extraer el x y el y de cada punto
                 if let xPoint = point["x"] as? Double, let yPoint = point["y"] as? Double {
                     
@@ -141,9 +203,17 @@ class Coordinator: NSObject, ARSessionDelegate {
                         currentLocation: initialLocation,
                         arView: arView
                     )
-                    
-                    // Crear una nueva esfera
-                    let poiEntity = createSphereEntity(radius: 0.15, color: .magenta)
+                                    
+
+                    var poiEntity:ModelEntity
+                    if index == 1 {    // Acceder al primer punto
+                        setTargetCoordinates( transformedPosition.x,  transformedPosition.z)
+                        poiEntity = createSphereEntity(radius: 0.15, color: .blue)
+                    }else{
+                        // Crear una nueva esfera
+                        poiEntity = createSphereEntity(radius: 0.15, color: .magenta)
+                    }
+
                     poiEntity.position = transformedPosition
                     poiEntity.name = "point_\(index)" // Dar un nombre único a cada esfera
 
@@ -153,8 +223,8 @@ class Coordinator: NSObject, ARSessionDelegate {
                     print("Invalid point data: \(point)")
                 }
             }
-            
-            didUpdatePath = true
+
+           
         } else {
             print("No se encontró el ancla 'fixedPOIAnchor'")
         }
@@ -164,10 +234,10 @@ class Coordinator: NSObject, ARSessionDelegate {
     func updateLocation(xSitum: Double, ySitum: Double, yawSitum: Double, floorIdentifier: Double) {
             // Comprobar si la ubicación ya ha sido actualizada
             guard !locationUpdated else { return }
-            print("XSITUM:  ", xSitum)
+           /* print("XSITUM:  ", xSitum)
             print("YSITUM:  ", ySitum)
             print("YAWSITUM:  ", yawSitum)
-            print("FLOORIDENTIFIER:  ", floorIdentifier)      
+            print("FLOORIDENTIFIER:  ", floorIdentifier)  */
         
 
             let locationPosition = SIMD4<Float>(Float(xSitum), Float(ySitum), Float(yawSitum), Float(floorIdentifier))
@@ -232,9 +302,6 @@ class Coordinator: NSObject, ARSessionDelegate {
                    let name = poi["name"] as? String,
                    floorIdentifier == String(Int(initialLocation.altitude)) {
                    let transformedPosition = generateARKitPosition(x: Float(x), y: Float(y), currentLocation: initialLocation, arView: arView)
-
-                  
-                   print("POI:  ", name, "  ", transformedPosition.x, "  ",transformedPosition.z)
                     
                    let poiEntity = createSphereEntity(radius: 0.5, color: .green)
                    poiEntity.position = transformedPosition
@@ -252,6 +319,9 @@ class Coordinator: NSObject, ARSessionDelegate {
             if !arView.scene.anchors.contains(where: { $0 as? AnchorEntity == fixedPOIAnchor }) {
                 arView.scene.anchors.append(fixedPOIAnchor)
             }
+            
+            self.updatePointsList()
+           
         }
 
         didUpdatePOIs = true
@@ -295,20 +365,14 @@ class Coordinator: NSObject, ARSessionDelegate {
      
         let cameraHorizontalRotation = simd_quatf(angle: cameraBearing, axis: SIMD3<Float>(0.0, 1.0, 0.0))
       
-        ///////////////
         let course = -currentLocation.course // Cambiamos el signo del yaw para invertir izquierda y derecha
 
         // Asegurarnos de que el valor ajustado esté dentro del rango [-π, π]
         let courseNormalized = fmod(course + .pi, 2 * .pi) - .pi
-
-        
-        
-       ///////////////
-        
         
         let situmBearingDegrees = courseNormalized * (180.0 / .pi) + 90.0
         let situmBearingInRadians = Float(situmBearingDegrees) * (.pi / 180.0)
-        print("yaw situmBearingDegrees!!!!!!!!!!!!!!!!!!!!!!!!:   ", situmBearingDegrees - 90.0)
+        //print("yaw situmBearingDegrees!!!!!!!!!!!!!!!!!!!!!!!!:   ", situmBearingDegrees - 90.0)
         
         let situmBearingMinusRotation = simd_quatf(angle: (situmBearingInRadians), axis: SIMD3<Float>(0.0, -1.0, 0.0))
 
