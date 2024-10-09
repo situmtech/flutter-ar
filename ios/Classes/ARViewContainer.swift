@@ -84,7 +84,7 @@ struct ARViewContainer: UIViewRepresentable {
             let arrowEntity = try ModelEntity.load(named: "arrow_situm.usdz")
             arrowEntity.scale = SIMD3<Float>(0.025, 0.025, 0.025)
             arrowEntity.orientation = simd_quatf(angle: .pi / 2, axis: [1, 0, 0])
-            arrowEntity.position = SIMD3<Float>(0.0, -0.5, -0.5)
+            arrowEntity.position = SIMD3<Float>(0.0, 0.0, 0.0)
             anchor.addChild(arrowEntity)
         } catch {
             print("Error al cargar el modelo de la flecha: \(error.localizedDescription)")

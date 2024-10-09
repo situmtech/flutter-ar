@@ -165,7 +165,7 @@ class Coordinator: NSObject, ARSessionDelegate {
          }
         
         // Actualizar la posición del ancla de la flecha
-        arrowAnchor.position = SIMD3<Float>(arrowPosition.x, cameraPosition.y , arrowPosition.z )
+        arrowAnchor.position = SIMD3<Float>(arrowPosition.x, -0.5 , arrowPosition.z)
     }
     
 
