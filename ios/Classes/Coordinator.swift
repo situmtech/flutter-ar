@@ -117,8 +117,8 @@ class Coordinator: NSObject, ARSessionDelegate {
         // Calcular el ángulo hacia el objetivo
         let angleToTarget = atan2(normalizedDirectionToTarget.y, normalizedDirectionToTarget.x)
        
-        print("Ángulo camara - objetivo: \(cameraAngleXZ * 180.0 / .pi) grados")
-        print("Ángulo posicion - objetivo: \(angleToTarget * 180.0 / .pi + 90) grados")
+        //print("Ángulo camara - objetivo: \(cameraAngleXZ * 180.0 / .pi) grados")
+        //print("Ángulo posicion - objetivo: \(angleToTarget * 180.0 / .pi + 90) grados")
         
         // Calcular la diferencia entre el ángulo de la cámara y el ángulo hacia el objetivo
         let angleDifference = angleToTarget + .pi/2.0 //- cameraAngleXZ
@@ -142,27 +142,26 @@ class Coordinator: NSObject, ARSessionDelegate {
         let forwardVector = SIMD3<Float>(forwardDirection.x, forwardDirection.y, forwardDirection.z) * distanceInFrontOfCamera
         let arrowPosition = cameraPosition - forwardVector
         
-        var yawPoint: Float = 0.0
+       
         
-        if !self.pointsList.isEmpty {
-            yawPoint = calculateAngleToTarget() ?? 0.0
+        if self.targetX != 0 && self.targetZ != 0 {
+            if var yawPoint = calculateAngleToTarget(){
             
+                if let arrowEntity = arrowAnchor.children.first {
+                    
+                    if yawPoint != 0.0 {
+                        // Primero aplicar la rotación de pi/2 alrededor del eje X (ajuste de orientación)
+                        let rotationX = simd_quatf(angle: .pi / 2, axis: SIMD3<Float>(1, 0, 0))
+                        // Luego aplicar la rotación alrededor del eje Y basada en yawPoint
+                        let rotationY = simd_quatf(angle: yawPoint, axis: SIMD3<Float>(0, -1, 0))
+                        // Multiplicar los cuaterniones, primero rotación en X y luego en Y
+                        let combinedRotation = rotationY * rotationX
+                        arrowEntity.orientation = combinedRotation
+                    }
+                }
+                
+            }
         }
-        print("YAW POINT!!    ", yawPoint * 180.0 / .pi)
-         if let arrowEntity = arrowAnchor.children.first {
-            
-             
-             if yawPoint != 0.0 {
-                 // Primero aplicar la rotación de pi/2 alrededor del eje X (ajuste de orientación)
-                 let rotationX = simd_quatf(angle: .pi / 2, axis: SIMD3<Float>(1, 0, 0))
-                 // Luego aplicar la rotación alrededor del eje Y basada en yawPoint
-                 let rotationY = simd_quatf(angle: yawPoint, axis: SIMD3<Float>(0, -1, 0))
-                 // Multiplicar los cuaterniones, primero rotación en X y luego en Y
-                 let combinedRotation = rotationY * rotationX
-                 arrowEntity.orientation = combinedRotation
-             }
-             
-         }
         
         // Actualizar la posición del ancla de la flecha
         arrowAnchor.position = SIMD3<Float>(arrowPosition.x, -0.5 , arrowPosition.z)
