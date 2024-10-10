@@ -20,17 +20,17 @@ struct ARViewContainer: UIViewRepresentable {
         configuration.planeDetection = []
         arView.session.run(configuration)
         
-        let yawLabel = UILabel()
+        /*let yawLabel = UILabel()
         yawLabel.frame = CGRect(x: 20, y: 20, width: 200, height: 50)
         yawLabel.textColor = .white
         yawLabel.backgroundColor = UIColor.black.withAlphaComponent(0.5)
         yawLabel.textAlignment = .center
-        yawLabel.text = "Yaw: 0.0°"
+        yawLabel.text = "Yaw: 0.0°"*/
         // Añadir la etiqueta al ARView
-        arView.addSubview(yawLabel)
+       // arView.addSubview(yawLabel)
         // Guardar referencias para actualizar el yaw
         context.coordinator.arView = arView
-        context.coordinator.yawLabel = yawLabel
+        //context.coordinator.yawLabel = yawLabel
         context.coordinator.setupFixedAnchor()
         // Establecer el delegado de la sesión para recibir actualizaciones
         arView.session.delegate = context.coordinator
@@ -124,7 +124,7 @@ struct ARViewContainer: UIViewRepresentable {
         
         // Crear una luz direccional
         let directionalLight = DirectionalLight()
-        directionalLight.light.intensity = 1000
+        directionalLight.light.intensity = 500
         directionalLight.light.color = .white
         
         // Ajustar la rotación de la luz si es necesario
