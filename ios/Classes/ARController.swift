@@ -1,5 +1,6 @@
 import Foundation
 import ARKit
+import SitumSDK
 
 /**
  * Plugin controller.
@@ -10,10 +11,12 @@ class ARController: NSObject {
     private let arView: SitumARPlatformView
     private let arSceneHandler: ARSceneHandler
     private let arMethodCallSender: ARMethodCallSender
-
+    private let sitLocationManager = SITLocationManager.sharedInstance()
+    private let sitNavigationManager = SITNavigationManager.shared()
+    
     private var isLoaded = false
     private var isLoading = false
-
+    
     init(arView: SitumARPlatformView, arSceneHandler: ARSceneHandler, arMethodCallSender: ARMethodCallSender) {
         self.arView = arView
         self.arSceneHandler = arSceneHandler
@@ -22,19 +25,22 @@ class ARController: NSObject {
     }
     
     // Cargar AR
-    func load(/*TODO: meter building ID*/) {
-        print("Situm> AR> L&U> CALLED LOAD")
+    func load(buildingIdentifier: String) {
+        print("Situm> AR> L&U> CALLED LOAD for building \(buildingIdentifier)")
         if isLoaded || isLoading {
             return
         }
         print("Situm> AR> L&U> ACTUALLY LOADED")
         isLoading = true
         arView.load()
-
+        
         arSceneHandler.setupSceneView(arSceneView: arView.sceneView)
         
+        sitLocationManager.addDelegate(arSceneHandler)
+        sitNavigationManager.addDelegate(arSceneHandler)
+        
         // TODO: start loading building & POIs, delegate them to arSceneHandler.
-
+        
         isLoaded = true
         isLoading = false
     }
@@ -44,6 +50,8 @@ class ARController: NSObject {
         print("Situm> AR> L&U> CALLED UNLOAD")
         if isLoaded {
             print("Situm> AR> L&U> ACTUALLY UNLOADED")
+            sitLocationManager.removeDelegate(arSceneHandler)
+            sitNavigationManager.removeDelegate(arSceneHandler)
             arView.unload()
             isLoading = false
             isLoaded = false

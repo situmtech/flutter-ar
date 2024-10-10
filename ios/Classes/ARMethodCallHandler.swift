@@ -31,7 +31,8 @@ class ARMethodCallHandler {
     }
     
     private func handleLoad(arguments: [String: Any], result: @escaping FlutterResult) {
-        controller.load()
+        let buildingIdentifer = arguments["buildingIdentifier"] as! String
+        controller.load(buildingIdentifier: buildingIdentifer)
         result(DONE)
         print("\(TAG) ### AR has been LOADED and should be visible ###")
     }

@@ -18,19 +18,19 @@ class SitumARPlatformView: NSObject, FlutterPlatformView {
          viewIdentifier viewId: Int64,
          arguments args: Any?,
          messenger: FlutterBinaryMessenger) {
-
+        
         rootView = UIView(frame: frame)
         sceneView = CustomARSceneView(frame: .zero)
-
+        
         super.init()
-
+        
         // TODO: FER: o method channel podemos construílo no plugin e pasarllo aquí a través do factory.
         let flutterMethodChannel = FlutterMethodChannel(name: "SitumARView", binaryMessenger: messenger)
         let arMethodCallSender = ARMethodCallSender(methodChannel: flutterMethodChannel)
         let sceneHandler = ARSceneHandler()
         let arController = ARController(arView: self, arSceneHandler: sceneHandler, arMethodCallSender: arMethodCallSender)
         let arMethodCallHandler = ARMethodCallHandler(arController: arController)
-
+        
         flutterMethodChannel.setMethodCallHandler { (call, result) in
             let arguments = call.arguments as? [String: Any] ?? [:]
             arMethodCallHandler.handle(method: call.method, arguments: arguments, result: result)

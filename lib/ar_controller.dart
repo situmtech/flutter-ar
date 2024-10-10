@@ -84,7 +84,8 @@ class ARController {
 
   Future<void> load() async {
     debugPrint("Situm > AR> Load AR.");
-    await _channel.invokeMethod("load", {});
+    await _channel.invokeMethod("load",
+        {"buildingIdentifier": _widgetState?.widget.buildingIdentifier});
   }
 
   // === Set of methods to keep the AR module updated regarding position and navigation.
