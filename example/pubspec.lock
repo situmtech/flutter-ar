@@ -250,12 +250,11 @@ packages:
   situm_flutter:
     dependency: "direct main"
     description:
-      path: "."
-      ref: "feature/new-ar-features"
-      resolved-ref: "89eb9b0de8ee5a85aea43caae712dacba55d323e"
-      url: "https://github.com/situmtech/flutter"
-    source: git
-    version: "3.20.4"
+      name: situm_flutter
+      sha256: a1f1f148426faee6e63e782e32c692e3810b30fccd0e9688e4206d2dbfdfcdf4
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.21.0"
   situm_flutter_ar:
     dependency: "direct main"
     description:
