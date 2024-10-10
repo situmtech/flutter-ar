@@ -73,7 +73,6 @@ class Coordinator: NSObject, ARSessionDelegate {
             // Verificar si la nueva lista de puntos es diferente a la actual
             if arePointsDifferent(self.pointsList, newPointsList) {
                 self.pointsList = newPointsList
-                //self.updatePointsList()
             }
         } else {
             print("Invalid data format in userInfo")
@@ -225,7 +224,7 @@ class Coordinator: NSObject, ARSessionDelegate {
                 var poiEntity:ModelEntity
                 if distanceToCamera >= 5.0 && !targetPointSet {
                     setTargetCoordinates(transformedPosition.x, transformedPosition.z)
-                    poiEntity = createSphereEntity(radius: 0.35, color: .blue) // Marcar el target
+                    poiEntity = createSphereEntity(radius: 0.35, color: .blue, transparency: 0.5) // Marcar el target
                     poiEntity.position = transformedPosition
                     poiEntity.name = "point_\(index)" // Dar un nombre único a cada esfera
                     targetPointSet = true // Marcar que ya se ha establecido el target
@@ -305,7 +304,7 @@ class Coordinator: NSObject, ARSessionDelegate {
                 let transformedPosition = generateARKitPosition(x: Float(x), y: Float(y), currentLocation: initialLocation, arView: arView)
 
                 // Crear POI y texto
-                let poiEntity = createSphereEntity(radius: 0.5, color: .green)
+                let poiEntity = createSphereEntity(radius: 0.5, color: .green, transparency: 1.0)
                 poiEntity.position = transformedPosition
                 poiEntity.name = "poi_\(index)"
 
@@ -389,12 +388,28 @@ class Coordinator: NSObject, ARSessionDelegate {
         return positionRotatedAndTranslatedToCamera
     }
 
-    func createSphereEntity(radius: Float, color: UIColor) -> ModelEntity {
+    func createSphereEntity(radius: Float, color: UIColor, transparency: Float) -> ModelEntity {
         let sphereMesh = MeshResource.generateSphere(radius: radius)
-        let material = SimpleMaterial(color: color, isMetallic: false)
+
+        // Descomponer el color en componentes de tono, saturación y brillo
+        var hue: CGFloat = 0
+        var saturation: CGFloat = 0
+        var brightness: CGFloat = 0
+        var alpha: CGFloat = 0
+        color.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
+
+        // Reducir la saturación del color
+        let desaturatedColor = UIColor(hue: hue, saturation: saturation * 0.5, brightness: brightness, alpha: alpha * CGFloat(transparency))
+
+        // Crear el material con transparencia y color desaturado
+        let material = SimpleMaterial(color: desaturatedColor, isMetallic: false)
+
         let sphereEntity = ModelEntity(mesh: sphereMesh, materials: [material])
+
         return sphereEntity
     }
+
+
 
     func createTextEntity(text: String, position: SIMD3<Float>) -> ModelEntity {
         let mesh = MeshResource.generateText(
