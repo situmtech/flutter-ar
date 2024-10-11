@@ -54,6 +54,10 @@ android {
         testImplementation 'org.jetbrains.kotlin:kotlin-test'
         testImplementation 'org.mockito:mockito-core:5.0.0'
         implementation 'io.github.sceneview:arsceneview:2.1.1'  //2.2.1
+        // Situm
+        implementation('es.situm:situm-sdk:3.17.1@aar') {
+            transitive = true
+        }
 
     }
 

@@ -1,20 +1,37 @@
 package com.situm.flutter.ar.situm_ar.scene
 
 import android.app.Activity
+import android.content.Context
 import android.util.Log
+import android.webkit.WebView
+import android.widget.TextView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.google.ar.core.Anchor
 import com.google.ar.core.Plane
+import com.google.ar.sceneform.rendering.ViewAttachmentManager
+import com.google.ar.sceneform.rendering.ViewRenderable
 import com.situm.flutter.ar.situm_ar.CustomARSceneView
 import com.situm.flutter.ar.situm_ar.R
-import dev.romainguy.kotlin.math.Quaternion
+import dev.romainguy.kotlin.math.Float3
+import es.situm.sdk.model.cartography.BuildingInfo
+import es.situm.sdk.model.cartography.Poi
+import es.situm.sdk.model.cartography.Point
+import es.situm.sdk.model.directions.Route
+import es.situm.sdk.model.location.CartesianCoordinate
+import es.situm.sdk.model.location.Location
 import io.github.sceneview.ar.arcore.getUpdatedPlanes
+import io.github.sceneview.ar.arcore.position
 import io.github.sceneview.ar.node.AnchorNode
 import io.github.sceneview.collision.Vector3
+import io.github.sceneview.geometries.Sphere
+import io.github.sceneview.loaders.MaterialLoader
+import io.github.sceneview.math.Color
 import io.github.sceneview.math.Position
+import io.github.sceneview.node.GeometryNode
 import io.github.sceneview.node.ModelNode
+import io.github.sceneview.node.ViewNode
 import io.github.sceneview.utils.getResourceUri
 import kotlinx.coroutines.launch
 
@@ -26,11 +43,54 @@ class ARSceneHandler(
         const val TAG = "Situm> AR>"
     }
 
+    private val context: Context = activity
+
     private var arrowNode: ModelNode? = null
+    private var targetArrow: Position? = null
     private var anchorNode: AnchorNode? = null
+
+    private lateinit var pois: List<Poi>
+    private var poisNodes: MutableList<ViewNode> = mutableListOf()
+
+    private lateinit var route: Route
+    private var routeNodes: MutableList<GeometryNode> = mutableListOf()
+    private lateinit var currentTargetNodeGeometry: GeometryNode
+
+    private lateinit var buildingInfo: BuildingInfo
+    private lateinit var currentPosition: Location
+
+
     private lateinit var sceneView: CustomARSceneView
+    private lateinit var viewAttachmentManager: ViewAttachmentManager
+
+
+    fun setRoute(route: Route) {
+        this.route = route
+    }
+
+    fun setPois(pois: List<Poi>) {
+        this.pois = pois
+    }
+
+    fun setCurrentLocation(location: Location) {
+        // if floor change, redraw
+        if (::currentPosition.isInitialized && this.currentPosition.floorIdentifier != location.floorIdentifier) {
+            loadPois()
+            updateRouteNodes()
+        }
+        this.currentPosition = location
+    }
+
+    fun setBuildingInfo(buildingInfo: BuildingInfo) {
+        this.buildingInfo = buildingInfo
+    }
+
 
     fun setupSceneView(sceneView: CustomARSceneView) {
+
+        viewAttachmentManager = ViewAttachmentManager(context, sceneView)
+        viewAttachmentManager.onResume()
+
         this.sceneView = sceneView
         sceneView.apply {
             Log.d(TAG, "Setup ARSceneView")
@@ -45,7 +105,7 @@ class ARSceneHandler(
                 Log.i(TAG, "onSessionCreated")
             }
             onTrackingFailureChanged = { reason ->
-                Log.i(TAG, "onTrackingFailureChanged: $reason");
+                Log.i(TAG, "onTrackingFailureChanged: $reason")
             }
             onSessionUpdated = { _, frame ->
                 if (anchorNode == null) {
@@ -53,6 +113,7 @@ class ARSceneHandler(
                         .firstOrNull { it.type == Plane.Type.HORIZONTAL_UPWARD_FACING }
                         ?.let { plane ->
                             addAnchorNode(plane.createAnchor(plane.centerPose))
+                            loadTextViewInAR(plane.centerPose.position, "Dance")
                         }
                 }
             }
@@ -62,6 +123,7 @@ class ARSceneHandler(
             Log.d("ARView", "setp scene view 2")
 
         }
+
         (activity as? LifecycleOwner)?.lifecycleScope?.launch {
             Log.d("ARView", "buildAndAddArrowNode 3")
 
@@ -72,11 +134,14 @@ class ARSceneHandler(
                     arrowNode?.let { node ->
                         val distanceFromCamera = -0.5f
                         val forwardVector = Vector3(0.0f, 0.0f, 1.0f)
-                        val cameraDirection =
-                            multiplyQuaternionVector(
-                                sceneView.cameraNode.quaternion,
-                                forwardVector
-                            )
+                        val cameraDirection = io.github.sceneview.collision.Quaternion.rotateVector(
+                            io.github.sceneview.collision.Quaternion(
+                                sceneView.cameraNode.quaternion.x,
+                                sceneView.cameraNode.quaternion.y,
+                                sceneView.cameraNode.quaternion.z,
+                                sceneView.cameraNode.quaternion.w
+                            ), forwardVector
+                        )
                         val cameraLowerPosition = Vector3(
                             sceneView.cameraNode.position.x,
                             sceneView.cameraNode.position.y,
@@ -88,14 +153,12 @@ class ARSceneHandler(
                         )
                         node.transform(
                             position = Position(
-                                x = objectPosition.x,
-                                y = objectPosition.y,
-                                z = objectPosition.z
+                                x = objectPosition.x, y = objectPosition.y, z = objectPosition.z
                             )
                         )
-                        if (anchorNode != null) {
+                        if (targetArrow != null) {
                             node.lookAt(
-                                targetNode = anchorNode!!,
+                                targetWorldPosition = targetArrow!!,
                                 smooth = true,
                                 smoothSpeed = 1.0f
                             )
@@ -104,38 +167,316 @@ class ARSceneHandler(
                 }
             }
         }
+        //
+        var position =
+            io.github.sceneview.math.Position(0.0f, 0.0f, -1.0f) // 1 metro frente a la cámara
+        loadTextViewInAR(position, "init Text")
+
+
     }
+
+
+    fun <T> generateARCorePositions(
+        items: List<T>, currentLocation: Location, getCoordinate: (T) -> CartesianCoordinate
+    ): List<Vector3> {
+
+        val arCorePositions = mutableListOf<Vector3>()
+        val cameraPosition = sceneView.cameraNode.worldPosition
+        val cameraBearing = sceneView.cameraNode.worldRotation.y
+
+        // Keep only horizontal rotation
+        val cameraHorizontalRotation = io.github.sceneview.collision.Quaternion.axisAngle(
+            Vector3(0.0f, 1.0f, 0.0f), cameraBearing
+        )
+
+        // Situm rotation
+        val situmBearing =
+            currentLocation.cartesianBearing?.degreesClockwise()?.plus(90) ?: return emptyList()
+        val situmBearingMinusRotation = io.github.sceneview.collision.Quaternion.axisAngle(
+            Vector3(0f, -1f, 0f), situmBearing.toFloat()
+        )
+
+
+        for (item in items) {
+            val coordinate = getCoordinate(item)
+            val xA = coordinate.x
+            val yA = coordinate.y
+
+            // Calculate relative position
+            val relativeItemPosition = Vector3(
+                (xA - currentLocation.cartesianCoordinate.x).toFloat(),
+                0f,
+                (yA - currentLocation.cartesianCoordinate.y).toFloat()
+            )
+
+            // Apply rotations
+            val positionMinusSitumRotated = io.github.sceneview.collision.Quaternion.rotateVector(
+                situmBearingMinusRotation, relativeItemPosition
+            )
+
+            val positionRotatedAndTranslatedToCamera =
+                io.github.sceneview.collision.Quaternion.rotateVector(
+                    cameraHorizontalRotation, positionMinusSitumRotated
+                ).apply {
+                    x = cameraPosition.x + this.x
+                    y = 0f
+                    z = cameraPosition.z - this.z
+                }
+
+            Log.d(
+                TAG,
+                "> Situm: generateARCorePositions> item.position: $xA , $yA / relativeItemPosition: ${relativeItemPosition.x} , ${relativeItemPosition.z}" + " bearingAdjustedPosition: ${positionMinusSitumRotated.x} , ${positionMinusSitumRotated.z}" + " transformedPosition: ${positionRotatedAndTranslatedToCamera.x} , ${positionRotatedAndTranslatedToCamera.z}"
+            )
+
+            arCorePositions.add(positionRotatedAndTranslatedToCamera)
+        }
+
+        return arCorePositions
+    }
+
+    private fun addPoisToScene(pois: List<Poi>, arcorePositions: List<Vector3>) {
+        clearPoiNodes()
+        for (i in pois.indices) {
+            val poi = pois[i]
+            val arcorePosition = arcorePositions[i]
+            arcorePosition.x
+            arcorePosition.y
+            arcorePosition.z
+
+            val position = Position(arcorePosition.x, arcorePosition.y, arcorePosition.z)
+
+            Log.w(
+                TAG,
+                "> Situm . Adding poi to scene: ${poi.name} , ${poi.infoHtml}, ${poi.cartesianCoordinate} "
+            )
+
+            loadTextViewInAR(
+                position, poi.name
+            )
+            if (poi.infoHtml.isNotEmpty()) {
+                loadWebViewInAR(
+                    Position(arcorePosition.x, arcorePosition.y - 1, arcorePosition.z), poi.infoHtml
+                )
+            }
+
+        }
+
+    }
+
+    private fun loadTextViewInAR(position: Position, textString: String) {
+
+        val textView = TextView(context).apply {
+            text = textString
+            textSize = 50f
+            setTextColor(android.graphics.Color.WHITE) // Establece el color del texto
+        }
+        ViewRenderable.builder().setView(context, textView).build(sceneView.engine)
+            .thenAccept { viewRenderable ->
+                var viewNode =
+                    ViewNode(sceneView.engine, sceneView.modelLoader, viewAttachmentManager)
+                viewNode.setRenderable(viewRenderable)
+
+                viewNode.position = position
+                viewNode.lookAt(sceneView.cameraNode)
+                viewNode.scale = Float3(-1f, 1f, 1f) // Inv. Needed to show text correctly
+                poisNodes.add(viewNode)
+                sceneView.addChildNode(viewNode)
+            }.exceptionally { throwable ->
+                throwable.printStackTrace()
+                null
+            }
+    }
+
+
+    private fun loadWebViewInAR(position: Position, htmlContent: String) {
+
+        val webView = WebView(context).apply {
+            settings.javaScriptEnabled = true
+            settings.domStorageEnabled = true
+            settings.loadWithOverviewMode = true
+            settings.useWideViewPort = true
+            settings.mediaPlaybackRequiresUserGesture = false
+
+
+            loadDataWithBaseURL(null, htmlContent, "text/html", "utf-8", null)
+//            setOnTouchListener { v, event ->
+//                v.performClick()
+//                false
+//            }
+        }
+
+        ViewRenderable.builder().setView(context, webView).build(sceneView.engine)
+            .thenAccept { viewRenderable ->
+                val viewNode =
+                    ViewNode(sceneView.engine, sceneView.modelLoader, viewAttachmentManager)
+
+                viewNode.setRenderable(viewRenderable)
+
+                viewNode.position = position
+                viewNode.lookAt(sceneView.cameraNode)
+                viewNode.scale = Float3(-1f, 1f, 1f)
+                poisNodes.add(viewNode)
+
+                sceneView.addChildNode(viewNode)
+            }.exceptionally { throwable ->
+                throwable.printStackTrace()
+                null
+            }
+    }
+
+    fun updateRouteNodes() {
+        if (!this::route.isInitialized) {
+            return
+        }
+
+        route.points.let { nonNullRoute ->
+            val filteredRoutePoints =
+                nonNullRoute.filter { point -> point.floorIdentifier == currentPosition.floorIdentifier }
+
+            val arCorePositionsForPoints = generateARCorePositions(
+                filteredRoutePoints, currentPosition
+            ) { point -> point.cartesianCoordinate }
+
+            val pathIntepolated = interpolatePositions(arCorePositionsForPoints, 1.0f)
+            addSpheresToScene(pathIntepolated)
+        }
+        updateTargetArrowOnARRoute(3f)
+    }
+
+    fun addSpheresToScene(positions: List<Vector3>, sphereRadius: Float = 0.1f) {
+        // force clear previous route if exists
+        clearRouteNodes()
+
+        val material = MaterialLoader(sceneView.engine, context).createColorInstance(
+            Color(
+                0f, 0f, 1f, 0.5f
+            )
+        )
+        val sphereNodes = mutableListOf<GeometryNode>()
+        Log.d(TAG, "> Situm add spheres to scene")
+        positions.forEach { position ->
+            Log.d(TAG, "> Situm add spheres to scene: $position")
+            val center = Position(position.x, position.y, position.z)
+            val sphereGeometry =
+                Sphere.Builder().radius(sphereRadius).center(center).build(sceneView.engine)
+
+            val sphereNode = GeometryNode(sceneView.engine, sphereGeometry, material)
+            routeNodes.add(sphereNode)
+            sphereNodes.add(sphereNode)
+        }
+        sceneView.addChildNodes(sphereNodes)
+    }
+
+    // from current AR position and AR RouteNodes, projects position on route and finds next node at n distance (?)
+    fun updateTargetArrowOnARRoute(minDistanceMeters: Float) {
+        val cameraPosition = sceneView.cameraNode.worldPosition
+        var closestNode: GeometryNode? = null
+        var minDistanceToCamera = Float.MAX_VALUE
+
+        //  Find closest node
+        for (node in routeNodes) {
+            val nodePosition = node.worldPosition
+            val distanceToCamera = calculate2DDistance(
+                Vector3(cameraPosition.x, cameraPosition.y, cameraPosition.z),
+                Vector3(nodePosition.x, nodePosition.y, nodePosition.z)
+            )
+
+            if (distanceToCamera < minDistanceToCamera) {
+                minDistanceToCamera = distanceToCamera
+                closestNode = node
+            }
+        }
+        if (closestNode == null) {
+            Log.w(TAG, "No closest node found.")
+            return
+        }
+        var targetNode: GeometryNode? = null
+
+        for (i in routeNodes.indexOf(closestNode) until routeNodes.size) {
+            val node = routeNodes[i]
+            val distanceFromClosest = calculate2DDistance(
+                Vector3(
+                    closestNode.worldPosition.x,
+                    closestNode.worldPosition.y,
+                    closestNode.worldPosition.z
+                ), Vector3(node.worldPosition.x, node.worldPosition.y, node.worldPosition.z)
+            )
+
+            if (distanceFromClosest >= minDistanceMeters) {
+                targetNode = node
+                break
+            }
+        }
+        if (targetNode != null) {
+            Log.d(TAG, "Target node found at position: ${targetNode.worldPosition}")
+            pointArrowToPosition(targetNode.worldPosition)
+        } else {
+            Log.w(
+                TAG, "No node found at least $minDistanceMeters meters away from the closest node."
+            )
+        }
+    }
+
+    // points arrow to position in arCoordinates
+    fun pointArrowToPosition(targetARPosition: Position) {
+        targetArrow = targetARPosition
+        arrowNode?.lookAt(targetARPosition)
+        // debug
+        if (::currentTargetNodeGeometry.isInitialized) {
+            sceneView.removeChildNode(currentTargetNodeGeometry)
+        }
+        val center = Position(targetARPosition.x, targetARPosition.y, targetARPosition.z)
+        val sphereGeometry = Sphere.Builder().radius(0.1f).center(center).build(sceneView.engine)
+        val material =
+            MaterialLoader(sceneView.engine, context).createColorInstance(Color(0f, 1f, 0f, 0.5f))
+        val sphereNode = GeometryNode(sceneView.engine, sphereGeometry, material)
+        currentTargetNodeGeometry = sphereNode
+        sceneView.addChildNode(sphereNode)
+    }
+
+    // receives a position in situm coordinates, converts it to ar coordinates and points arrow towards it.
+    fun pointArrowToSitumPosition(fromPoint: Point?) {
+        val arCorePosition = fromPoint?.let {
+            generateARCorePositions(
+                listOf(it),  // Pasar una lista con un único punto
+                currentPosition
+            ) { point -> point.cartesianCoordinate }
+        }
+        var targetArrow = arCorePosition?.get(0)?.let { Position(it.x, it.y, it.z) }
+        if (targetArrow != null) {
+            pointArrowToPosition(targetArrow)
+        }
+    }
+
+    fun loadPois() {
+        if (::currentPosition.isInitialized && this.currentPosition != null && ::pois.isInitialized && pois.isNotEmpty()) {
+            var nearPois = filterPoisByDistanceAndFloor(pois, currentPosition, 50)
+            Log.d(TAG, "> Situm: load  pois: $nearPois")
+            var arcorePositions = generateARCorePositions(
+                nearPois, currentPosition
+            ) { poi -> poi.position.cartesianCoordinate }
+            addPoisToScene(nearPois, arcorePositions)
+        }
+    }
+
 
     private fun multiplyVectorScalar(vector: Vector3, scalar: Float): Vector3 {
         return Vector3(vector.x * scalar, vector.y * scalar, vector.z * scalar)
     }
 
-    private fun multiplyQuaternionVector(quaternion: Quaternion, vector: Vector3): Vector3 {
-        val x = quaternion.w * vector.x + quaternion.y * vector.z - quaternion.z * vector.y
-        val y = quaternion.w * vector.y + quaternion.z * vector.x - quaternion.x * vector.z
-        val z = quaternion.w * vector.z + quaternion.x * vector.y - quaternion.y * vector.x
-        val w = -quaternion.x * vector.x - quaternion.y * vector.y - quaternion.z * vector.z
-        return Vector3(
-            x * quaternion.w + w * -quaternion.x + y * -quaternion.z - z * -quaternion.y,
-            y * quaternion.w + w * -quaternion.y + z * -quaternion.x - x * -quaternion.z,
-            z * quaternion.w + w * -quaternion.z + x * -quaternion.y - y * -quaternion.x
-        )
-    }
 
     private fun addVectors(vector1: Vector3, vector2: Vector3): Vector3 {
         return Vector3(vector1.x + vector2.x, vector1.y + vector2.y, vector1.z + vector2.z)
     }
 
     private fun addAnchorNode(anchor: Anchor) {
-        sceneView.addChildNode(
-            AnchorNode(sceneView.engine, anchor).apply {
-                isEditable = true
-                (activity as? LifecycleOwner)?.lifecycleScope?.launch {
-                    buildModelNode()?.let { addChildNode(it) }
-                }
-                anchorNode = this
+        sceneView.addChildNode(AnchorNode(sceneView.engine, anchor).apply {
+            isEditable = true
+            (activity as? LifecycleOwner)?.lifecycleScope?.launch {
+                buildModelNode()?.let { addChildNode(it) }
             }
-        )
+            anchorNode = this
+        })
     }
 
     private suspend fun buildModelNode(): ModelNode? {
@@ -158,9 +499,7 @@ class ARSceneHandler(
         val arrowPosition = Position(x = 0.0f, y = -1.0f, z = -6.0f)
         arrowModel?.let { modelInstance ->
             arrowNode = ModelNode(
-                modelInstance = modelInstance,
-                scaleToUnits = 0.1f,
-                centerOrigin = arrowPosition
+                modelInstance = modelInstance, scaleToUnits = 0.1f, centerOrigin = arrowPosition
             ).apply {
                 isEditable = true
                 isPositionEditable = true
@@ -168,4 +507,37 @@ class ARSceneHandler(
             sceneView.addChildNode(arrowNode!!)
         }
     }
+
+    fun unload() {
+        viewAttachmentManager.onPause()
+        anchorNode?.let { sceneView.removeChildNode(it) }
+        anchorNode = null
+        arrowNode?.let { sceneView.removeChildNode(it) }
+        arrowNode = null
+        clearPoiNodes()
+        clearRouteNodes()
+    }
+
+    fun clearPoiNodes() {
+        for (poiNode in poisNodes) {
+            poiNode.parent
+            poiNode.parent = null
+        }
+        sceneView.removeChildNodes(poisNodes)
+        poisNodes.clear()
+    }
+
+    fun clearRouteNodes() {
+        for (routeNode in routeNodes) {
+            routeNode.parent
+            routeNode.parent = null
+        }
+        sceneView.removeChildNodes(routeNodes)
+        routeNodes.clear()
+    }
+
+    fun clearRoute() {
+        route = Route()
+    }
+
 }

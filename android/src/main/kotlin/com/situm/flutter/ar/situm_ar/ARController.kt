@@ -39,6 +39,7 @@ class ARController(
         Log.d(TAG, "Situm> AR> L&U> CALLED UNLOAD")
         if (isLoaded) {
             Log.d(TAG, "\tSitum> AR> L&U> ACTUALLY UNLOADED")
+            arSceneHandler.unload()
             arView.unload()
             isLoading = false
             isLoaded = false
