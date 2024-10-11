@@ -13,6 +13,7 @@ class ARController: NSObject {
     private let arMethodCallSender: ARMethodCallSender
     private let sitLocationManager = SITLocationManager.sharedInstance()
     private let sitNavigationManager = SITNavigationManager.shared()
+    private let sitCommManager = SITCommunicationManager.shared()
     
     private var isLoaded = false
     private var isLoading = false
@@ -36,13 +37,20 @@ class ARController: NSObject {
         
         arSceneHandler.setupSceneView(arSceneView: arView.sceneView)
         
+        // Subscribe to positioning/navigation callbacks:
         sitLocationManager.addDelegate(arSceneHandler)
         sitNavigationManager.addDelegate(arSceneHandler)
         
-        // TODO: start loading building & POIs, delegate them to arSceneHandler.
+        // Start loading building & POIs, delegate them to arSceneHandler.
+        sitCommManager.fetchBuildingInfo(buildingIdentifier, withOptions: nil, success: { (data) in
+            self.arSceneHandler.onBuildingInfoReceived(data?["results"] as? SITBuildingInfo, withError: nil)
+        }, failure: { (error) in
+            self.arSceneHandler.onBuildingInfoReceived(nil, withError: error as Error?)
+        })
         
         isLoaded = true
         isLoading = false
+        return
     }
     
     // Descargar AR

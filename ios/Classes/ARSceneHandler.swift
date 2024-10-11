@@ -23,6 +23,13 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         
     }
     
+    // MARK: Communication Manager callbacks:
+    
+    func onBuildingInfoReceived(_ buildingInfo: SITBuildingInfo?, withError error: Error?) {
+        print("Situm> Building info received: \(String(describing: buildingInfo))")
+        print("Situm> Got \(buildingInfo?.indoorPois.count ?? 0) POIs: \(String(describing: buildingInfo?.indoorPois))")
+    }
+    
     // MARK: LocationManager delegate.
     
     func locationManager(_ locationManager: any SITLocationInterface, didUpdate location: SITLocation) {
@@ -43,7 +50,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         print("Situm> Navigation started on route: \(route)")
     }
     
-    func navigationManager(_ navigationManager: SITNavigationInterface, didFailWithError error: NSError) {
+    func navigationManager(_ navigationManager: SITNavigationInterface, didFailWithError error: Error) {
         print("Situm> Navigation encountered an error: \(error.localizedDescription)")
     }
     
