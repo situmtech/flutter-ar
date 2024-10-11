@@ -15,12 +15,17 @@ import com.google.ar.sceneform.rendering.ViewRenderable
 import com.situm.flutter.ar.situm_ar.CustomARSceneView
 import com.situm.flutter.ar.situm_ar.R
 import dev.romainguy.kotlin.math.Float3
+import es.situm.sdk.error.Error
+import es.situm.sdk.location.LocationListener
+import es.situm.sdk.location.LocationStatus
 import es.situm.sdk.model.cartography.BuildingInfo
 import es.situm.sdk.model.cartography.Poi
 import es.situm.sdk.model.cartography.Point
 import es.situm.sdk.model.directions.Route
 import es.situm.sdk.model.location.CartesianCoordinate
 import es.situm.sdk.model.location.Location
+import es.situm.sdk.model.navigation.NavigationProgress
+import es.situm.sdk.navigation.NavigationListener
 import io.github.sceneview.ar.arcore.getUpdatedPlanes
 import io.github.sceneview.ar.arcore.position
 import io.github.sceneview.ar.node.AnchorNode
@@ -38,7 +43,7 @@ import kotlinx.coroutines.launch
 class ARSceneHandler(
     private val activity: Activity,
     private val lifecycle: Lifecycle,
-) {
+):NavigationListener,LocationListener {
     companion object {
         const val TAG = "Situm> AR>"
     }
@@ -72,7 +77,9 @@ class ARSceneHandler(
         this.pois = pois
     }
 
+
     fun setCurrentLocation(location: Location) {
+        Log.d(TAG, "Situm location $location")
         // if floor change, redraw
         if (::currentPosition.isInitialized && this.currentPosition.floorIdentifier != location.floorIdentifier) {
             loadPois()
@@ -82,7 +89,9 @@ class ARSceneHandler(
     }
 
     fun setBuildingInfo(buildingInfo: BuildingInfo) {
+        Log.d(TAG,"set building info : $buildingInfo")
         this.buildingInfo = buildingInfo
+        setPois(buildingInfo.indoorPOIs as List<Poi>)
     }
 
 
@@ -539,5 +548,62 @@ class ARSceneHandler(
     fun clearRoute() {
         route = Route()
     }
+
+    // Navigation listener
+    override fun onStart(route: Route) {        // TODO: Esto no se va a llamar
+        setRoute(route)
+        updateRouteNodes()
+        pointArrowToSitumPosition(route.firstStep.to)
+    }
+
+    override fun onProgress(navigationProgress: NavigationProgress?) {
+        Log.w(TAG, ">> Situm navigation progress: ${navigationProgress.toString()}")
+        val to = navigationProgress?.routeStep?.to
+        //navigationProgress?.segments?.get(0)?.points
+        val targetPoint = to?.let {
+            Point(
+                it.buildingIdentifier,
+                it.floorIdentifier,
+                it.coordinate,
+                it.cartesianCoordinate
+            )
+        }
+        //updateTargetArrowOnARRoute(3f)
+        pointArrowToSitumPosition(targetPoint)
+    }
+
+    override fun onUserOutsideRoute() {
+        Log.w(TAG, ">> Situm navigation user out of routes")
+    }
+
+
+
+    override fun onCancellation() {
+        Log.w(TAG, ">> Situm navigation onCancellation")
+        clearRouteNodes()
+        clearRoute()
+        super.onCancellation()
+    }
+
+    override fun onDestinationReached(route: Route?) {
+        Log.w(TAG, ">> Situm navigation on destination reached")
+        clearRouteNodes()
+        clearRoute()
+        super.onDestinationReached(route)
+    }
+    // Location Listener
+
+    override fun onLocationChanged(location: Location) {
+        this.setCurrentLocation(location)
+    }
+
+    override fun onStatusChanged(p0: LocationStatus) {
+
+    }
+
+    override fun onError(p0: Error) {
+
+    }
+
 
 }

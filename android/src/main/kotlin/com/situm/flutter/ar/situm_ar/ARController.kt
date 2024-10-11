@@ -4,6 +4,12 @@ import android.util.Log
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import com.situm.flutter.ar.situm_ar.scene.ARSceneHandler
+import es.situm.sdk.SitumSdk
+import es.situm.sdk.communication.CommunicationConfigImpl
+import es.situm.sdk.configuration.network.NetworkOptions
+import es.situm.sdk.configuration.network.NetworkOptionsImpl
+import es.situm.sdk.model.cartography.BuildingInfo
+import es.situm.sdk.utils.Handler
 
 /**
  * Plugin controller.
@@ -20,7 +26,7 @@ class ARController(
     private var isLoaded = false
     private var isLoading = false
 
-    fun load() {
+    fun load(buildingIdentifier: String) {
         Log.d(TAG, "Situm> AR> L&U> CALLED LOAD")
         if (isLoaded || isLoading) {
             return
@@ -31,6 +37,26 @@ class ARController(
         // Now arView.sceneView is safe to use even if we change the behavior to instantiate it in
         // the load() call.
         arSceneHandler.setupSceneView(arView.sceneView)
+        // Situm location and navigation listeners
+        SitumSdk.locationManager().addLocationListener(arSceneHandler)
+        SitumSdk.navigationManager().addNavigationListener(arSceneHandler)
+        SitumSdk.communicationManager().fetchBuildingInfo(
+            buildingIdentifier,
+            CommunicationConfigImpl(
+                NetworkOptionsImpl.Builder()
+                    .setCacheStrategy(NetworkOptions.CacheStrategy.TIMED_CACHE)
+                    .build()
+            ),
+            object : Handler<BuildingInfo> {
+                override fun onSuccess(obtained: BuildingInfo?) {
+                    arSceneHandler.setBuildingInfo(obtained as BuildingInfo)
+                    Log.w(TAG, "> Situm: fetch Building info, Success")
+                }
+                override fun onFailure(error: es.situm.sdk.error.Error?) {
+                    Log.e(TAG, "> Situm: fetch Building info error: ${error?.message}")
+                }
+            })
+
         isLoaded = true
         isLoading = false
     }
