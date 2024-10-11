@@ -128,7 +128,7 @@ class Coordinator: NSObject, ARSessionDelegate {
         }
 
         // Imprimir la lista actualizada
-        print("Puntos restantes después de eliminación: \(storedTransformedPositions)")
+        //print("Puntos restantes después de eliminación: \(storedTransformedPositions)")
     }
 
     

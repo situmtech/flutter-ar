@@ -20,6 +20,7 @@
 		E7D445EB2C9C4ED2001FC602 /* robot.usdz in Resources */ = {isa = PBXBuildFile; fileRef = E7D445E72C9C4ED2001FC602 /* robot.usdz */; };
 		E7D445EC2C9C4ED2001FC602 /* Manta_Ray_Birostris_animated.usdz in Resources */ = {isa = PBXBuildFile; fileRef = E7D445E82C9C4ED2001FC602 /* Manta_Ray_Birostris_animated.usdz */; };
 		E7D445ED2C9C4ED2001FC602 /* arrow_situm.usdz in Resources */ = {isa = PBXBuildFile; fileRef = E7D445E92C9C4ED2001FC602 /* arrow_situm.usdz */; };
+		E7DF0B0E2CB95D5E00DCB5AC /* T-Rex.usdz in Resources */ = {isa = PBXBuildFile; fileRef = E7DF0B0D2CB95D5E00DCB5AC /* T-Rex.usdz */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -72,6 +73,7 @@
 		E7D445E72C9C4ED2001FC602 /* robot.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; name = robot.usdz; path = ../../ios/Assets/robot.usdz; sourceTree = "<group>"; };
 		E7D445E82C9C4ED2001FC602 /* Manta_Ray_Birostris_animated.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; name = Manta_Ray_Birostris_animated.usdz; path = ../../ios/Assets/Manta_Ray_Birostris_animated.usdz; sourceTree = "<group>"; };
 		E7D445E92C9C4ED2001FC602 /* arrow_situm.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; name = arrow_situm.usdz; path = ../../ios/Assets/arrow_situm.usdz; sourceTree = "<group>"; };
+		E7DF0B0D2CB95D5E00DCB5AC /* T-Rex.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; name = "T-Rex.usdz"; path = "../../ios/Assets/T-Rex.usdz"; sourceTree = "<group>"; };
 		F547050BAC466D12F7848D66 /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -139,6 +141,7 @@
 		97C146E51CF9000F007C117D = {
 			isa = PBXGroup;
 			children = (
+				E7DF0B0D2CB95D5E00DCB5AC /* T-Rex.usdz */,
 				E7D445E62C9C4ED2001FC602 /* Animated_Dragon_Three_Motion_Loops.usdz */,
 				E7D445E92C9C4ED2001FC602 /* arrow_situm.usdz */,
 				E7D445E82C9C4ED2001FC602 /* Manta_Ray_Birostris_animated.usdz */,
@@ -279,6 +282,7 @@
 				3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */,
 				97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */,
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
+				E7DF0B0E2CB95D5E00DCB5AC /* T-Rex.usdz in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
