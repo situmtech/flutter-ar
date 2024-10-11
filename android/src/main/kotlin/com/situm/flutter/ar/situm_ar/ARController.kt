@@ -37,9 +37,11 @@ class ARController(
         // Now arView.sceneView is safe to use even if we change the behavior to instantiate it in
         // the load() call.
         arSceneHandler.setupSceneView(arView.sceneView)
+
         // Situm location and navigation listeners
         SitumSdk.locationManager().addLocationListener(arSceneHandler)
         SitumSdk.navigationManager().addNavigationListener(arSceneHandler)
+
         SitumSdk.communicationManager().fetchBuildingInfo(
             buildingIdentifier,
             CommunicationConfigImpl(

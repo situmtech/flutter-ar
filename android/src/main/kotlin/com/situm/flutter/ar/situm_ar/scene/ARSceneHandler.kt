@@ -22,6 +22,7 @@ import es.situm.sdk.model.cartography.BuildingInfo
 import es.situm.sdk.model.cartography.Poi
 import es.situm.sdk.model.cartography.Point
 import es.situm.sdk.model.directions.Route
+import es.situm.sdk.model.directions.RouteSegment
 import es.situm.sdk.model.location.CartesianCoordinate
 import es.situm.sdk.model.location.Location
 import es.situm.sdk.model.navigation.NavigationProgress
@@ -48,6 +49,7 @@ class ARSceneHandler(
         const val TAG = "Situm> AR>"
     }
 
+
     private val context: Context = activity
 
     private var arrowNode: ModelNode? = null
@@ -57,6 +59,7 @@ class ARSceneHandler(
     private lateinit var pois: List<Poi>
     private var poisNodes: MutableList<ViewNode> = mutableListOf()
 
+    private lateinit var currentSegment: RouteSegment
     private lateinit var route: Route
     private var routeNodes: MutableList<GeometryNode> = mutableListOf()
     private lateinit var currentTargetNodeGeometry: GeometryNode
@@ -71,6 +74,9 @@ class ARSceneHandler(
 
     fun setRoute(route: Route) {
         this.route = route
+    }
+    private fun setCurrentSegment(routeSegment: RouteSegment) {
+        this.currentSegment = routeSegment
     }
 
     fun setPois(pois: List<Poi>) {
@@ -334,6 +340,21 @@ class ARSceneHandler(
     }
 
     fun updateRouteNodes() {
+        if (!this::currentSegment.isInitialized) {
+            return
+        }
+
+        currentSegment.points.let { nonNullRoute ->
+            val arCorePositionsForPoints = generateARCorePositions(
+                nonNullRoute, currentPosition
+            ) { point -> point.cartesianCoordinate }
+
+            val pathIntepolated = interpolatePositions(arCorePositionsForPoints, 1.0f)
+            addSpheresToScene(pathIntepolated)
+        }
+        updateTargetArrowOnARRoute(3f)
+    }
+    fun updateRouteNodes2() {
         if (!this::route.isInitialized) {
             return
         }
@@ -559,7 +580,10 @@ class ARSceneHandler(
     override fun onProgress(navigationProgress: NavigationProgress?) {
         Log.w(TAG, ">> Situm navigation progress: ${navigationProgress.toString()}")
         val to = navigationProgress?.routeStep?.to
+        Log.d(TAG,">> Situm navigation progress segments :${navigationProgress?.segments.toString()}")
         //navigationProgress?.segments?.get(0)?.points
+        navigationProgress?.segments?.get(0)?.let { setCurrentSegment(it) }
+        updateRouteNodes()
         val targetPoint = to?.let {
             Point(
                 it.buildingIdentifier,
@@ -568,9 +592,12 @@ class ARSceneHandler(
                 it.cartesianCoordinate
             )
         }
+
         //updateTargetArrowOnARRoute(3f)
         pointArrowToSitumPosition(targetPoint)
     }
+
+
 
     override fun onUserOutsideRoute() {
         Log.w(TAG, ">> Situm navigation user out of routes")
