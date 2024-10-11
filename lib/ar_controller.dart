@@ -9,7 +9,6 @@ class ARController {
   final MethodChannel _channel = const MethodChannel(CHANNEL_ID);
 
   ARController._() {
-    SitumSdk().internalSetMethodCallARDelegate(_situmSDKMethodCallHandler);
     _channel.setMethodCallHandler(_nativeARMethodCallHandler);
   }
 
@@ -86,40 +85,6 @@ class ARController {
     debugPrint("Situm > AR> Load AR.");
     await _channel.invokeMethod("load",
         {"buildingIdentifier": _widgetState?.widget.buildingIdentifier});
-  }
-
-  // === Set of methods to keep the AR module updated regarding position and navigation.
-  Future<void> _situmSDKMethodCallHandler(InternalCall call) async {
-    // TODO: restore.
-    switch (call.type) {
-      case InternalCallType.location:
-        // _onLocationChanged(call.get());
-        break;
-      case InternalCallType.navigationStart:
-        // _onNavigationStart(call.get());
-        break;
-      case InternalCallType.navigationDestinationReached:
-        // _onNavigationDestinationReached();
-        break;
-      case InternalCallType.navigationProgress:
-        // _onNavigationProgress(call.get());
-        break;
-      case InternalCallType.navigationOutOfRoute:
-        // _onNavigationOutOfRoute();
-        break;
-      case InternalCallType.navigationCancellation:
-        // _onNavigationCancelled();
-        break;
-      case InternalCallType.geofencesEnter:
-        // _onEnterGeofences(call.get());
-        break;
-      case InternalCallType.geofencesExit:
-        // _onExitGeofences(call.get());
-        break;
-      default:
-        debugPrint("Unhandled call: ${call.type}");
-        break;
-    }
   }
 
   // === Handle native method calls from this plugin.
