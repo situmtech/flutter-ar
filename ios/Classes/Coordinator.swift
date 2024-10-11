@@ -112,14 +112,13 @@ class Coordinator: NSObject, ARSessionDelegate {
         // Usamos un bucle while para eliminar puntos sin saltar ningún índice
         var i = 0
         while i < storedTransformedPositions.count {
-            let point = storedTransformedPositions[i]
-
+            
             // Calcular la distancia entre la cámara y el punto
-            let distanceToCamera = simd_distance(cameraPosition, SIMD2<Float>(point.x, point.z))
+            let distanceToCamera = simd_distance(cameraPosition, SIMD2<Float>(self.storedTransformedPositions[i].x, self.storedTransformedPositions[i].z))
 
             // Si la distancia es menor que el umbral, eliminamos el punto
             if distanceToCamera < 5.0 {
-                print("Eliminando punto en índice \(i) con distancia \(distanceToCamera)")                
+                print("Eliminando punto en índice \(i) con distancia \(distanceToCamera)")
                 storedTransformedPositions.remove(at: i)
                 setTargetCoordinates(x: storedTransformedPositions[i].x, z: storedTransformedPositions[i].z)
             } else {
@@ -271,11 +270,12 @@ class Coordinator: NSObject, ARSessionDelegate {
                         arView: arView
                     )
                     self.storedTransformedPositions.append(transformedPosition)
-                    //print ("updateing points lists!!!!!!!!!")
                     
                 } else {
                     print("Invalid point data: \(point)")
                 }
+                
+                setTargetCoordinates(x: self.storedTransformedPositions[0].x, z: self.storedTransformedPositions[0].z)
         }
         
       
