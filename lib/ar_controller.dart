@@ -294,7 +294,7 @@ class ARController {
     }
 
  try {
-  print("UPDATE AR ARROW ${progressContent["points"]}");
+  //print("UPDATE AR ARROW ${progressContent["points"]}");
       // Envía posición del poi     
       await platform.invokeMethod('updatePoint', progressContent["points"]);
     } on PlatformException catch (e) {

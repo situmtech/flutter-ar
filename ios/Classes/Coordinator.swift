@@ -36,6 +36,7 @@ class Coordinator: NSObject, ARSessionDelegate {
                  self.yawLabel?.text = String(format: "Yaw: %.2f°", yawDegrees)
              }*/
          }
+        
         updateArrowPositionAndDirection()
        
         
@@ -92,43 +93,74 @@ class Coordinator: NSObject, ARSessionDelegate {
                 print("Datos inválidos recibidos en la notificación: \(String(describing: notification.userInfo))")
             }
         }
-    func calculateAndSetTargetPoint(){
+    
+    func calculateDistanceToCamera(x: Float, z: Float) -> Float{
         
-        var targetPointSet = false
-        guard let arView = arView else { return  }
+        guard let arView = arView else { return  0.0 }
+        let distanceToCamera = simd_distance(SIMD2<Float>(arView.cameraTransform.translation.x, arView.cameraTransform.translation.z),
+                                             SIMD2<Float>(x, z))
+        return distanceToCamera
         
-        //Busca el ancla y la crea si no existe
+    }
+    
+    func calculateAndSetTargetPoint() {
+        guard let arView = arView else { return }
+
+        // Obtener la posición actual de la cámara
+        let cameraPosition = SIMD2<Float>(arView.cameraTransform.translation.x, arView.cameraTransform.translation.z)
+
+        // Usamos un bucle while para eliminar puntos sin saltar ningún índice
+        var i = 0
+        while i < storedTransformedPositions.count {
+            let point = storedTransformedPositions[i]
+
+            // Calcular la distancia entre la cámara y el punto
+            let distanceToCamera = simd_distance(cameraPosition, SIMD2<Float>(point.x, point.z))
+
+            // Si la distancia es menor que el umbral, eliminamos el punto
+            if distanceToCamera < 5.0 {
+                print("Eliminando punto en índice \(i) con distancia \(distanceToCamera)")                
+                storedTransformedPositions.remove(at: i)
+                setTargetCoordinates(x: storedTransformedPositions[i].x, z: storedTransformedPositions[i].z)
+            } else {
+                // Solo incrementamos el índice si no eliminamos el punto
+                i += 1
+            }
+        }
+
+        // Imprimir la lista actualizada
+        print("Puntos restantes después de eliminación: \(storedTransformedPositions)")
+    }
+
+    
+   
+    func showPointTarget(){
+        
+        guard let arView = arView else { return }
+
+        // Buscar el ancla y crear si no existe
         let fixedPOIAnchor = arView.scene.anchors.first(where: { $0.name == "fixedPOIAnchor" }) as? AnchorEntity ?? {
             let newAnchor = AnchorEntity(world: SIMD3<Float>(0, 0, 0))
             newAnchor.name = "fixedPOIAnchor"
             arView.scene.addAnchor(newAnchor)
             return newAnchor
         }()
-        
-        // Eliminar el punto de la ruta
-        fixedPOIAnchor.children.filter { $0.name.starts(with: "point_")}
+
+        // Eliminar el punto de la ruta existente
+        fixedPOIAnchor.children.filter { $0.name.starts(with: "point_") }
             .forEach { $0.removeFromParent() }
         
-        
-        for (index, point) in self.storedTransformedPositions.enumerated() {
-            //Calculo la distancia entre la camara y los puntos de la ruta ya transformados
-            let distanceToCamera = simd_distance(SIMD2<Float>(arView.cameraTransform.translation.x, arView.cameraTransform.translation.z),
-                                                 SIMD2<Float>(point.x, point.z))
-            
-            if distanceToCamera >= 5.0 && !targetPointSet {
-                setTargetCoordinates(point.x, point.z)
-                
-                var poiEntity:ModelEntity
-                poiEntity = createSphereEntity(radius: 0.35, color: .blue, transparency: 0.75) // Marcar el target
-                poiEntity.position = point
-                poiEntity.name = "point_\(index)"
-                       
-                fixedPOIAnchor.addChild(poiEntity)
-                targetPointSet = true
-                
-            }
-        }
+        // Crear la entidad de la esfera para marcar el punto objetivo
+        let poiEntity = createSphereEntity(radius: 0.35, color: .blue, transparency: 0.75)
+        let targetPosition = SIMD3<Float>(Float(self.targetX), -0.5, Float(self.targetZ))  // Establecer y como -0.5 o cualquier valor apropiado
+        poiEntity.position = targetPosition
+        poiEntity.name = "point_" // Dar un nombre único a la esfera
+
+        // Agregar la esfera al ancla
+        fixedPOIAnchor.addChild(poiEntity)
+
     }
+    
     
     func calculateAngleToTarget() -> Float? {
                
@@ -165,6 +197,7 @@ class Coordinator: NSObject, ARSessionDelegate {
         let arrowPosition = cameraPosition - forwardVector
         
         self.calculateAndSetTargetPoint()
+        self.showPointTarget()
         
         if self.targetX != 0 && self.targetZ != 0 {
             if let yawPoint = calculateAngleToTarget(){
@@ -201,7 +234,7 @@ class Coordinator: NSObject, ARSessionDelegate {
     }
     
             
-    func setTargetCoordinates(_ x: Float, _ z: Float ){
+    func setTargetCoordinates(x: Float, z: Float ){
             
             self.targetX = Double(x)
             self.targetZ = Double(z)
@@ -227,6 +260,7 @@ class Coordinator: NSObject, ARSessionDelegate {
             .forEach { $0.removeFromParent() }
                 
         
+        self.storedTransformedPositions.removeAll()
         // Aplico la transformación a todos los puntos de la ruta
             for (index, point) in self.pointsList.enumerated() {
                 if let xPoint = point["x"] as? Double, let yPoint = point["y"] as? Double {
@@ -237,6 +271,7 @@ class Coordinator: NSObject, ARSessionDelegate {
                         arView: arView
                     )
                     self.storedTransformedPositions.append(transformedPosition)
+                    //print ("updateing points lists!!!!!!!!!")
                     
                 } else {
                     print("Invalid point data: \(point)")
