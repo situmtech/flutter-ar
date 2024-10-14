@@ -8,16 +8,14 @@ import SitumSDK
  */
 @available(iOS 13.0, *)
 class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavigationDelegate {
-    
+  
     /**
      Called once after initialization.
      */
-    var arView: ARView?  // Definir arView como propiedad de la clase
-    var fixedAnchor: AnchorEntity?
+    var coordinator: Coordinator?
     
     func setupSceneView(arSceneView: CustomARSceneView) {
 
-        //let arView = ARView(frame: arSceneView.bounds)
         arSceneView.cameraMode = .ar
         arSceneView.automaticallyConfigureSession = false
         let configuration = ARWorldTrackingConfiguration()
@@ -28,20 +26,9 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         
         //Fija un ancla en el origen de coordenadas
         setupFixedAnchor(arSceneView: arSceneView)
-
-       /* context.coordinator.arView = arView
-        context.coordinator.setupFixedAnchor()
-        
-        // Establecer el delegado de la sesión para recibir actualizaciones
-        arView.session.delegate = context.coordinator
-
-       // context.coordinator.arView = arView
-        arView.session.delegate = context.coordinator
-        */
         
         // Agregar la luz direccional
         addDirectionalLight(to: arSceneView)
-        
         
         //Arrow
         let arrowAnchor = createArrowAnchor()
@@ -51,25 +38,39 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         //Setup animated model
         let fixedAnchorModel = setupDynamicModel()
         arSceneView.scene.anchors.append(fixedAnchorModel)
-    
+     
         
+        // Instancia el Coordinator
+        self.coordinator = makeCoordinator()
+        self.coordinator?.arView = arSceneView // Asigna la vista AR
+        self.coordinator?.arrowAnchor = arrowAnchor // Asigna el ancla de la flecha
+        arSceneView.session.delegate = self.coordinator
+               
     }
     
+    
     func setupFixedAnchor(arSceneView: CustomARSceneView) {
-        //guard let arView = arSceneView else { return }
-
+        
         let fixedAnchor = AnchorEntity(world: SIMD3<Float>(0.0, 0.0, 0.0))
         fixedAnchor.name = "fixedPOIAnchor"
 
         arSceneView.scene.anchors.append(fixedAnchor)
-        self.fixedAnchor = fixedAnchor
+        //self.fixedAnchor = fixedAnchor
     }
+    
+    func makeCoordinator() -> Coordinator {
+        let locationManager = LocationManager()
+        return Coordinator(locationManager: locationManager)
+    }
+
 
     /**
      Called once per frame.
      */
     func session(_ session: ARSession, didUpdate frame: ARFrame) {
         
+        //self.coordinator.handlePointUpdate()
+        //self.coordinator.handleLocationUpdate()   
     }
     
     // MARK: Communication Manager callbacks:
@@ -82,7 +83,13 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     // MARK: LocationManager delegate.
     
     func locationManager(_ locationManager: any SITLocationInterface, didUpdate location: SITLocation) {
-        print("Situm> Location received: \(location)")
+        print("Situm> Location received!!: \(location)")
+        
+        if let coordinator = self.coordinator {
+            coordinator.handleLocationUpdate(location: location)
+        } else {
+            print("Coordinator is nil")
+        }
     }
     
     func locationManager(_ locationManager: any SITLocationInterface, didFailWithError error: (any Error)?) {
