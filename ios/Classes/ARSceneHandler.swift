@@ -12,9 +12,12 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     /**
      Called once after initialization.
      */
+    var arView: ARView?  // Definir arView como propiedad de la clase
+    var fixedAnchor: AnchorEntity?
+    
     func setupSceneView(arSceneView: CustomARSceneView) {
 
-        let arView = ARView(frame: .zero)
+        let arView = ARView(frame: arSceneView.bounds)
         arView.cameraMode = .ar
         arView.automaticallyConfigureSession = false
         let configuration = ARWorldTrackingConfiguration()
@@ -23,6 +26,9 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         configuration.planeDetection = []
         arView.session.run(configuration)
         
+        self.arView = arView
+        setupFixedAnchor()
+
        /* context.coordinator.arView = arView
         context.coordinator.setupFixedAnchor()
         
@@ -44,7 +50,18 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         //Dinamyc model
         let fixedAnchorModel = setupDynamicModel()
         arView.scene.anchors.append(fixedAnchorModel)
+    
         
+    }
+    
+    func setupFixedAnchor() {
+        guard let arView = arView else { return }
+
+        let fixedAnchor = AnchorEntity(world: SIMD3<Float>(0.0, 0.0, 0.0))
+        fixedAnchor.name = "fixedPOIAnchor"
+
+        arView.scene.anchors.append(fixedAnchor)
+        self.fixedAnchor = fixedAnchor
     }
     
     
@@ -72,6 +89,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
             
             fixedAnchorModel.addChild(robotEntity)
             fixedAnchorModel.addChild(tRexEntity)
+   
             
         } catch {
             print("Error al cargar el modelo animado: \(error.localizedDescription)")
