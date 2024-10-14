@@ -13,9 +13,72 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
      Called once after initialization.
      */
     func setupSceneView(arSceneView: CustomARSceneView) {
+
+        let arView = ARView(frame: .zero)
+        arView.cameraMode = .ar
+        arView.automaticallyConfigureSession = false
+        let configuration = ARWorldTrackingConfiguration()
+        configuration.worldAlignment = .gravity
+        
+        configuration.planeDetection = []
+        arView.session.run(configuration)
+        
+       /* context.coordinator.arView = arView
+        context.coordinator.setupFixedAnchor()
+        
+        // Establecer el delegado de la sesión para recibir actualizaciones
+        arView.session.delegate = context.coordinator
+
+       // context.coordinator.arView = arView
+        arView.session.delegate = context.coordinator
+        
+        // Agregar la luz direccional
+        addDirectionalLight(to: arView)
+        
+        
+        //Arrow
+        let arrowAnchor = createArrowAnchor()
+        arView.scene.anchors.append(arrowAnchor)
+        context.coordinator.arrowAnchor = arrowAnchor
+        */
+        //Dinamyc model
+        let fixedAnchorModel = setupDynamicModel()
+        arView.scene.anchors.append(fixedAnchorModel)
         
     }
     
+    
+    func setupDynamicModel() -> AnchorEntity{
+        let fixedAnchorModel = AnchorEntity(world: SIMD3<Float>(0.0, 0.0, 0.0))
+        do {
+            let robotEntity = try ModelEntity.load(named: "Animated_Dragon_Three_Motion_Loops.usdz")
+            robotEntity.scale = SIMD3<Float>(0.015, 0.015, 0.015)
+            robotEntity.position = SIMD3<Float>(1.0, -0.25, -3.0)
+            
+            let rotation = simd_quatf(angle: .pi / 4, axis: SIMD3<Float>(0, 1, 0))
+            robotEntity.orientation = rotation
+
+            if let animation = robotEntity.availableAnimations.first(where: { $0.name == "global scene animation" }) {
+                robotEntity.playAnimation(animation.repeat(), transitionDuration: 0.5, startsPaused: false)
+            }           
+        
+            let tRexEntity = try ModelEntity.load(named: "T-Rex.usdz")
+            tRexEntity.scale = SIMD3<Float>(0.015, 0.015, 0.015)
+            tRexEntity.position = SIMD3<Float>(-2.0, -1.5, -20.0)
+            
+            if let animation = tRexEntity.availableAnimations.first(where: { $0.name == "global scene animation" }) {
+                tRexEntity.playAnimation(animation.repeat(), transitionDuration: 0.5, startsPaused: false)
+            }
+            
+            fixedAnchorModel.addChild(robotEntity)
+            fixedAnchorModel.addChild(tRexEntity)
+            
+        } catch {
+            print("Error al cargar el modelo animado: \(error.localizedDescription)")
+        }
+        
+        return fixedAnchorModel
+    }
     /**
      Called once per frame.
      */
