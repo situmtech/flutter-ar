@@ -7,7 +7,8 @@ func parsePois(pois: [SITPOI]) -> [[String: Any]] {
     for poi in pois {
         // Llamar a la función position() para obtener el valor de SITPoint
         let position = poi.position()
-        
+        let icon = poi.category.iconURL
+        print("ICON URL:   ", icon)
         // Desenrolla el cartesianCoordinate de forma segura
         if let cartesianCoordinate = position.cartesianCoordinate {
             let name = poi.name
@@ -21,7 +22,8 @@ func parsePois(pois: [SITPOI]) -> [[String: Any]] {
                         "y": cartesianCoordinate.y
                     ],
                     "floorIdentifier": floorIdentifier
-                ]
+                ],
+                "iconUrl": icon
             ]
             poisMap.append(poiDict)
         } else {

@@ -76,7 +76,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     // MARK: Communication Manager callbacks:
     
     func onBuildingInfoReceived(_ buildingInfo: SITBuildingInfo?, withError error: Error?) {
-        print("Situm> Got \(buildingInfo?.indoorPois.count ?? 0) POIs: \(String(describing: buildingInfo?.indoorPois))")
+       // print("Situm> Got \(buildingInfo?.indoorPois.count ?? 0) POIs: \(String(describing: buildingInfo?.indoorPois))")
         
         if let coordinator = self.coordinator, let indoorPois = buildingInfo?.indoorPois {
             // Parsea los POIs
@@ -123,7 +123,12 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     
     func navigationManager(_ navigationManager: SITNavigationInterface, didUpdate progress: SITNavigationProgress, on route: SITRoute) {
         print("Situm> Progress updated on route: \(route.toDictionary()["points"]), progress: \(progress)")
-        parsePointsRoute(route.toDictionary()["points"])
+        if let coordinator = self.coordinator {
+            coordinator.handlePointUpdate(route.toDictionary()["points"])
+        } else {
+            print("Coordinator is nil")
+        }
+        
     }
     
     func navigationManager(_ navigationManager: SITNavigationInterface, destinationReachedOn route: SITRoute) {

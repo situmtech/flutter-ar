@@ -65,8 +65,8 @@ class Coordinator: NSObject, ARSessionDelegate {
     }
 
         
-    func handlePointUpdate(_ notification: Notification) {
-        if let userInfo = notification.userInfo, let newPointsList = userInfo["pointsList"] as? [[String: Any]] {
+    func handlePointUpdate(_ points: Any?) {
+        if let newPointsList = points as? [[String: Any]] {
             
             // Verificar si la nueva lista de puntos es diferente a la actual
             if arePointsDifferent(self.pointsList, newPointsList) {
