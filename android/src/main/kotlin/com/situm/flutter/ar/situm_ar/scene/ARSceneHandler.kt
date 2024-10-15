@@ -40,6 +40,8 @@ import io.github.sceneview.node.ViewNode
 import io.github.sceneview.utils.getResourceUri
 import kotlinx.coroutines.launch
 
+const val DIRECTION_ARROW_TARGET_DISTANCE = 6f
+
 class ARSceneHandler(
     private val activity: Activity,
     private val lifecycle: Lifecycle,
@@ -199,7 +201,7 @@ class ARSceneHandler(
     }
 
 
-    fun <T> generateARCorePositions(
+    private fun <T> generateARCorePositions(
         items: List<T>, currentLocation: Location, getCoordinate: (T) -> CartesianCoordinate
     ): List<Vector3> {
 
@@ -281,9 +283,7 @@ class ARSceneHandler(
                     Position(arcorePosition.x, arcorePosition.y - 1, arcorePosition.z), poi.infoHtml
                 )
             }
-
         }
-
     }
 
     private fun loadTextViewInAR(position: Position, textString: String) {
@@ -439,11 +439,27 @@ class ARSceneHandler(
             )
         }
     }
+    private fun hasToUpdateArrowTarget(): Boolean {
+        if (targetArrow!=null){
+            val distanceToCamera = calculate2DDistance(
+                Vector3(
+                    sceneView.cameraNode.worldPosition.x,
+                    sceneView.cameraNode.worldPosition.y,
+                    sceneView.cameraNode.worldPosition.z
+                ),
+                Vector3(targetArrow!!.x, targetArrow!!.y, targetArrow!!.z)
+            )
+            if (distanceToCamera < DIRECTION_ARROW_TARGET_DISTANCE/2 || distanceToCamera > DIRECTION_ARROW_TARGET_DISTANCE * 2){
+                return true
+            }
+        }
+        return false
+    }
 
     // points arrow to position in arCoordinates
     private fun pointArrowToPosition(targetARPosition: Position) {
         targetArrow = targetARPosition
-        arrowNode?.lookAt(targetARPosition)
+        arrowNode?.lookAt(targetARPosition, smooth = true)
         // debug
         if (::currentTargetNodeGeometry.isInitialized) {
             sceneView.removeChildNode(currentTargetNodeGeometry)
@@ -579,42 +595,22 @@ class ARSceneHandler(
     override fun onStart(route: Route) {        // TODO: Esto no se va a llamar
         setRoute(route)
         updateRouteNodes()
-        pointArrowToSitumPosition(route.firstStep.to)
-        targetArrowSitumCoordinates = route.firstStep.to
+        updateArrowTarget()
     }
 
     override fun onProgress(navigationProgress: NavigationProgress?) {
-        Log.w(TAG, ">> Situm navigation progress: ${navigationProgress.toString()}")
-        val to = navigationProgress?.routeStep?.to
-        Log.d(TAG,">> Situm navigation progress segments :${navigationProgress?.segments.toString()}")
-        //navigationProgress?.segments?.get(0)?.points
+        Log.d(TAG, ">> Situm navigation progress: ${navigationProgress.toString()}")
+
         navigationProgress?.segments?.get(0)?.let { setCurrentSegment(it) }
-        return      //TODO: Debugging , do not redraw if not requested
-        val targetPoint = to?.let {
-            Point(
-                it.buildingIdentifier,
-                it.floorIdentifier,
-                it.coordinate,
-                it.cartesianCoordinate
-            )
+        if(hasToUpdateArrowTarget()){
+            updateArrowTarget()
         }
-
-        if (targetPoint != null ) {
-            if(!::targetArrowSitumCoordinates.isInitialized || targetPoint != targetArrowSitumCoordinates){   // if changes redraw
-                updateRouteNodes()
-                targetArrowSitumCoordinates = targetPoint
-                pointArrowToSitumPosition(targetPoint)
-                //updateTargetArrowOnARRoute(3f)
-            }
-        }
+        return
     }
-
-
 
     override fun onUserOutsideRoute() {
         Log.w(TAG, ">> Situm navigation user out of routes")
     }
-
 
 
     override fun onCancellation() {
@@ -644,14 +640,15 @@ class ARSceneHandler(
 
     }
 
+    // callable from dart
     fun worldRedraw() {
         loadPois()
         updateRouteNodes()
-        updateTargetArrowOnARRoute(5f)
+        updateTargetArrowOnARRoute(DIRECTION_ARROW_TARGET_DISTANCE)
     }
 
     fun updateArrowTarget() {
-        updateTargetArrowOnARRoute(5f)
+        updateTargetArrowOnARRoute(DIRECTION_ARROW_TARGET_DISTANCE)
     }
 
 }
