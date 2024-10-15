@@ -122,8 +122,8 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     }
     
     func navigationManager(_ navigationManager: SITNavigationInterface, didUpdate progress: SITNavigationProgress, on route: SITRoute) {
-        print("Situm> Progress updated on route: \(route.points), progress: \(progress)")
-        parsePointsRoute(route.points)
+        print("Situm> Progress updated on route: \(route.toDictionary()["points"]), progress: \(progress)")
+        parsePointsRoute(route.toDictionary()["points"])
     }
     
     func navigationManager(_ navigationManager: SITNavigationInterface, destinationReachedOn route: SITRoute) {
