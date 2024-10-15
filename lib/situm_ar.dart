@@ -114,6 +114,14 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
             ArScreenBackButton(onPressed: () {
               arController.onArGone();
             }),
+
+            if (Platform.isAndroid) ...[
+              _createButtonsDebugAR(() {
+                arController.worldRedraw();
+              }, () {
+                arController.updateArrowTarget();
+              }),
+            ],
             if (loadingArMessage) const ARLoadingWidget()
           ],
         ),

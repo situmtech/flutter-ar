@@ -20,6 +20,8 @@ class ARMethodCallHandler(
             "pause" -> handlePause(arguments, result)
             "resume" -> handleResume(arguments, result)
             "unload" -> handleUnload(arguments, result)
+            "worldRedraw" -> handleRedraw(arguments, result)
+            "updateArrowTarget" -> handleUpdateArrowTarget(arguments, result)
             else -> result.notImplemented()
         }
     }
@@ -48,4 +50,15 @@ class ARMethodCallHandler(
         result.success(DONE)
         Log.d(TAG, "### AR has been PAUSED (camera should not be active) ###")
     }
+
+    private fun handleRedraw(arguments: Map<String, Any>, result: MethodChannel.Result) {
+        controller.worldRedraw()
+        result.success(DONE)
+    }
+
+    private fun handleUpdateArrowTarget(arguments: Map<String, Any>, result: MethodChannel.Result) {
+        controller.updateArrowTarget()
+        result.success(DONE)
+    }
+
 }

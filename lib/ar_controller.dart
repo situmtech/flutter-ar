@@ -88,6 +88,16 @@ class ARController {
         {"buildingIdentifier": _widgetState?.widget.buildingIdentifier});
   }
 
+  Future<void> worldRedraw() async {
+    debugPrint("Situm > AR> world redraw.");
+    await _channel.invokeMethod("worldRedraw", {});
+  }
+
+  Future<void> updateArrowTarget() async {
+    debugPrint("Situm > AR> world redraw.");
+    await _channel.invokeMethod("updateArrowTarget", {});
+  }
+
   // === Set of methods to keep the AR module updated regarding position and navigation.
   Future<void> _situmSDKMethodCallHandler(InternalCall call) async {
     // TODO: restore.

@@ -102,4 +102,12 @@ class ARController(
             arMethodCallSender.sendArGoneRequired()
         }
     }
+
+    fun worldRedraw() {
+        arSceneHandler.worldRedraw()
+    }
+
+    fun updateArrowTarget(){
+        arSceneHandler.updateArrowTarget()
+    }
 }

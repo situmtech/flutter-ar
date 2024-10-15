@@ -28,7 +28,6 @@ import es.situm.sdk.model.location.Location
 import es.situm.sdk.model.navigation.NavigationProgress
 import es.situm.sdk.navigation.NavigationListener
 import io.github.sceneview.ar.arcore.getUpdatedPlanes
-import io.github.sceneview.ar.arcore.position
 import io.github.sceneview.ar.node.AnchorNode
 import io.github.sceneview.collision.Vector3
 import io.github.sceneview.geometries.Sphere
@@ -50,6 +49,7 @@ class ARSceneHandler(
     }
 
 
+
     private lateinit var targetArrowSitumCoordinates: Point
     private val context: Context = activity
 
@@ -64,6 +64,7 @@ class ARSceneHandler(
     private lateinit var route: Route
     private var routeNodes: MutableList<GeometryNode> = mutableListOf()
     private lateinit var currentTargetNodeGeometry: GeometryNode
+    private lateinit var currentProjectedNodeGeometry: GeometryNode
 
     private lateinit var buildingInfo: BuildingInfo
     private lateinit var currentPosition: Location
@@ -346,8 +347,8 @@ class ARSceneHandler(
             }
     }
 
-    fun updateRouteNodes() {
-        if (!this::currentSegment.isInitialized) {
+    private fun updateRouteNodes() {
+        if (!this::currentSegment.isInitialized || !this::currentPosition.isInitialized) {
             return
         }
 
@@ -356,31 +357,13 @@ class ARSceneHandler(
                 nonNullRoute, currentPosition
             ) { point -> point.cartesianCoordinate }
 
-            val pathIntepolated = interpolatePositions(arCorePositionsForPoints, 1.0f)
-            addSpheresToScene(pathIntepolated)
+            val pathInterpolated = interpolatePositions(arCorePositionsForPoints, 1.0f)
+            addSpheresToScene(pathInterpolated)
         }
-        updateTargetArrowOnARRoute(3f)
-    }
-    fun updateRouteNodes2() {
-        if (!this::route.isInitialized) {
-            return
-        }
-
-        route.points.let { nonNullRoute ->
-            val filteredRoutePoints =
-                nonNullRoute.filter { point -> point.floorIdentifier == currentPosition.floorIdentifier }
-
-            val arCorePositionsForPoints = generateARCorePositions(
-                filteredRoutePoints, currentPosition
-            ) { point -> point.cartesianCoordinate }
-
-            val pathIntepolated = interpolatePositions(arCorePositionsForPoints, 1.0f)
-            addSpheresToScene(pathIntepolated)
-        }
-        updateTargetArrowOnARRoute(3f)
+        //updateTargetArrowOnARRoute(3f)
     }
 
-    fun addSpheresToScene(positions: List<Vector3>, sphereRadius: Float = 0.1f) {
+    private fun addSpheresToScene(positions: List<Vector3>, sphereRadius: Float = 0.1f) {
         // force clear previous route if exists
         clearRouteNodes()
 
@@ -389,29 +372,28 @@ class ARSceneHandler(
                 0f, 0f, 1f, 0.5f
             )
         )
-        val sphereNodes = mutableListOf<GeometryNode>()
+        val sphereGeometry =
+            Sphere.Builder().radius(sphereRadius).center(Position(0f,0f,0f)).build(sceneView.engine)
         Log.d(TAG, "> Situm add spheres to scene")
         positions.forEach { position ->
             Log.d(TAG, "> Situm add spheres to scene: $position")
             val center = Position(position.x, position.y, position.z)
-            val sphereGeometry =
-                Sphere.Builder().radius(sphereRadius).center(center).build(sceneView.engine)
-
             val sphereNode = GeometryNode(sceneView.engine, sphereGeometry, material)
+            sphereNode.worldPosition = center
             routeNodes.add(sphereNode)
-            sphereNodes.add(sphereNode)
         }
-        sceneView.addChildNodes(sphereNodes)
+        sceneView.addChildNodes(routeNodes)
     }
 
     // from current AR position and AR RouteNodes, projects position on route and finds next node at n distance (?)
-    fun updateTargetArrowOnARRoute(minDistanceMeters: Float) {
+    private fun updateTargetArrowOnARRoute(minDistanceMeters: Float) {
         val cameraPosition = sceneView.cameraNode.worldPosition
         var closestNode: GeometryNode? = null
         var minDistanceToCamera = Float.MAX_VALUE
 
         //  Find closest node
         for (node in routeNodes) {
+            Log.d(TAG,"> node: ${node.worldPosition} / ${node.position}")
             val nodePosition = node.worldPosition
             val distanceToCamera = calculate2DDistance(
                 Vector3(cameraPosition.x, cameraPosition.y, cameraPosition.z),
@@ -424,9 +406,13 @@ class ARSceneHandler(
             }
         }
         if (closestNode == null) {
-            Log.w(TAG, "No closest node found.")
+            Log.w(TAG, "> No closest node found.")
             return
+        } else{
+            Log.w(TAG,"< Closest node: ${closestNode.worldPosition}, ${closestNode.position}")
         }
+
+        drawCurrentProjectedPosition(closestNode.worldPosition)
         var targetNode: GeometryNode? = null
 
         for (i in routeNodes.indexOf(closestNode) until routeNodes.size) {
@@ -438,41 +424,51 @@ class ARSceneHandler(
                     closestNode.worldPosition.z
                 ), Vector3(node.worldPosition.x, node.worldPosition.y, node.worldPosition.z)
             )
-
+            Log.d(TAG,"> Distance from closest: ${closestNode.worldPosition} to node: ${node.worldPosition}  : $distanceFromClosest ")
             if (distanceFromClosest >= minDistanceMeters) {
                 targetNode = node
                 break
             }
         }
         if (targetNode != null) {
-            Log.d(TAG, "Target node found at position: ${targetNode.worldPosition}")
+            Log.d(TAG, "> Target node found at position: ${targetNode.worldPosition}")
             pointArrowToPosition(targetNode.worldPosition)
         } else {
             Log.w(
-                TAG, "No node found at least $minDistanceMeters meters away from the closest node."
+                TAG, "> No node found at least $minDistanceMeters meters away from the closest node."
             )
         }
     }
 
     // points arrow to position in arCoordinates
-    fun pointArrowToPosition(targetARPosition: Position) {
+    private fun pointArrowToPosition(targetARPosition: Position) {
         targetArrow = targetARPosition
         arrowNode?.lookAt(targetARPosition)
         // debug
         if (::currentTargetNodeGeometry.isInitialized) {
             sceneView.removeChildNode(currentTargetNodeGeometry)
         }
-        val center = Position(targetARPosition.x, targetARPosition.y, targetARPosition.z)
-        val sphereGeometry = Sphere.Builder().radius(0.1f).center(center).build(sceneView.engine)
+        currentTargetNodeGeometry = drawSphereOnPosition(targetARPosition,Color(0f, 1f, 0f, 0.8f))
+    }
+
+    private fun drawCurrentProjectedPosition(projectedARPosition: Position) {
+        if (::currentProjectedNodeGeometry.isInitialized) {
+            sceneView.removeChildNode(currentProjectedNodeGeometry)
+        }
+        currentProjectedNodeGeometry = drawSphereOnPosition(projectedARPosition,Color(1f, 1f, 0f, 0.8f))
+    }
+
+    private fun drawSphereOnPosition(arPosition: Position, color: Color): GeometryNode{
+        val sphereGeometry = Sphere.Builder().radius(0.15f).center(arPosition).build(sceneView.engine)
         val material =
-            MaterialLoader(sceneView.engine, context).createColorInstance(Color(0f, 1f, 0f, 0.5f))
+            MaterialLoader(sceneView.engine, context).createColorInstance(color)
         val sphereNode = GeometryNode(sceneView.engine, sphereGeometry, material)
-        currentTargetNodeGeometry = sphereNode
         sceneView.addChildNode(sphereNode)
+        return sphereNode
     }
 
     // receives a position in situm coordinates, converts it to ar coordinates and points arrow towards it.
-    fun pointArrowToSitumPosition(fromPoint: Point?) {
+    private fun pointArrowToSitumPosition(fromPoint: Point?) {
         val arCorePosition = fromPoint?.let {
             generateARCorePositions(
                 listOf(it),  // Pasar una lista con un único punto
@@ -485,7 +481,7 @@ class ARSceneHandler(
         }
     }
 
-    fun loadPois() {
+    private fun loadPois() {
         if (::currentPosition.isInitialized && this.currentPosition != null && ::pois.isInitialized && pois.isNotEmpty()) {
             var nearPois = filterPoisByDistanceAndFloor(pois, currentPosition, 50)
             Log.d(TAG, "> Situm: load  pois: $nearPois")
@@ -555,7 +551,7 @@ class ARSceneHandler(
         clearRouteNodes()
     }
 
-    fun clearPoiNodes() {
+    private fun clearPoiNodes() {
         Log.d(TAG,">> Clear poi nodes: ${poisNodes.size}")
         for (poiNode in poisNodes) {
             poiNode.parent
@@ -566,7 +562,7 @@ class ARSceneHandler(
         Log.d(TAG,">> Clear poi nodes_ 2: ${poisNodes.size}")
     }
 
-    fun clearRouteNodes() {
+    private fun clearRouteNodes() {
         for (routeNode in routeNodes) {
             routeNode.parent
             routeNode.parent = null
@@ -575,7 +571,7 @@ class ARSceneHandler(
         routeNodes.clear()
     }
 
-    fun clearRoute() {
+    private fun clearRoute() {
         route = Route()
     }
 
@@ -593,7 +589,7 @@ class ARSceneHandler(
         Log.d(TAG,">> Situm navigation progress segments :${navigationProgress?.segments.toString()}")
         //navigationProgress?.segments?.get(0)?.points
         navigationProgress?.segments?.get(0)?.let { setCurrentSegment(it) }
-
+        return      //TODO: Debugging , do not redraw if not requested
         val targetPoint = to?.let {
             Point(
                 it.buildingIdentifier,
@@ -648,5 +644,14 @@ class ARSceneHandler(
 
     }
 
+    fun worldRedraw() {
+        loadPois()
+        updateRouteNodes()
+        updateTargetArrowOnARRoute(5f)
+    }
+
+    fun updateArrowTarget() {
+        updateTargetArrowOnARRoute(5f)
+    }
 
 }
