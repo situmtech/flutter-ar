@@ -76,9 +76,22 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     // MARK: Communication Manager callbacks:
     
     func onBuildingInfoReceived(_ buildingInfo: SITBuildingInfo?, withError error: Error?) {
-        print("Situm> Building info received: \(String(describing: buildingInfo))")
         print("Situm> Got \(buildingInfo?.indoorPois.count ?? 0) POIs: \(String(describing: buildingInfo?.indoorPois))")
+        
+        if let coordinator = self.coordinator, let indoorPois = buildingInfo?.indoorPois {
+            // Pasa el array de POIs a parsePois
+            let poisMapArray = parsePois(pois: indoorPois)
+            
+            // Envuelve el array en un diccionario antes de pasarlo a updatePOIs
+            let poisMap: [String: Any] = ["pois": poisMapArray]
+            print("POIS MAP:   ", poisMap)
+            // Llama a updatePOIs con el diccionario
+            coordinator.updatePOIs(poisMap: poisMap)
+        } else {
+            print("Coordinator is nil or no POIs available")
+        }
     }
+
     
     // MARK: LocationManager delegate.
     

@@ -80,19 +80,22 @@ class Coordinator: NSObject, ARSessionDelegate {
     
     func handleLocationUpdate(location: SITLocation) {
         
-        if let xSitum = location.position.cartesianCoordinate?.x as? Double,
-           let ySitum = location.position.cartesianCoordinate?.y as? Double,
-           let yawSitum = location.cartesianBearing as? Double,
-           let floorIdentifier = location.position.floorIdentifier as? Double {
-                
-                // Llama al método que actualiza la ubicación en la escena
-                updateLocation(xSitum: xSitum, ySitum: ySitum, yawSitum: yawSitum, floorIdentifier: floorIdentifier)
-            }
-           
-            else {
-                print("Datos inválidos recibidos en la notificación: \(location)")
-            }
+        // Verifica si las coordenadas son opcionales y convierte floorIdentifier de String a Double
+        if let cartesianCoordinate = location.position.cartesianCoordinate,
+           let floorIdentifierAsDouble = Double(location.position.floorIdentifier) {
+            let xSitum = cartesianCoordinate.x
+            let ySitum = cartesianCoordinate.y
+            let yawSitum = Double(location.cartesianBearing.radians()) // Asegúrate de usar la propiedad correcta para convertir SITAngle a Double
+            
+            // Llama al método que actualiza la ubicación en la escena
+            updateLocation(xSitum: xSitum, ySitum: ySitum, yawSitum: yawSitum, floorIdentifier: floorIdentifierAsDouble)
+            
+        } else {
+            print("Datos inválidos recibidos en la notificación o conversión de floorIdentifier fallida: \(location)")
         }
+    }
+
+
     
     func calculateDistanceToCamera(x: Float, z: Float) -> Float{
         
@@ -283,9 +286,11 @@ class Coordinator: NSObject, ARSessionDelegate {
 
     
     func updateLocation(xSitum: Double, ySitum: Double, yawSitum: Double, floorIdentifier: Double) {
-         
+        print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+
             guard !locationUpdated else { return }
-           
+                print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+
             let newLocation = CLLocation(
                 coordinate: CLLocationCoordinate2D(latitude: ySitum, longitude: xSitum),
                 altitude: floorIdentifier,
@@ -297,12 +302,14 @@ class Coordinator: NSObject, ARSessionDelegate {
             )
 
             locationManager.initialLocation = newLocation
+        print("LOCATION MANAGER:   ", locationManager.initialLocation?.coordinate.latitude, " ", locationManager.initialLocation?.coordinate.longitude)
             locationUpdated = true
         }
     
-    func updatePOIs(poisMap: [String: Any], width: Double) {
+    func updatePOIs(poisMap: [String: Any]) {
+        print("Before ?????!!!!")
         guard !didUpdatePOIs, let arView = arView, let initialLocation = locationManager.initialLocation else { return }
-
+        print("Before !!!!!")
         // Buscar o crear el ancla 'fixedPOIAnchor'
         let fixedPOIAnchor = arView.scene.anchors.first(where: { $0.name == "fixedPOIAnchor" }) as? AnchorEntity ?? {
             let newAnchor = AnchorEntity(world: SIMD3<Float>(0, 0, 0))
@@ -310,6 +317,7 @@ class Coordinator: NSObject, ARSessionDelegate {
             arView.scene.addAnchor(newAnchor)
             return newAnchor
         }()
+        print("After !!!!!")
 
         // Eliminar todos los POIs y textos anteriores
         fixedPOIAnchor.children.filter { $0.name.starts(with: "poi_") || $0.name.starts(with: "text_") }
@@ -320,6 +328,8 @@ class Coordinator: NSObject, ARSessionDelegate {
             print("Error: No se encontró la clave 'pois' en el mapa de POIs")
             return
         }
+        
+        print("pois list!:  ", poisList)
 
         // Añadir los nuevos POIs
         for (index, poi) in poisList.enumerated() {

@@ -1,5 +1,4 @@
 import Foundation
-
 import RealityKit
 
 func addDirectionalLight(to arView: ARView) {
