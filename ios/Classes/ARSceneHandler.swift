@@ -79,12 +79,10 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         print("Situm> Got \(buildingInfo?.indoorPois.count ?? 0) POIs: \(String(describing: buildingInfo?.indoorPois))")
         
         if let coordinator = self.coordinator, let indoorPois = buildingInfo?.indoorPois {
-            // Pasa el array de POIs a parsePois
+            // Parsea los POIs
             let poisMapArray = parsePois(pois: indoorPois)
-            
             // Envuelve el array en un diccionario antes de pasarlo a updatePOIs
             let poisMap: [String: Any] = ["pois": poisMapArray]
-            print("POIS MAP:   ", poisMap)
             // Llama a updatePOIs con el diccionario
             coordinator.updatePOIs(poisMap: poisMap)
         } else {
@@ -124,7 +122,8 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     }
     
     func navigationManager(_ navigationManager: SITNavigationInterface, didUpdate progress: SITNavigationProgress, on route: SITRoute) {
-        print("Situm> Progress updated on route: \(route), progress: \(progress)")
+        print("Situm> Progress updated on route: \(route.points), progress: \(progress)")
+        parsePointsRoute(route.points)
     }
     
     func navigationManager(_ navigationManager: SITNavigationInterface, destinationReachedOn route: SITRoute) {

@@ -286,10 +286,7 @@ class Coordinator: NSObject, ARSessionDelegate {
 
     
     func updateLocation(xSitum: Double, ySitum: Double, yawSitum: Double, floorIdentifier: Double) {
-        print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
-
             guard !locationUpdated else { return }
-                print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
 
             let newLocation = CLLocation(
                 coordinate: CLLocationCoordinate2D(latitude: ySitum, longitude: xSitum),
@@ -302,7 +299,6 @@ class Coordinator: NSObject, ARSessionDelegate {
             )
 
             locationManager.initialLocation = newLocation
-        print("LOCATION MANAGER:   ", locationManager.initialLocation?.coordinate.latitude, " ", locationManager.initialLocation?.coordinate.longitude)
             locationUpdated = true
         }
     
