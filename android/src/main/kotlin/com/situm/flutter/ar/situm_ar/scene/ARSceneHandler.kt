@@ -50,6 +50,7 @@ class ARSceneHandler(
     }
 
 
+    private lateinit var targetArrowSitumCoordinates: Point
     private val context: Context = activity
 
     private var arrowNode: ModelNode? = null
@@ -86,6 +87,12 @@ class ARSceneHandler(
 
     fun setCurrentLocation(location: Location) {
         Log.d(TAG, "Situm location $location")
+        if (::currentPosition.isInitialized && this.poisNodes.isEmpty()){
+            Log.w(TAG,">> LOAD POIS")
+            loadPois()
+        }else{
+            Log.w(TAG,">> NOT LOAD POIS: ${this.poisNodes.size}")
+        }
         // if floor change, redraw
         if (::currentPosition.isInitialized && this.currentPosition.floorIdentifier != location.floorIdentifier) {
             loadPois()
@@ -128,7 +135,7 @@ class ARSceneHandler(
                         .firstOrNull { it.type == Plane.Type.HORIZONTAL_UPWARD_FACING }
                         ?.let { plane ->
                             addAnchorNode(plane.createAnchor(plane.centerPose))
-                            loadTextViewInAR(plane.centerPose.position, "Dance")
+                            //loadTextViewInAR(plane.centerPose.position, "Dance")
                         }
                 }
             }
@@ -183,9 +190,9 @@ class ARSceneHandler(
             }
         }
         //
-        var position =
-            io.github.sceneview.math.Position(0.0f, 0.0f, -1.0f) // 1 metro frente a la cámara
-        loadTextViewInAR(position, "init Text")
+//        var position =
+//            io.github.sceneview.math.Position(0.0f, 0.0f, -1.0f) // 1 metro frente a la cámara
+        //loadTextViewInAR(position, "init Text")
 
 
     }
@@ -549,12 +556,14 @@ class ARSceneHandler(
     }
 
     fun clearPoiNodes() {
+        Log.d(TAG,">> Clear poi nodes: ${poisNodes.size}")
         for (poiNode in poisNodes) {
             poiNode.parent
             poiNode.parent = null
         }
         sceneView.removeChildNodes(poisNodes)
         poisNodes.clear()
+        Log.d(TAG,">> Clear poi nodes_ 2: ${poisNodes.size}")
     }
 
     fun clearRouteNodes() {
@@ -575,6 +584,7 @@ class ARSceneHandler(
         setRoute(route)
         updateRouteNodes()
         pointArrowToSitumPosition(route.firstStep.to)
+        targetArrowSitumCoordinates = route.firstStep.to
     }
 
     override fun onProgress(navigationProgress: NavigationProgress?) {
@@ -583,7 +593,7 @@ class ARSceneHandler(
         Log.d(TAG,">> Situm navigation progress segments :${navigationProgress?.segments.toString()}")
         //navigationProgress?.segments?.get(0)?.points
         navigationProgress?.segments?.get(0)?.let { setCurrentSegment(it) }
-        updateRouteNodes()
+
         val targetPoint = to?.let {
             Point(
                 it.buildingIdentifier,
@@ -593,8 +603,14 @@ class ARSceneHandler(
             )
         }
 
-        //updateTargetArrowOnARRoute(3f)
-        pointArrowToSitumPosition(targetPoint)
+        if (targetPoint != null ) {
+            if(!::targetArrowSitumCoordinates.isInitialized || targetPoint != targetArrowSitumCoordinates){   // if changes redraw
+                updateRouteNodes()
+                targetArrowSitumCoordinates = targetPoint
+                pointArrowToSitumPosition(targetPoint)
+                //updateTargetArrowOnARRoute(3f)
+            }
+        }
     }
 
 

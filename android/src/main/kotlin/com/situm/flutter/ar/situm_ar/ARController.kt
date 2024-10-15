@@ -67,6 +67,8 @@ class ARController(
         Log.d(TAG, "Situm> AR> L&U> CALLED UNLOAD")
         if (isLoaded) {
             Log.d(TAG, "\tSitum> AR> L&U> ACTUALLY UNLOADED")
+            SitumSdk.locationManager().removeLocationListener(arSceneHandler)
+            SitumSdk.navigationManager().removeNavigationListener(arSceneHandler)
             arSceneHandler.unload()
             arView.unload()
             isLoading = false
