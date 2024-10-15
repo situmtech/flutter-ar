@@ -20,6 +20,8 @@ class Coordinator: NSObject, ARSessionDelegate {
     
     var pointsList: [[String: Any]] = []
     var storedTransformedPositions: [SIMD3<Float>] = []
+    var poisStored: [String: Any] = [:]
+
 
  
       
@@ -64,6 +66,10 @@ class Coordinator: NSObject, ARSessionDelegate {
         return false
     }
 
+    func handlePoisUpdated(poisMap: [String: Any]){
+        poisStored = poisMap
+        self.updatePOIs()
+    }
         
     func handlePointUpdate(_ points: Any?) {
         if let newPointsList = points as? [[String: Any]] {
@@ -130,8 +136,6 @@ class Coordinator: NSObject, ARSessionDelegate {
             }
         }
 
-        // Imprimir la lista actualizada
-        //print("Puntos restantes después de eliminación: \(storedTransformedPositions)")
     }
 
     
@@ -302,10 +306,10 @@ class Coordinator: NSObject, ARSessionDelegate {
             locationUpdated = true
         }
     
-    func updatePOIs(poisMap: [String: Any]) {
-        print("Before ?????!!!!")
+    func updatePOIs() {
+        print("###################################")
         guard !didUpdatePOIs, let arView = arView, let initialLocation = locationManager.initialLocation else { return }
-        print("Before !!!!!")
+        
         // Buscar o crear el ancla 'fixedPOIAnchor'
         let fixedPOIAnchor = arView.scene.anchors.first(where: { $0.name == "fixedPOIAnchor" }) as? AnchorEntity ?? {
             let newAnchor = AnchorEntity(world: SIMD3<Float>(0, 0, 0))
@@ -313,14 +317,14 @@ class Coordinator: NSObject, ARSessionDelegate {
             arView.scene.addAnchor(newAnchor)
             return newAnchor
         }()
-        print("After !!!!!")
+        print("###################################")
 
         // Eliminar todos los POIs y textos anteriores
         fixedPOIAnchor.children.filter { $0.name.starts(with: "poi_") || $0.name.starts(with: "text_") }
             .forEach { $0.removeFromParent() }
 
         // Obtener lista de POIs
-        guard let poisList = poisMap["pois"] as? [[String: Any]] else {
+        guard let poisList = self.poisStored["pois"] as? [[String: Any]] else {
             print("Error: No se encontró la clave 'pois' en el mapa de POIs")
             return
         }
