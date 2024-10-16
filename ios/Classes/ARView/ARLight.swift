@@ -7,7 +7,7 @@ func addDirectionalLight(to arView: ARView) {
     
     // Crear una luz direccional
     let directionalLight = DirectionalLight()
-    directionalLight.light.intensity = 500
+    directionalLight.light.intensity = 5000
     directionalLight.light.color = .white
     
     // Ajustar la rotación de la luz si es necesario

@@ -349,21 +349,35 @@ class Coordinator: NSObject, ARSessionDelegate {
                 
                 // Crear POI y texto
                 //let poiEntity = createSphereEntity(radius: 0.5, color: .green, transparency: 1.0)
-               let poiEntity = createDiskEntity(radius: 0.5, thickness: 0.2, color: .green)
-                    
-                    poiEntity.position = transformedPosition
-                    poiEntity.name = "poi_\(index)"
-                    
-                    let textEntity = createTextEntity(text: name, position: transformedPosition)
-                    textEntity.name = "text_\(index)"
-                    
-                    // Añadir ambos al ancla
-                    fixedPOIAnchor.addChild(poiEntity)
-                    fixedPOIAnchor.addChild(textEntity)
-                //}//else {
-                  //  print("Error: No se pudo crear el disco para el POI")
-               // }
+               //let poiEntity = createDiskEntity(radius: 0.5, thickness: 0.2, color: .green)
+                let iconUrlString = poi["iconUrl"] as? String ?? ""
+                print("pois urlsslsls:_   ", poi["iconUrl"])
+                // Asegúrate de usar la URL correcta
+                guard let iconUrl = URL(string: iconUrlString) else {
+                    print("Error: URL no válida para el icono del POI: \(name)")
+                    continue
+                }
                 
+                createDiskEntityWithImageFromURL(radius: 0.5, thickness: 0.2, url: iconUrl) { poiEntity in
+                        guard let poiEntity = poiEntity else {
+                            print("Error: No se pudo crear el disco para el POI")
+                            return
+                        }
+                        poiEntity.position = transformedPosition
+                        poiEntity.name = "poi_\(index)"
+                        
+                        let textEntity = createTextEntity(text: name, position: transformedPosition)
+                        textEntity.name = "text_\(index)"
+                        
+                        // Añadir ambos al ancla
+                        fixedPOIAnchor.addChild(poiEntity)
+                        fixedPOIAnchor.addChild(textEntity)
+                        //}//else {
+                        //  print("Error: No se pudo crear el disco para el POI")
+                        // }
+                    }
+                
+                                
             }
         }
         self.updatePointsList()
