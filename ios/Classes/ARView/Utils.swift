@@ -177,9 +177,8 @@ func createDiskEntityWithImageFromURL(radius: Float, thickness: Float, url: URL,
     }
 }
 
-
 @available(iOS 15.0, *)
-func createTextEntity(text: String, position: SIMD3<Float>) -> ModelEntity {
+func createTextEntity(text: String, position: SIMD3<Float>, arView: ARView) -> ModelEntity {
     let mesh = MeshResource.generateText(
         text,
         extrusionDepth: 0.02,
@@ -195,5 +194,35 @@ func createTextEntity(text: String, position: SIMD3<Float>) -> ModelEntity {
     textEntity.scale = SIMD3<Float>(0.3, 0.3, 0.3)
     textEntity.position = SIMD3<Float>(position.x, position.y + 0.5, position.z)
     
+    // Actualizar la orientación del texto en relación con la cámara sin voltearse
+    arView.scene.subscribe(to: SceneEvents.Update.self) { _ in
+        let cameraTransform = arView.cameraTransform
+        let cameraForward = cameraTransform.matrix.columns.2 // Dirección hacia adelante de la cámara
+        
+        // Obtener la dirección que la entidad debe mirar sin voltear en el eje Y
+        let newForward = normalize(SIMD3<Float>(-cameraForward.x, 0, -cameraForward.z))
+        let rotation = simd_quatf(from: SIMD3<Float>(0, 0, -1), to: newForward)
+        textEntity.orientation = rotation
+    }
+    
     return textEntity
 }
+
+func updateTextOrientation(arView: ARView) {       
+
+        if let fixedPOIAnchor = arView.scene.anchors.first(where: { $0.name == "fixedPOIAnchor" }) as? AnchorEntity {
+            for child in fixedPOIAnchor.children {
+                if let textEntity = child as? ModelEntity, textEntity.name.starts(with: "text_") {
+                    let cameraPosition = arView.cameraTransform.translation
+
+                    textEntity.look(at: cameraPosition, from: textEntity.position, relativeTo: nil)
+                    textEntity.orientation = simd_mul(
+                        textEntity.orientation,
+                        simd_quatf(angle: .pi, axis: SIMD3<Float>(0, 1, 0))
+                    )
+                }
+            }
+        }
+    }
+
+
