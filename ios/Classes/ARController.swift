@@ -33,6 +33,7 @@ class ARController: NSObject {
         }
         print("Situm> AR> L&U> ACTUALLY LOADED")
         isLoading = true
+        clearScene()
         arView.load()
         
         arSceneHandler.setupSceneView(arSceneView: arView.sceneView)
@@ -64,6 +65,12 @@ class ARController: NSObject {
             isLoading = false
             isLoaded = false
         }
+    }
+    
+    private func clearScene() {
+        // Asegúrate de limpiar todos los elementos de la escena antes de recargar
+        arSceneHandler.coordinator?.arView?.scene.anchors.removeAll()
+        arSceneHandler.coordinator?.resetFlags()
     }
     
     // Retomar AR

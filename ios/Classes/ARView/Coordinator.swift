@@ -10,7 +10,7 @@ class Coordinator: NSObject, ARSessionDelegate {
     var arView: ARView?    
     var yawLabel: UILabel?
     
-    var didUpdatePOIs = false
+    //var didUpdatePOIs = false
     var locationUpdated = false
     var didUpdatePath = false
     
@@ -225,7 +225,7 @@ class Coordinator: NSObject, ARSessionDelegate {
         }
         
         // Actualizar la posición del ancla de la flecha
-        arrowAnchor.position = SIMD3<Float>(arrowPosition.x, -0.5 , arrowPosition.z)
+        arrowAnchor.position = SIMD3<Float>(arrowPosition.x, cameraPosition.y , arrowPosition.z)
     }
     
 
@@ -269,7 +269,10 @@ class Coordinator: NSObject, ARSessionDelegate {
         self.storedTransformedPositions.removeAll()
         // Aplico la transformación a todos los puntos de la ruta
             for (index, point) in self.pointsList.enumerated() {
-                if let xPoint = point["x"] as? Double, let yPoint = point["y"] as? Double {
+                if let cartesianCoordinate = point["cartesianCoordinate"] as? [String: Double],
+                   let xPoint = cartesianCoordinate["x"],
+                   let yPoint = cartesianCoordinate["y"]{
+
                     let transformedPosition = generateARKitPosition(
                         x: Float(xPoint),
                         y: Float(yPoint),
@@ -308,7 +311,7 @@ class Coordinator: NSObject, ARSessionDelegate {
     
     func updatePOIs() {
         print("###################################")
-        guard !didUpdatePOIs, let arView = arView, let initialLocation = locationManager.initialLocation else { return }
+        guard let arView = arView, let initialLocation = locationManager.initialLocation else { return }
         
         // Buscar o crear el ancla 'fixedPOIAnchor'
         let fixedPOIAnchor = arView.scene.anchors.first(where: { $0.name == "fixedPOIAnchor" }) as? AnchorEntity ?? {
@@ -357,12 +360,12 @@ class Coordinator: NSObject, ARSessionDelegate {
             }
         }
         self.updatePointsList()
-        didUpdatePOIs = true
+        //didUpdatePOIs = true
     }
 
 
     func resetFlags() {
-        didUpdatePOIs = false
+        //didUpdatePOIs = false
         locationUpdated = false
         didUpdatePath = false
     }
