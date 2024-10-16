@@ -5,7 +5,7 @@ import SitumSDK
 /**
  * Plugin controller.
  */
-@available(iOS 14.0, *)
+@available(iOS 15.0, *)
 class ARController: NSObject {
     
     private let arView: SitumARPlatformView

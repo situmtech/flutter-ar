@@ -3,6 +3,8 @@ import RealityKit
 import CoreLocation
 import SitumSDK
 
+@available(iOS 15.0, *)
+
 class Coordinator: NSObject, ARSessionDelegate {
     var locationManager: LocationManager
     var arrowAnchor: AnchorEntity?
@@ -21,33 +23,33 @@ class Coordinator: NSObject, ARSessionDelegate {
     var pointsList: [[String: Any]] = []
     var storedTransformedPositions: [SIMD3<Float>] = []
     var poisStored: [String: Any] = [:]
-
-
- 
-      
+    
+    
+    
+    
     init(locationManager: LocationManager) {        
         self.locationManager = locationManager
     }
     
     // Esta función se llama en cada actualización del frame de la cámara
     func session(_ session: ARSession, didUpdate frame: ARFrame) {
-         // Obtener el yaw respecto al norte
-         if let yaw = getCameraYawRespectToNorth() {
-             let yawDegrees = yaw * (180.0 / .pi)
-             // Actualizar el valor del label en la interfaz de usuario
+        // Obtener el yaw respecto al norte
+        if let yaw = getCameraYawRespectToNorth() {
+            let yawDegrees = yaw * (180.0 / .pi)
+            // Actualizar el valor del label en la interfaz de usuario
             /* DispatchQueue.main.async {
-                 self.yawLabel?.text = String(format: "Yaw: %.2f°", yawDegrees)
+             self.yawLabel?.text = String(format: "Yaw: %.2f°", yawDegrees)
              }*/
-         }
+        }
         
         updateArrowPositionAndDirection()
-       
         
-     }
+        
+    }
     
     func arePointsDifferent(_ oldPoints: [[String: Any]], _ newPoints: [[String: Any]]) -> Bool {
         guard oldPoints.count == newPoints.count else { return true }
-
+        
         for (index, oldPoint) in oldPoints.enumerated() {
             let newPoint = newPoints[index]
             
@@ -65,12 +67,12 @@ class Coordinator: NSObject, ARSessionDelegate {
         
         return false
     }
-
+    
     func handlePoisUpdated(poisMap: [String: Any]){
         poisStored = poisMap
         self.updatePOIs()
     }
-        
+    
     func handlePointUpdate(_ points: Any?) {
         if let newPointsList = points as? [[String: Any]] {
             
@@ -82,7 +84,7 @@ class Coordinator: NSObject, ARSessionDelegate {
             print("Invalid data format in userInfo")
         }
     }
-
+    
     
     func handleLocationUpdate(location: SITLocation) {
         
@@ -100,8 +102,8 @@ class Coordinator: NSObject, ARSessionDelegate {
             print("Datos inválidos recibidos en la notificación o conversión de floorIdentifier fallida: \(location)")
         }
     }
-
-
+    
+    
     
     func calculateDistanceToCamera(x: Float, z: Float) -> Float{
         
@@ -114,17 +116,17 @@ class Coordinator: NSObject, ARSessionDelegate {
     
     func calculateAndSetTargetPoint() {
         guard let arView = arView else { return }
-
+        
         // Obtener la posición actual de la cámara
         let cameraPosition = SIMD2<Float>(arView.cameraTransform.translation.x, arView.cameraTransform.translation.z)
-
+        
         // Usamos un bucle while para eliminar puntos sin saltar ningún índice
         var i = 0
         while i < storedTransformedPositions.count {
             
             // Calcular la distancia entre la cámara y el punto
             let distanceToCamera = simd_distance(cameraPosition, SIMD2<Float>(self.storedTransformedPositions[i].x, self.storedTransformedPositions[i].z))
-
+            
             // Si la distancia es menor que el umbral, eliminamos el punto
             if distanceToCamera < 5.0 {
                 print("Eliminando punto en índice \(i) con distancia \(distanceToCamera)")
@@ -135,15 +137,15 @@ class Coordinator: NSObject, ARSessionDelegate {
                 i += 1
             }
         }
-
+        
     }
-
     
-   
+    
+    
     func showPointTarget(){
         
         guard let arView = arView else { return }
-
+        
         // Buscar el ancla y crear si no existe
         let fixedPOIAnchor = arView.scene.anchors.first(where: { $0.name == "fixedPOIAnchor" }) as? AnchorEntity ?? {
             let newAnchor = AnchorEntity(world: SIMD3<Float>(0, 0, 0))
@@ -151,7 +153,7 @@ class Coordinator: NSObject, ARSessionDelegate {
             arView.scene.addAnchor(newAnchor)
             return newAnchor
         }()
-
+        
         // Eliminar el punto de la ruta existente
         fixedPOIAnchor.children.filter { $0.name.starts(with: "point_") }
             .forEach { $0.removeFromParent() }
@@ -161,17 +163,17 @@ class Coordinator: NSObject, ARSessionDelegate {
         let targetPosition = SIMD3<Float>(Float(self.targetX), -0.5, Float(self.targetZ))  // Establecer y como -0.5 o cualquier valor apropiado
         poiEntity.position = targetPosition
         poiEntity.name = "point_" // Dar un nombre único a la esfera
-
+        
         // Agregar la esfera al ancla
         fixedPOIAnchor.addChild(poiEntity)
-
+        
     }
     
     
     func calculateAngleToTarget() -> Float? {
-               
+        
         guard let arView = arView else { return nil }
-
+        
         let cameraTransform = arView.cameraTransform
         let cameraPosition = cameraTransform.translation
         
@@ -185,19 +187,19 @@ class Coordinator: NSObject, ARSessionDelegate {
         
         return angleDifference
     }
-   
-
+    
+    
     func updateArrowPositionAndDirection() {
         guard let arView = arView, let arrowAnchor = arrowAnchor else { return }
         
         // Obtener la posición de la cámara
         let cameraTransform = arView.cameraTransform
         let cameraPosition = cameraTransform.translation
-
+        
         // Calcular una posición fija en frente de la cámara
         let distanceInFrontOfCamera: Float = 1.0 // Define la distancia fija frente a la cámara
         let forwardDirection = cameraTransform.matrix.columns.2 // Vector hacia adelante de la cámara
-
+        
         // Calcular la nueva posición de la flecha
         let forwardVector = SIMD3<Float>(forwardDirection.x, forwardDirection.y, forwardDirection.z) * distanceInFrontOfCamera
         let arrowPosition = cameraPosition - forwardVector
@@ -207,7 +209,7 @@ class Coordinator: NSObject, ARSessionDelegate {
         
         if self.targetX != 0 && self.targetZ != 0 {
             if let yawPoint = calculateAngleToTarget(){
-            
+                
                 if let arrowEntity = arrowAnchor.children.first {
                     
                     if yawPoint != 0.0 {
@@ -228,31 +230,31 @@ class Coordinator: NSObject, ARSessionDelegate {
         arrowAnchor.position = SIMD3<Float>(arrowPosition.x, cameraPosition.y , arrowPosition.z)
     }
     
-
+    
     func setupFixedAnchor() {
         guard let arView = arView else { return }
-
+        
         let fixedAnchor = AnchorEntity(world: SIMD3<Float>(0.0, 0.0, 0.0))
         fixedAnchor.name = "fixedPOIAnchor"
-
+        
         arView.scene.anchors.append(fixedAnchor)
         self.fixedAnchor = fixedAnchor
     }
     
-            
+    
     func setTargetCoordinates(x: Float, z: Float ){
-            
-            self.targetX = Double(x)
-            self.targetZ = Double(z)
-            //self.targetFloorIdentifier = Int(floorIdentifier)
-            
+        
+        self.targetX = Double(x)
+        self.targetZ = Double(z)
+        //self.targetFloorIdentifier = Int(floorIdentifier)
+        
         print("x_target: \(self.targetX), z_target: \(self.targetZ)")//, floorIdentifier: \(self.targetFloorIdentifier)")
-      
+        
     }
     
     func updatePointsList() {
         guard let arView = arView, let initialLocation = locationManager.initialLocation else { return }
-
+        
         // Buscar o crear el ancla 'fixedPOIAnchor'
         let fixedPOIAnchor = arView.scene.anchors.first(where: { $0.name == "fixedPOIAnchor" }) as? AnchorEntity ?? {
             let newAnchor = AnchorEntity(world: SIMD3<Float>(0, 0, 0))
@@ -260,57 +262,57 @@ class Coordinator: NSObject, ARSessionDelegate {
             arView.scene.addAnchor(newAnchor)
             return newAnchor
         }()
-
+        
         // Eliminar todos los puntos de la ruta
         fixedPOIAnchor.children.filter { $0.name.starts(with: "point_")}
             .forEach { $0.removeFromParent() }
-                
+        
         
         self.storedTransformedPositions.removeAll()
         // Aplico la transformación a todos los puntos de la ruta
-            for (index, point) in self.pointsList.enumerated() {
-                if let cartesianCoordinate = point["cartesianCoordinate"] as? [String: Double],
-                   let xPoint = cartesianCoordinate["x"],
-                   let yPoint = cartesianCoordinate["y"]{
-
-                    let transformedPosition = generateARKitPosition(
-                        x: Float(xPoint),
-                        y: Float(yPoint),
-                        currentLocation: initialLocation,
-                        arView: arView
-                    )
-                    self.storedTransformedPositions.append(transformedPosition)
-                    
-                } else {
-                    print("Invalid point data: \(point)")
-                }
+        for (index, point) in self.pointsList.enumerated() {
+            if let cartesianCoordinate = point["cartesianCoordinate"] as? [String: Double],
+               let xPoint = cartesianCoordinate["x"],
+               let yPoint = cartesianCoordinate["y"]{
                 
-                setTargetCoordinates(x: self.storedTransformedPositions[0].x, z: self.storedTransformedPositions[0].z)
+                let transformedPosition = generateARKitPosition(
+                    x: Float(xPoint),
+                    y: Float(yPoint),
+                    currentLocation: initialLocation,
+                    arView: arView
+                )
+                self.storedTransformedPositions.append(transformedPosition)
+                
+            } else {
+                print("Invalid point data: \(point)")
+            }
+            
+            setTargetCoordinates(x: self.storedTransformedPositions[0].x, z: self.storedTransformedPositions[0].z)
         }
         
-      
+        
     }
-
+    
     
     func updateLocation(xSitum: Double, ySitum: Double, yawSitum: Double, floorIdentifier: Double) {
-            guard !locationUpdated else { return }
-
-            let newLocation = CLLocation(
-                coordinate: CLLocationCoordinate2D(latitude: ySitum, longitude: xSitum),
-                altitude: floorIdentifier,
-                horizontalAccuracy: kCLLocationAccuracyBest,
-                verticalAccuracy: kCLLocationAccuracyBest,
-                course: yawSitum,
-                speed: 0,
-                timestamp: Date()
-            )
-
-            locationManager.initialLocation = newLocation
-            locationUpdated = true
-        }
+        guard !locationUpdated else { return }
+        
+        let newLocation = CLLocation(
+            coordinate: CLLocationCoordinate2D(latitude: ySitum, longitude: xSitum),
+            altitude: floorIdentifier,
+            horizontalAccuracy: kCLLocationAccuracyBest,
+            verticalAccuracy: kCLLocationAccuracyBest,
+            course: yawSitum,
+            speed: 0,
+            timestamp: Date()
+        )
+        
+        locationManager.initialLocation = newLocation
+        locationUpdated = true
+    }
     
     func updatePOIs() {
-        print("###################################")
+      
         guard let arView = arView, let initialLocation = locationManager.initialLocation else { return }
         
         // Buscar o crear el ancla 'fixedPOIAnchor'
@@ -320,12 +322,11 @@ class Coordinator: NSObject, ARSessionDelegate {
             arView.scene.addAnchor(newAnchor)
             return newAnchor
         }()
-        print("###################################")
-
+               
         // Eliminar todos los POIs y textos anteriores
         fixedPOIAnchor.children.filter { $0.name.starts(with: "poi_") || $0.name.starts(with: "text_") }
             .forEach { $0.removeFromParent() }
-
+        
         // Obtener lista de POIs
         guard let poisList = self.poisStored["pois"] as? [[String: Any]] else {
             print("Error: No se encontró la clave 'pois' en el mapa de POIs")
@@ -333,7 +334,7 @@ class Coordinator: NSObject, ARSessionDelegate {
         }
         
         print("pois list!:  ", poisList)
-
+        
         // Añadir los nuevos POIs
         for (index, poi) in poisList.enumerated() {
             if let position = poi["position"] as? [String: Any],
@@ -343,48 +344,54 @@ class Coordinator: NSObject, ARSessionDelegate {
                let y = cartesianCoordinate["y"],
                let name = poi["name"] as? String,
                floorIdentifier == String(Int(initialLocation.altitude)) {
-
+                
                 let transformedPosition = generateARKitPosition(x: Float(x), y: Float(y), currentLocation: initialLocation, arView: arView)
-                    
+                
                 // Crear POI y texto
-                let poiEntity = createSphereEntity(radius: 0.5, color: .green, transparency: 1.0)
-                poiEntity.position = transformedPosition
-                poiEntity.name = "poi_\(index)"
-
-                let textEntity = createTextEntity(text: name, position: transformedPosition)
-                textEntity.name = "text_\(index)"
-
-                // Añadir ambos al ancla
-                fixedPOIAnchor.addChild(poiEntity)
-                fixedPOIAnchor.addChild(textEntity)
+                //let poiEntity = createSphereEntity(radius: 0.5, color: .green, transparency: 1.0)
+               let poiEntity = createDiskEntity(radius: 0.5, thickness: 0.2, color: .green)
+                    
+                    poiEntity.position = transformedPosition
+                    poiEntity.name = "poi_\(index)"
+                    
+                    let textEntity = createTextEntity(text: name, position: transformedPosition)
+                    textEntity.name = "text_\(index)"
+                    
+                    // Añadir ambos al ancla
+                    fixedPOIAnchor.addChild(poiEntity)
+                    fixedPOIAnchor.addChild(textEntity)
+                //}//else {
+                  //  print("Error: No se pudo crear el disco para el POI")
+               // }
+                
             }
         }
         self.updatePointsList()
         //didUpdatePOIs = true
     }
-
-
+    
+    
     func resetFlags() {
         //didUpdatePOIs = false
         locationUpdated = false
         didUpdatePath = false
     }
-
+    
     func getCameraYawRespectToNorth() -> Float? {
         // Obtener el yaw original de la cámara
-            guard let yaw = arView?.session.currentFrame?.camera.eulerAngles.y else {
-                return nil
-            }
-
-            // Ajustar el yaw para que siga tus necesidades:
-            // 0° será frente, +90° derecha, -90° izquierda, y 180° atrás
-            let adjustedYaw = -yaw // Cambiamos el signo del yaw para invertir izquierda y derecha
-
-            // Asegurarnos de que el valor ajustado esté dentro del rango [-π, π]
-            let normalizedYaw = fmod(adjustedYaw + .pi, 2 * .pi) - .pi
-
-            return normalizedYaw
-
+        guard let yaw = arView?.session.currentFrame?.camera.eulerAngles.y else {
+            return nil
+        }
+        
+        // Ajustar el yaw para que siga tus necesidades:
+        // 0° será frente, +90° derecha, -90° izquierda, y 180° atrás
+        let adjustedYaw = -yaw // Cambiamos el signo del yaw para invertir izquierda y derecha
+        
+        // Asegurarnos de que el valor ajustado esté dentro del rango [-π, π]
+        let normalizedYaw = fmod(adjustedYaw + .pi, 2 * .pi) - .pi
+        
+        return normalizedYaw
+        
     }
     
     func generateARKitPosition(x: Float, y: Float, currentLocation: CLLocation, arView: ARView) -> SIMD3<Float> {
@@ -393,22 +400,22 @@ class Coordinator: NSObject, ARSessionDelegate {
         guard let cameraBearing = getCameraYawRespectToNorth() else {
             return SIMD3<Float>(0, 0, 0) // Retorna un valor por defecto si no se pudo obtener el yaw
         }
-      
+        
         
         let cameraTransform = arView.cameraTransform
         let cameraPosition = cameraTransform.translation
-     
+        
         let cameraHorizontalRotation = simd_quatf(angle: cameraBearing, axis: SIMD3<Float>(0.0, 1.0, 0.0))
-      
+        
         let course = -currentLocation.course // Cambiamos el signo del yaw para invertir izquierda y derecha
-
+        
         // Asegurarnos de que el valor ajustado esté dentro del rango [-π, π]
         let courseNormalized = fmod(course + .pi, 2 * .pi) - .pi
         
         let situmBearingDegrees = courseNormalized * (180.0 / .pi) + 90.0
         let situmBearingInRadians = Float(situmBearingDegrees) * (.pi / 180.0)
         let situmBearingMinusRotation = simd_quatf(angle: (situmBearingInRadians), axis: SIMD3<Float>(0.0, -1.0, 0.0))
-
+        
         let relativePoiPosition = SIMD3<Float>(
             x - Float(currentLocation.coordinate.longitude),
             0,
@@ -416,77 +423,17 @@ class Coordinator: NSObject, ARSessionDelegate {
         )
         
         let positionsMinusSitumRotated = situmBearingMinusRotation.act(relativePoiPosition)
-               
+        
         // Rotar la posición ajustada basándose en la rotación horizontal de la cámara
         var positionRotatedAndTranslatedToCamera = cameraHorizontalRotation.act(positionsMinusSitumRotated)
-               
+        
         // Trasladar la posición al sistema de la cámara
         positionRotatedAndTranslatedToCamera.x = cameraPosition.x + positionRotatedAndTranslatedToCamera.x
         positionRotatedAndTranslatedToCamera.z = cameraPosition.z - positionRotatedAndTranslatedToCamera.z
         positionRotatedAndTranslatedToCamera.y = -1
-
+        
         
         return positionRotatedAndTranslatedToCamera
     }
-
-    func createSphereEntity(radius: Float, color: UIColor, transparency: Float) -> ModelEntity {
-        let sphereMesh = MeshResource.generateSphere(radius: radius)
-
-        // Descomponer el color en componentes de tono, saturación y brillo
-        var hue: CGFloat = 0
-        var saturation: CGFloat = 0
-        var brightness: CGFloat = 0
-        var alpha: CGFloat = 0
-        color.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
-
-        // Reducir la saturación del color
-        let desaturatedColor = UIColor(hue: hue, saturation: saturation * 0.5, brightness: brightness, alpha: alpha * CGFloat(transparency))
-
-        // Crear el material con transparencia y color desaturado
-        let material = SimpleMaterial(color: desaturatedColor, isMetallic: false)
-
-        let sphereEntity = ModelEntity(mesh: sphereMesh, materials: [material])
-
-        return sphereEntity
-    }
-
-
-
-    func createTextEntity(text: String, position: SIMD3<Float>) -> ModelEntity {
-        let mesh = MeshResource.generateText(
-            text,
-            extrusionDepth: 0.02,
-            font: .systemFont(ofSize: 1.3),
-            containerFrame: .zero,
-            alignment: .center,
-            lineBreakMode: .byWordWrapping
-        )
-
-        let material = SimpleMaterial(color: .white, isMetallic: false)
-        let textEntity = ModelEntity(mesh: mesh, materials: [material])
-
-        textEntity.scale = SIMD3<Float>(0.3, 0.3, 0.3)
-        textEntity.position = SIMD3<Float>(position.x, position.y + 0.5, position.z)
-
-        return textEntity
-    }
-
-    func updateTextOrientation() {
-            guard let arView = arView else { return }
-
-            if let fixedPOIAnchor = arView.scene.anchors.first(where: { $0.name == "fixedPOIAnchor" }) as? AnchorEntity {
-                for child in fixedPOIAnchor.children {
-                    if let textEntity = child as? ModelEntity, textEntity.name.starts(with: "text_") {
-                        let cameraTransform = arView.cameraTransform
-                        let cameraPosition = cameraTransform.translation
-
-                        textEntity.look(at: cameraPosition, from: textEntity.position, relativeTo: nil)
-                        textEntity.orientation = simd_mul(
-                            textEntity.orientation,
-                            simd_quatf(angle: .pi, axis: SIMD3<Float>(0, 1, 0))
-                        )
-                    }
-                }
-            }
-        }
-    }
+    
+}

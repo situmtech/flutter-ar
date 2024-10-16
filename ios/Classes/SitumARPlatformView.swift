@@ -7,13 +7,13 @@ import Flutter
 /**
  Situm Platform View implementation for AR.
  */
-@available(iOS 14.0, *)
+@available(iOS 15.0, *)
 class SitumARPlatformView: NSObject, FlutterPlatformView {
     
     private var rootView: UIView
     var sceneView: CustomARSceneView
     
-    @available(iOS 14.0, *)
+    @available(iOS 15.0, *)
     init(frame: CGRect,
          viewIdentifier viewId: Int64,
          arguments args: Any?,

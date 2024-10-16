@@ -6,7 +6,7 @@ import SitumSDK
 /**
  ARSceneJuandler. Manage AR world.
  */
-@available(iOS 13.0, *)
+@available(iOS 15.0, *)
 class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavigationDelegate {
   
     /**

@@ -1,7 +1,7 @@
 import Foundation
 import Flutter
 
-@available(iOS 14.0, *)
+@available(iOS 15.0, *)
 class ARMethodCallHandler {
     
     private let controller: ARController
