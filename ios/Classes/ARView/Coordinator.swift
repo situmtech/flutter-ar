@@ -34,7 +34,7 @@ class Coordinator: NSObject, ARSessionDelegate {
     // Esta función se llama en cada actualización del frame de la cámara
     func session(_ session: ARSession, didUpdate frame: ARFrame) {
        
-        <guard let arView = self.arView else {
+        guard let arView = self.arView else {
             return // Si arView es nil, salir de la función
         }
         
