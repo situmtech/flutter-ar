@@ -2,20 +2,15 @@ package com.situm.flutter.ar.situm_ar.scene
 
 import android.app.Activity
 import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.drawable.Drawable
 import android.util.Log
 import android.webkit.WebView
 import android.widget.TextView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
-import com.bumptech.glide.Glide
-import com.bumptech.glide.request.target.CustomTarget
-import com.bumptech.glide.request.transition.Transition
-import com.google.android.filament.Material
 import com.google.android.filament.Texture
+import com.google.android.filament.Material
 import com.google.ar.core.Anchor
 import com.google.ar.core.Plane
 import com.google.ar.sceneform.rendering.ViewAttachmentManager
@@ -42,9 +37,11 @@ import io.github.sceneview.collision.Vector3
 import io.github.sceneview.geometries.Cylinder
 import io.github.sceneview.geometries.Sphere
 import io.github.sceneview.loaders.MaterialLoader
+import io.github.sceneview.material.setTexture
 import io.github.sceneview.math.Color
 import io.github.sceneview.math.Position
 import io.github.sceneview.math.Rotation
+import io.github.sceneview.model.ModelInstance
 import io.github.sceneview.node.GeometryNode
 import io.github.sceneview.node.ModelNode
 import io.github.sceneview.node.Node
@@ -95,6 +92,8 @@ class ARSceneHandler(
 
     private lateinit var sceneView: CustomARSceneView
     private lateinit var viewAttachmentManager: ViewAttachmentManager
+
+    var diskModel: ModelNode? = null
 
 
     fun setRoute(route: Route) {
@@ -165,6 +164,9 @@ class ARSceneHandler(
             }
             onSessionCreated = { session ->
                 Log.i(TAG, "onSessionCreated")
+//                (activity as? LifecycleOwner)?.lifecycleScope?.launch {
+//                    diskModel = buildModelNode(R.raw.disc)
+//                }
             }
             onTrackingFailureChanged = { reason ->
                 Log.i(TAG, "onTrackingFailureChanged: $reason")
@@ -233,7 +235,6 @@ class ARSceneHandler(
 //        var position =
 //            io.github.sceneview.math.Position(0.0f, 0.0f, -1.0f) // 1 metro frente a la cámara
         //loadTextViewInAR(position, "init Text")
-
 
     }
 
@@ -558,6 +559,65 @@ class ARSceneHandler(
         }
     }
 
+//    // Función para dibujar el modelo con diferentes texturas
+//    fun drawDiskWithImage(arPosition: Position, poiCategory: PoiCategory) {
+//        // Verifica si el modelo ya fue cargado
+//        if (diskModel == null) {
+//            Log.e(TAG, ">> Disk model not loaded yet.")
+//            return
+//        }
+//
+//        val texture = poisTexturesMap[poiCategory.identifier]
+//        if (texture != null) {
+//            // Clonar el nodo del modelo cargado
+//            val clonedDiskNode = diskModel?.modelInstance?.let { modelInstance ->
+//                ModelNode(
+//                    modelInstance = modelInstance,
+//                    scaleToUnits = 0.5f,
+//                    centerOrigin = Position(y = -0.5f)
+//                ).apply {
+//                    isEditable = true
+//                }
+//            }
+//
+//            if (clonedDiskNode != null) {
+//                // Cargar el material con la textura
+//                val materialInstance =
+//                    MaterialLoader(sceneView.engine, context).createTextureInstance(texture, true)
+//
+//                // Asignar el material clonado al modelo
+//                //clonedDiskNode.modelInstance?.material = materialInstance
+//                clonedDiskNode.modelInstance?.asset?.let { asset ->
+//                    for (entity in asset.entities) {
+//                        // Verificamos si el entity tiene un material asociado
+//                        val material = sceneView.engine.renderableManager.getMaterialInstanceAt(entity, 0)
+//                        if (material != null) {
+//                            // Asignamos la nueva textura al material
+//                            material.setTexture("baseColorMap", texture)
+//                        }
+//                    }
+//                }
+//                // Ajustar la posición en AR
+//                clonedDiskNode.worldPosition = arPosition
+//                clonedDiskNode.lookAt(sceneView.cameraNode)
+//
+//                // Añadir el nodo clonado a la escena
+//                sceneView.addChildNode(clonedDiskNode)
+//
+//                // Guardar el nodo si es necesario
+//               // poisDiskNodes.add(clonedDiskNode)
+//
+//                Log.d(TAG, ">> Disk node added to scene with texture.")
+//            }
+//        } else {
+//            Log.e(TAG, ">> Failed to load texture.")
+//        }
+//    }
+
+
+    // Variable global para almacenar el modelo cargado
+
+
     val diskGeometry = Cylinder.Builder()
         .radius(0.5f)
         .height(0.01f)
@@ -637,14 +697,15 @@ class ARSceneHandler(
         sceneView.addChildNode(AnchorNode(sceneView.engine, anchor).apply {
             isEditable = true
             (activity as? LifecycleOwner)?.lifecycleScope?.launch {
-                buildModelNode()?.let { addChildNode(it) }
+                buildModelNode(R.raw.eren_hiphop_dance)?.let { addChildNode(it) }
             }
             anchorNode = this
         })
     }
 
-    private suspend fun buildModelNode(): ModelNode? {
-        return sceneView.modelLoader.loadModelInstance(activity.getResourceUri(R.raw.eren_hiphop_dance))
+
+    private suspend fun buildModelNode(resId: Int): ModelNode? {
+        return sceneView.modelLoader.loadModelInstance(activity.getResourceUri(resId))
             ?.let { modelInstance ->
                 ModelNode(
                     modelInstance = modelInstance,
