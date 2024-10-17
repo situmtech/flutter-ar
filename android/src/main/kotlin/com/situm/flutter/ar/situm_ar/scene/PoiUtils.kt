@@ -76,3 +76,5 @@ fun getPoiNodeFromId(pois: List<Poi>, poiNodes: List<ViewNode>, poiId: String): 
     // Si no se encuentra el POI con ese ID, devolver null
     return null
 }
+
+

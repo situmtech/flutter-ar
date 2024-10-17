@@ -2,12 +2,20 @@ package com.situm.flutter.ar.situm_ar.scene
 
 import android.app.Activity
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.drawable.Drawable
 import android.util.Log
 import android.webkit.WebView
 import android.widget.TextView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
+import com.bumptech.glide.Glide
+import com.bumptech.glide.request.target.CustomTarget
+import com.bumptech.glide.request.transition.Transition
+import com.google.android.filament.Material
+import com.google.android.filament.Texture
 import com.google.ar.core.Anchor
 import com.google.ar.core.Plane
 import com.google.ar.sceneform.rendering.ViewAttachmentManager
@@ -20,6 +28,7 @@ import es.situm.sdk.location.LocationListener
 import es.situm.sdk.location.LocationStatus
 import es.situm.sdk.model.cartography.BuildingInfo
 import es.situm.sdk.model.cartography.Poi
+import es.situm.sdk.model.cartography.PoiCategory
 import es.situm.sdk.model.cartography.Point
 import es.situm.sdk.model.directions.Route
 import es.situm.sdk.model.directions.RouteSegment
@@ -30,16 +39,26 @@ import es.situm.sdk.navigation.NavigationListener
 import io.github.sceneview.ar.arcore.getUpdatedPlanes
 import io.github.sceneview.ar.node.AnchorNode
 import io.github.sceneview.collision.Vector3
+import io.github.sceneview.geometries.Cylinder
 import io.github.sceneview.geometries.Sphere
 import io.github.sceneview.loaders.MaterialLoader
 import io.github.sceneview.math.Color
 import io.github.sceneview.math.Position
+import io.github.sceneview.math.Rotation
 import io.github.sceneview.node.GeometryNode
 import io.github.sceneview.node.ModelNode
+import io.github.sceneview.node.Node
 import io.github.sceneview.node.ViewNode
+import io.github.sceneview.texture.setBitmap
 import io.github.sceneview.utils.getResourceUri
 import kotlinx.coroutines.launch
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.net.URL
+import java.nio.ByteBuffer
 const val DIRECTION_ARROW_TARGET_DISTANCE = 6f
 
 class ARSceneHandler(
@@ -50,7 +69,7 @@ class ARSceneHandler(
         const val TAG = "Situm> AR>"
     }
 
-
+    private val dashboardDomain: String = "https://dashboard.situm.com"
 
     private lateinit var targetArrowSitumCoordinates: Point
     private val context: Context = activity
@@ -60,7 +79,9 @@ class ARSceneHandler(
     private var anchorNode: AnchorNode? = null
 
     private lateinit var pois: List<Poi>
+    val poisTexturesMap = mutableMapOf<String, Texture?>()
     private var poisNodes: MutableList<ViewNode> = mutableListOf()
+    private var poisDiskNodes: MutableList<GeometryNode> = mutableListOf()
 
     private lateinit var currentSegment: RouteSegment
     private lateinit var route: Route
@@ -87,6 +108,21 @@ class ARSceneHandler(
         this.pois = pois
     }
 
+    fun loadPoiImages(){
+        for (poi in pois){
+            CoroutineScope(Dispatchers.Main).launch {
+                Log.d(TAG, "> Situm: To download texture from : ${dashboardDomain+poi.category.unselectedIconUrl.value.toString()}")
+                if (!poisTexturesMap.containsKey(poi.category.identifier)) {
+                    val texture = loadTextureFromUrlAsync(context,
+                        dashboardDomain+poi.category.unselectedIconUrl.value.toString())
+                    if (texture != null) {
+                        poisTexturesMap[poi.category.identifier] = texture
+                    }
+                }
+            }
+        }
+    }
+
 
     fun setCurrentLocation(location: Location) {
         Log.d(TAG, "Situm location $location")
@@ -108,6 +144,7 @@ class ARSceneHandler(
         Log.d(TAG,"set building info : $buildingInfo")
         this.buildingInfo = buildingInfo
         setPois(buildingInfo.indoorPOIs as List<Poi>)
+        loadPoiImages()
     }
 
 
@@ -278,11 +315,15 @@ class ARSceneHandler(
             loadTextViewInAR(
                 position, poi.name
             )
-            if (poi.infoHtml.isNotEmpty()) {
-                loadWebViewInAR(
-                    Position(arcorePosition.x, arcorePosition.y - 1, arcorePosition.z), poi.infoHtml
-                )
-            }
+
+            val positionDisk = Position(arcorePosition.x, arcorePosition.y-0.5f, arcorePosition.z)
+
+           drawDiskWithImage(positionDisk, poi.category)
+//            if (poi.infoHtml.isNotEmpty()) {
+//                loadWebViewInAR(
+//                    Position(arcorePosition.x, arcorePosition.y - 1, arcorePosition.z), poi.infoHtml
+//                )
+//            }
         }
     }
 
@@ -483,6 +524,80 @@ class ARSceneHandler(
         return sphereNode
     }
 
+    /////////////////////
+
+    suspend fun loadTextureFromUrlAsync(context: Context, imageUrl: String): Texture? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val bitmap = BitmapFactory.decodeStream(URL(imageUrl).openStream())
+                // Pasar los datos del Bitmap a Filament
+                val buffer = ByteBuffer.allocate(bitmap.byteCount)
+                bitmap.copyPixelsToBuffer(buffer)
+                buffer.rewind()
+
+                // Asignar el contenido del buffer a la textura de Filament
+                Texture.Builder()
+                    .width(bitmap.width)
+                    .height(bitmap.height)
+                    .build(sceneView.engine).apply {
+                        setImage(
+                            sceneView.engine,
+                            0,
+                            Texture.PixelBufferDescriptor(
+                                buffer,
+                                Texture.Format.RGBA,
+                                Texture.Type.UBYTE
+                            )
+                        )
+                    }
+            } catch (e: Exception) {
+                Log.e(TAG,">> Exceptiom loading texture : $e")
+                e.printStackTrace()
+                null
+            }
+        }
+    }
+
+    val diskGeometry = Cylinder.Builder()
+        .radius(0.5f)
+        .height(0.01f)
+        .build(sceneView.engine)
+
+    //TODO: Que no aparezcan giradas y que miren siempre a camara.
+    fun drawDiskWithImage(arPosition: Position, poiCategory: PoiCategory) {
+
+        val texture =  poisTexturesMap[poiCategory.identifier]
+        if (texture != null) {
+            // Crear la geometría del cilindro (simulando un disco)
+
+
+            // Cargar el material con la textura
+            val materialInstance =
+                MaterialLoader(sceneView.engine, context).createTextureInstance(texture, true)
+
+            // Crear el nodo con el disco (cilindro plano) y el material con la textura
+            val diskNode = GeometryNode(sceneView.engine, diskGeometry, materialInstance)
+            //diskNode.worldPosition = arPosition
+            diskNode.rotation = Rotation(-90f, 0f, 0f)
+            var node: Node = Node(sceneView.engine)
+            node.addChildNode(diskNode)
+            node.worldPosition = arPosition
+            node.lookAt(sceneView.cameraNode)
+            poisDiskNodes.add(diskNode)
+
+
+
+
+            // Añadir el nodo a la escena
+            sceneView.addChildNode(node)
+            Log.d(TAG, ">> Disk added to scene with texture.")
+        } else {
+            Log.e(TAG, ">> Failed to load texture.")
+        }
+    }
+
+
+
     // receives a position in situm coordinates, converts it to ar coordinates and points arrow towards it.
     private fun pointArrowToSitumPosition(fromPoint: Point?) {
         val arCorePosition = fromPoint?.let {
@@ -568,14 +683,20 @@ class ARSceneHandler(
     }
 
     private fun clearPoiNodes() {
-        Log.d(TAG,">> Clear poi nodes: ${poisNodes.size}")
+
         for (poiNode in poisNodes) {
             poiNode.parent
             poiNode.parent = null
         }
         sceneView.removeChildNodes(poisNodes)
         poisNodes.clear()
-        Log.d(TAG,">> Clear poi nodes_ 2: ${poisNodes.size}")
+
+        for (poiNode in poisDiskNodes) {
+            poiNode.parent
+            poiNode.parent = null
+        }
+        sceneView.removeChildNodes(poisDiskNodes)
+        poisDiskNodes.clear()
     }
 
     private fun clearRouteNodes() {
