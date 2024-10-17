@@ -233,7 +233,7 @@ class Coordinator: NSObject, ARSessionDelegate {
         }
         
         // Actualizar la posición del ancla de la flecha
-        arrowAnchor.position = SIMD3<Float>(arrowPosition.x, cameraPosition.y , arrowPosition.z)
+        arrowAnchor.position = SIMD3<Float>(arrowPosition.x, 0.5 , arrowPosition.z)
     }
     
     
@@ -363,7 +363,7 @@ class Coordinator: NSObject, ARSessionDelegate {
                     continue
                 }
                 
-                createDiskEntityWithImageFromURL(radius: 0.5, thickness: 0.2, url: iconUrl) { poiEntity in
+                createDiskEntityWithImageFromURL(radius: 0.8, thickness: 0.2, url: iconUrl) { poiEntity in
                         guard let poiEntity = poiEntity else {
                             print("Error: No se pudo crear el disco para el POI")
                             return

@@ -126,41 +126,43 @@ func createSphereEntity(radius: Float, color: UIColor, transparency: Float) -> M
     return sphereEntity
 }
 
+
 @available(iOS 15.0, *)
-func createDiskEntityWithImage(radius: Float, thickness: Float, image: UIImage) -> ModelEntity {
+func createDiskEntityWithImage(radius: Float, image: UIImage) -> ModelEntity {
     // Generar la malla del disco (plano)
-    let diskMesh = MeshResource.generatePlane(width: 2 * radius, depth: 2 * radius, cornerRadius: radius)
-    
-    // Crear textura a partir de la imagen
-    guard let cgImage = image.cgImage else {
-        print("Error: No se pudo convertir UIImage a CGImage.")
-        return ModelEntity()
-    }
-    
-    // Crear la textura para la imagen
-    let texture = try? TextureResource.generate(from: cgImage, options: .init(semantic: .color))
-    
-    // Crear material con la textura
-    var material = SimpleMaterial()
-    material.baseColor = texture != nil ? .texture(texture!) : .color(.white)
+      let diskMesh = MeshResource.generatePlane(width: 2 * radius, depth: 2 * radius)
+      
+      // Crear textura a partir de la imagen
+      guard let cgImage = image.cgImage else {
+          print("Error: No se pudo convertir UIImage a CGImage.")
+          return ModelEntity()
+      }
 
-    // Crear la entidad del disco
-    let diskEntity = ModelEntity(mesh: diskMesh, materials: [material])
-    
-    // Rotar el disco para que esté en vertical
-    diskEntity.transform.rotation = simd_quatf(angle: .pi / 2, axis: SIMD3<Float>(1, 0, 0))
+      // Crear la textura para la imagen
+      guard let texture = try? TextureResource.generate(from: cgImage, options: .init(semantic: .color)) else {
+          print("Error: No se pudo generar la textura desde la imagen.")
+          return ModelEntity()
+      }
 
-    // Crear la cara trasera del disco con el mismo material
-    let backEntity = ModelEntity(mesh: diskMesh, materials: [material])
-    backEntity.setParent(diskEntity)
-    backEntity.position = SIMD3(0, -thickness / 2, 0)
+      // Crear el material con la textura y habilitar la transparencia
+      var material = UnlitMaterial()
+      material.baseColor = .texture(texture)
+      material.opacityThreshold = 0.5  // Asegura que las partes transparentes del PNG se respeten
 
-    // Crear la cara delantera del disco (del lado opuesto) con el mismo material
-    let frontEntity = ModelEntity(mesh: diskMesh, materials: [material])
-    frontEntity.setParent(diskEntity)
-    frontEntity.position = SIMD3(0, thickness / 2, 0)
+      // Crear la entidad del disco frontal
+      let frontDiskEntity = ModelEntity(mesh: diskMesh, materials: [material])
+      frontDiskEntity.transform.rotation = simd_quatf(angle: .pi / 2, axis: SIMD3<Float>(1, 0, 0))
 
-    return diskEntity
+      // Crear la entidad del disco trasero con la misma malla y material, pero invertida
+      let backDiskEntity = ModelEntity(mesh: diskMesh, materials: [material])
+      backDiskEntity.transform.rotation = simd_quatf(angle: -.pi / 2, axis: SIMD3<Float>(1, 0, 0))
+      
+      // Agrupar ambas caras en una entidad principal
+      let doubleSidedDiskEntity = ModelEntity()
+      doubleSidedDiskEntity.addChild(frontDiskEntity)
+      doubleSidedDiskEntity.addChild(backDiskEntity)
+
+      return doubleSidedDiskEntity
 }
 
 
@@ -172,7 +174,7 @@ func createDiskEntityWithImageFromURL(radius: Float, thickness: Float, url: URL,
             return
         }
         
-        let diskEntity = createDiskEntityWithImage(radius: radius, thickness: thickness, image: image)
+        let diskEntity = createDiskEntityWithImage(radius: radius, image: image)
         completion(diskEntity)
     }
 }
@@ -194,7 +196,7 @@ func createTextEntity(text: String, position: SIMD3<Float>, arView: ARView) -> M
     textEntity.scale = SIMD3<Float>(0.3, 0.3, 0.3)
     textEntity.position = SIMD3<Float>(position.x, position.y + 0.5, position.z)
     
-    // Actualizar la orientación del texto en relación con la cámara sin voltearse
+   // Actualizar la orientación del texto en relación con la cámara sin voltearse
     arView.scene.subscribe(to: SceneEvents.Update.self) { _ in
         let cameraTransform = arView.cameraTransform
         let cameraForward = cameraTransform.matrix.columns.2 // Dirección hacia adelante de la cámara
