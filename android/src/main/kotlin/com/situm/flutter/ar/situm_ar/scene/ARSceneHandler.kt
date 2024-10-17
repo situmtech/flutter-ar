@@ -10,7 +10,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.google.android.filament.Texture
-import com.google.android.filament.Material
+//import com.google.android.filament.Material
 import com.google.ar.core.Anchor
 import com.google.ar.core.Plane
 import com.google.ar.sceneform.rendering.ViewAttachmentManager
@@ -37,11 +37,9 @@ import io.github.sceneview.collision.Vector3
 import io.github.sceneview.geometries.Cylinder
 import io.github.sceneview.geometries.Sphere
 import io.github.sceneview.loaders.MaterialLoader
-import io.github.sceneview.material.setTexture
 import io.github.sceneview.math.Color
 import io.github.sceneview.math.Position
 import io.github.sceneview.math.Rotation
-import io.github.sceneview.model.ModelInstance
 import io.github.sceneview.node.GeometryNode
 import io.github.sceneview.node.ModelNode
 import io.github.sceneview.node.Node
@@ -93,7 +91,7 @@ class ARSceneHandler(
     private lateinit var sceneView: CustomARSceneView
     private lateinit var viewAttachmentManager: ViewAttachmentManager
 
-    var diskModel: ModelNode? = null
+    //var diskModel: ModelNode? = null
 
 
     fun setRoute(route: Route) {
@@ -615,16 +613,14 @@ class ARSceneHandler(
 //    }
 
 
-    // Variable global para almacenar el modelo cargado
-
-
-    val diskGeometry = Cylinder.Builder()
-        .radius(0.5f)
-        .height(0.01f)
-        .build(sceneView.engine)
 
     //TODO: Que no aparezcan giradas y que miren siempre a camara.
     fun drawDiskWithImage(arPosition: Position, poiCategory: PoiCategory) {
+
+        val diskGeometry = Cylinder.Builder()
+            .radius(0.5f)
+            .height(0.01f)
+            .build(sceneView.engine)
 
         val texture =  poisTexturesMap[poiCategory.identifier]
         if (texture != null) {
@@ -746,14 +742,12 @@ class ARSceneHandler(
     private fun clearPoiNodes() {
 
         for (poiNode in poisNodes) {
-            poiNode.parent
             poiNode.parent = null
         }
         sceneView.removeChildNodes(poisNodes)
         poisNodes.clear()
 
         for (poiNode in poisDiskNodes) {
-            poiNode.parent
             poiNode.parent = null
         }
         sceneView.removeChildNodes(poisDiskNodes)
@@ -762,7 +756,6 @@ class ARSceneHandler(
 
     private fun clearRouteNodes() {
         for (routeNode in routeNodes) {
-            routeNode.parent
             routeNode.parent = null
         }
         sceneView.removeChildNodes(routeNodes)
