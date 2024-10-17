@@ -132,7 +132,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
                   // If the AR is not visible, make the MapView full height:
                   : constraints.maxHeight;
               return AbsorbPointer(
-                absorbing: isArVisible,
+                absorbing: false,
                 child: AnimatedContainer(
                   // NOTE: visibleMapHeight must be a property of AnimatedContainer
                   // as it will not animate changes on a child.

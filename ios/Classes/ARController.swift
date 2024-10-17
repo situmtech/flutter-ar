@@ -69,8 +69,7 @@ class ARController: NSObject {
     
     private func clearScene() {
         // Asegúrate de limpiar todos los elementos de la escena antes de recargar
-        arSceneHandler.coordinator?.arView?.scene.anchors.removeAll()
-        arSceneHandler.coordinator?.resetFlags()
+        arSceneHandler.coordinator?.arView?.scene.anchors.removeAll()       
     }
     
     // Retomar AR

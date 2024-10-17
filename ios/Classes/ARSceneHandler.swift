@@ -126,9 +126,9 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     // MARK: LocationManager delegate.
     
     func locationManager(_ locationManager: any SITLocationInterface, didUpdate location: SITLocation) {
-        print("Situm> Location received!!: \(location)")
         
         if let coordinator = self.coordinator {
+            print("Situm> Location received!! and send to AR: \(location)")
             coordinator.handleLocationUpdate(location: location)
         } else {
             print("Coordinator is nil")

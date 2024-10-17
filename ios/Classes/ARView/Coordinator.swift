@@ -12,8 +12,7 @@ class Coordinator: NSObject, ARSessionDelegate {
     var arView: ARView?    
     var yawLabel: UILabel?
     
-    //var didUpdatePOIs = false
-    var locationUpdated = false
+
     var didUpdatePath = false
     
     var targetX = 0.0
@@ -301,7 +300,6 @@ class Coordinator: NSObject, ARSessionDelegate {
     
     
     func updateLocation(xSitum: Double, ySitum: Double, yawSitum: Double, floorIdentifier: Double) {
-        guard !locationUpdated else { return }
         
         let newLocation = CLLocation(
             coordinate: CLLocationCoordinate2D(latitude: ySitum, longitude: xSitum),
@@ -314,7 +312,6 @@ class Coordinator: NSObject, ARSessionDelegate {
         )
         
         locationManager.initialLocation = newLocation
-        locationUpdated = true
     }
     
     func updatePOIs() {
@@ -384,16 +381,9 @@ class Coordinator: NSObject, ARSessionDelegate {
             }
         }
         self.updatePointsList()
-        //didUpdatePOIs = true
     }
     
-    
-    func resetFlags() {
-        //didUpdatePOIs = false
-        locationUpdated = false
-        didUpdatePath = false
-    }
-    
+   
     func getCameraYawRespectToNorth() -> Float? {
         // Obtener el yaw original de la cámara
         guard let yaw = arView?.session.currentFrame?.camera.eulerAngles.y else {
@@ -402,8 +392,7 @@ class Coordinator: NSObject, ARSessionDelegate {
         
         // Ajustar el yaw para que siga tus necesidades:
         // 0° será frente, +90° derecha, -90° izquierda, y 180° atrás
-        let adjustedYaw = -yaw // Cambiamos el signo del yaw para invertir izquierda y derecha
-        
+        let adjustedYaw = -yaw // Cambiamos el signo del yaw para invertir izquierda y derecha        
         // Asegurarnos de que el valor ajustado esté dentro del rango [-π, π]
         let normalizedYaw = fmod(adjustedYaw + .pi, 2 * .pi) - .pi
         
