@@ -10,6 +10,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.google.android.filament.Texture
+import com.google.android.filament.TextureSampler
 //import com.google.android.filament.Material
 import com.google.ar.core.Anchor
 import com.google.ar.core.Plane
@@ -37,6 +38,7 @@ import io.github.sceneview.collision.Vector3
 import io.github.sceneview.geometries.Cylinder
 import io.github.sceneview.geometries.Sphere
 import io.github.sceneview.loaders.MaterialLoader
+import io.github.sceneview.material.setTexture
 import io.github.sceneview.math.Color
 import io.github.sceneview.math.Position
 import io.github.sceneview.math.Rotation
@@ -64,6 +66,7 @@ class ARSceneHandler(
         const val TAG = "Situm> AR>"
     }
 
+
     private val dashboardDomain: String = "https://dashboard.situm.com"
 
     private lateinit var targetArrowSitumCoordinates: Point
@@ -77,6 +80,8 @@ class ARSceneHandler(
     val poisTexturesMap = mutableMapOf<String, Texture?>()
     private var poisNodes: MutableList<ViewNode> = mutableListOf()
     private var poisDiskNodes: MutableList<GeometryNode> = mutableListOf()
+    private var poisDiskModelNodes: MutableList<ModelNode> = mutableListOf()
+    private var poinModelNode:  MutableList<Node> = mutableListOf()
 
     private lateinit var currentSegment: RouteSegment
     private lateinit var route: Route
@@ -91,7 +96,7 @@ class ARSceneHandler(
     private lateinit var sceneView: CustomARSceneView
     private lateinit var viewAttachmentManager: ViewAttachmentManager
 
-    //var diskModel: ModelNode? = null
+    var diskModel: ModelNode? = null
 
 
     fun setRoute(route: Route) {
@@ -162,19 +167,23 @@ class ARSceneHandler(
             }
             onSessionCreated = { session ->
                 Log.i(TAG, "onSessionCreated")
-//                (activity as? LifecycleOwner)?.lifecycleScope?.launch {
-//                    diskModel = buildModelNode(R.raw.disc)
-//                }
             }
             onTrackingFailureChanged = { reason ->
                 Log.i(TAG, "onTrackingFailureChanged: $reason")
             }
             onSessionUpdated = { _, frame ->
+                if (diskModel == null){
+                    (activity as? LifecycleOwner)?.lifecycleScope?.launch {
+                        diskModel = buildModelNode(R.raw.disc)
+                    }
+
+                }
                 if (anchorNode == null) {
                     frame.getUpdatedPlanes()
                         .firstOrNull { it.type == Plane.Type.HORIZONTAL_UPWARD_FACING }
                         ?.let { plane ->
                             addAnchorNode(plane.createAnchor(plane.centerPose))
+
                             //loadTextViewInAR(plane.centerPose.position, "Dance")
                         }
                 }
@@ -558,12 +567,74 @@ class ARSceneHandler(
     }
 
 //    // Función para dibujar el modelo con diferentes texturas
-//    fun drawDiskWithImage(arPosition: Position, poiCategory: PoiCategory) {
-//        // Verifica si el modelo ya fue cargado
+    fun drawDiskWithImage(arPosition: Position, poiCategory: PoiCategory) {
+        // Verifica si el modelo ya fue cargado
 //        if (diskModel == null) {
 //            Log.e(TAG, ">> Disk model not loaded yet.")
 //            return
 //        }
+
+        val texture = poisTexturesMap[poiCategory.identifier]
+            sceneView.addChildNode(Node(sceneView.engine).apply {
+                isEditable = true
+                (activity as? LifecycleOwner)?.lifecycleScope?.launch {
+                    buildModelNode(R.raw.cilinder)?.let {
+                        it.rotation = Rotation(-90f,0f,0f)
+                        if (texture != null) {
+                            val materialInstance = MaterialLoader(sceneView.engine, context).createTextureInstance(texture, true)
+
+                                // Asignar el material clonado al modelo
+                                //clonedDiskNode.modelInstance?.material = materialInstance
+                            Log.e(TAG,">> Set TEXTURE")
+//                            it.modelInstance.materialInstances[0].setTexture("texture",texture)
+
+                            it.modelInstance?.materialInstances?.let { materialInstances ->
+                                for (mi in materialInstances){
+                                    Log.d(TAG,">> mi: ${mi.name} / ${mi.material.name.toString()} / ${mi.material.parameterCount}")
+                                    for (i in 0 until mi.material.parameterCount) {
+                                        Log.d(TAG," >> mi.material.parameters[i].name: ${mi.material.parameters[i].name}")
+                                    }
+                                    //mi.material.parameters.fin
+                                    //mi.material.setDefaultParameter("Texture",texture,TextureSampler())
+                                   // mi.setTexture(texture)
+                                    //mi.setParameter("tex-global", texture, TextureSampler())
+//                                    for (i in 0 until mi.setParameter("texture",texture)) {
+//                                        val paramName = mi.getParameterName(i)
+//                                        Log.d(TAG, ">> Parameter: $paramName")
+//                                    }
+                                   // mi.setParameter("texture",texture, TextureSampler())
+//                                    try {
+                                       // mi.setTexture("tex-global",texture)
+//                                    }catch (e:Exception){
+//                                        Log.e(TAG,">> Exception $e")
+//                                    }
+
+//                                    mi.setTexture(texture)
+                                }
+
+                            }
+//                                it.modelInstance?.asset?.let { asset ->
+//                                    for (entity in asset.entities) {
+////                                        // Verificamos si el entity tiene un material asociado
+//                                        val material = sceneView.engine.renderableManager.getMaterialInstanceAt(entity, 0)
+////                                        if (material != null) {
+////                                            // Asignamos la nueva textura al material
+////                                            material.setTexture("baseColorMap", texture)
+////                                        }
+//                                    }
+//                                }
+                        }
+
+
+                        addChildNode(it)
+                    }
+                }
+                this.worldPosition = arPosition
+                this.lookAt(sceneView.cameraNode)
+                poinModelNode.add(this)
+                // add to structyre
+
+            })
 //
 //        val texture = poisTexturesMap[poiCategory.identifier]
 //        if (texture != null) {
@@ -571,31 +642,30 @@ class ARSceneHandler(
 //            val clonedDiskNode = diskModel?.modelInstance?.let { modelInstance ->
 //                ModelNode(
 //                    modelInstance = modelInstance,
-//                    scaleToUnits = 0.5f,
-//                    centerOrigin = Position(y = -0.5f)
 //                ).apply {
 //                    isEditable = true
+//                    isVisible = true
 //                }
 //            }
 //
 //            if (clonedDiskNode != null) {
 //                // Cargar el material con la textura
-//                val materialInstance =
-//                    MaterialLoader(sceneView.engine, context).createTextureInstance(texture, true)
-//
-//                // Asignar el material clonado al modelo
-//                //clonedDiskNode.modelInstance?.material = materialInstance
-//                clonedDiskNode.modelInstance?.asset?.let { asset ->
-//                    for (entity in asset.entities) {
-//                        // Verificamos si el entity tiene un material asociado
-//                        val material = sceneView.engine.renderableManager.getMaterialInstanceAt(entity, 0)
-//                        if (material != null) {
-//                            // Asignamos la nueva textura al material
-//                            material.setTexture("baseColorMap", texture)
-//                        }
-//                    }
-//                }
-//                // Ajustar la posición en AR
+////                val materialInstance =
+////                    MaterialLoader(sceneView.engine, context).createTextureInstance(texture, true)
+////
+////                // Asignar el material clonado al modelo
+////                //clonedDiskNode.modelInstance?.material = materialInstance
+////                clonedDiskNode.modelInstance?.asset?.let { asset ->
+////                    for (entity in asset.entities) {
+////                        // Verificamos si el entity tiene un material asociado
+////                        val material = sceneView.engine.renderableManager.getMaterialInstanceAt(entity, 0)
+////                        if (material != null) {
+////                            // Asignamos la nueva textura al material
+////                            material.setTexture("baseColorMap", texture)
+////                        }
+////                    }
+////                }
+////                // Ajustar la posición en AR
 //                clonedDiskNode.worldPosition = arPosition
 //                clonedDiskNode.lookAt(sceneView.cameraNode)
 //
@@ -603,19 +673,19 @@ class ARSceneHandler(
 //                sceneView.addChildNode(clonedDiskNode)
 //
 //                // Guardar el nodo si es necesario
-//               // poisDiskNodes.add(clonedDiskNode)
+//                poisDiskModelNodes.add(clonedDiskNode)
 //
-//                Log.d(TAG, ">> Disk node added to scene with texture.")
+//                Log.d(TAG, ">> Disk node added to scene with texture. poisDiskModelNodes: ${poisDiskModelNodes.size}")
 //            }
 //        } else {
 //            Log.e(TAG, ">> Failed to load texture.")
 //        }
-//    }
+    }
 
 
 
     //TODO: Que no aparezcan giradas y que miren siempre a camara.
-    fun drawDiskWithImage(arPosition: Position, poiCategory: PoiCategory) {
+    fun drawDiskWithImage_old(arPosition: Position, poiCategory: PoiCategory) {
 
         val diskGeometry = Cylinder.Builder()
             .radius(0.5f)
@@ -752,6 +822,12 @@ class ARSceneHandler(
         }
         sceneView.removeChildNodes(poisDiskNodes)
         poisDiskNodes.clear()
+
+        for (poiNode in poinModelNode) {
+            poiNode.parent = null
+        }
+        sceneView.removeChildNodes(poinModelNode)
+        poinModelNode.clear()
     }
 
     private fun clearRouteNodes() {
