@@ -12,8 +12,13 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     /**
      Called once after initialization.
      */
+
     var coordinator: Coordinator?
     var updateButton: UIButton?
+    
+    var arQuality: ARQuality?
+    var refreshingTimer = 5
+    var timestampLastRefresh = 0
     
     func setupSceneView(arSceneView: CustomARSceneView) {
 
@@ -105,6 +110,74 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         //self.coordinator.handleLocationUpdate()   
     }
     
+    
+    
+    //Update AR
+    
+   /* func updateRefreshing() {
+        var hasToRefresh = true
+        guard let arPosQualityState = _arPosQualityState else {
+            return
+        }
+        
+        hasToRefresh = arPosQualityState.checkIfHasToRefreshForAndroid()
+        
+        if hasToRefresh {
+            let numRefresh = 1
+            startRefreshing(numRefresh)
+        } else if refreshingTimer > 0 {
+            refresh()
+            refreshingTimer -= 1
+            if refreshingTimer == 0 {
+                stopRefreshing()
+            }
+        }
+    }
+    
+    func refresh() {
+        let currentTimestamp = Int(Date().timeIntervalSince1970 * 1000) // Obtener el timestamp en milisegundos
+        if currentTimestamp > timestampLastRefresh + 5000 {
+            _unityViewController?.send("MessageManager", methodName: "ForceReposition", message: "null")
+            timestampLastRefresh = currentTimestamp
+        }
+    }
+
+    
+
+    func startRefreshing(_ numRefresh: Int) {
+        ARModeDebugValues.refresh.value = true
+        refresh()
+        refreshingTimer = numRefresh
+    }
+    
+    func stopRefreshing() {
+        ARModeDebugValues.refresh.value = false
+        _unityViewController?.send("MessageManager", methodName: "SendRefressData", message: "1000000")
+    }*/
+
+
+    func updateArQuality(location: SITLocation) {
+        arQuality?.updateSitumLocation(location: location)
+
+        // Desempaquetar los valores opcionales de coordenadas de cámara
+        if let worldPosition = coordinator?.arView?.cameraTransform.translation,
+           let worldRotation = coordinator?.arView?.cameraTransform.rotation {
+            
+            // Asegurar que los tipos están correctos: SCNVector3 y SCNQuaternion
+            let position: SCNVector3 = SCNVector3(worldPosition.x, worldPosition.y, worldPosition.z)
+            let rotation = SCNQuaternion(worldRotation.axis.x,
+                                         worldRotation.axis.y,
+                                         worldRotation.axis.z,
+                                         worldRotation.angle)
+            arQuality?.updateARLocation(worldPosition: position, worldRotation: rotation)
+        } else {
+            print("Error: no se pudieron obtener los valores de la cámara")
+        }
+    }
+
+    
+    // Finish update AR
+    
     // MARK: Communication Manager callbacks:
     
     func onBuildingInfoReceived(_ buildingInfo: SITBuildingInfo?, withError error: Error?) {
@@ -130,6 +203,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         if let coordinator = self.coordinator {
             print("Situm> Location received!! and send to AR: \(location)")
             coordinator.handleLocationUpdate(location: location)
+            updateArQuality(location: location)
         } else {
             print("Coordinator is nil")
         }
