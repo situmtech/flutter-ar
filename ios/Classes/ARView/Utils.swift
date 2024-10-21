@@ -129,40 +129,52 @@ func createSphereEntity(radius: Float, color: UIColor, transparency: Float) -> M
 
 @available(iOS 15.0, *)
 func createDiskEntityWithImage(radius: Float, image: UIImage) -> ModelEntity {
-    // Generar la malla del disco (plano)
-      let diskMesh = MeshResource.generatePlane(width: 2 * radius, depth: 2 * radius)
-      
-      // Crear textura a partir de la imagen
-      guard let cgImage = image.cgImage else {
-          print("Error: No se pudo convertir UIImage a CGImage.")
-          return ModelEntity()
-      }
+    // Entidad principal que contendrá todos los planos para formar el disco grueso
+    let thickCircularEntity = ModelEntity()
+    let thickness = Float(0.1)
+    let segments = 10
+    
+    // Crear textura a partir de la imagen
+    guard let cgImage = image.cgImage else {
+        print("Error: No se pudo convertir UIImage a CGImage.")
+        return ModelEntity()
+    }
 
-      // Crear la textura para la imagen
-      guard let texture = try? TextureResource.generate(from: cgImage, options: .init(semantic: .color)) else {
-          print("Error: No se pudo generar la textura desde la imagen.")
-          return ModelEntity()
-      }
+    // Crear la textura para la imagen
+    guard let texture = try? TextureResource.generate(from: cgImage, options: .init(semantic: .color)) else {
+        print("Error: No se pudo generar la textura desde la imagen.")
+        return ModelEntity()
+    }
 
-      // Crear el material con la textura y habilitar la transparencia
-      var material = UnlitMaterial()
-      material.baseColor = .texture(texture)
-      material.opacityThreshold = 0.5  // Asegura que las partes transparentes del PNG se respeten
+    // Crear el material con la textura
+    var material = UnlitMaterial()
+    material.baseColor = .texture(texture)
+    material.opacityThreshold = 0.5  // Respetar la transparencia del PNG
+    
+    // Calcular la distancia entre cada plano para crear el grosor
+    let segmentSpacing = thickness / Float(segments - 1)
 
-      // Crear la entidad del disco frontal
-      let frontDiskEntity = ModelEntity(mesh: diskMesh, materials: [material])
-      frontDiskEntity.transform.rotation = simd_quatf(angle: .pi / 2, axis: SIMD3<Float>(1, 0, 0))
+    // Generar y posicionar cada plano para crear el efecto de grosor
+    for i in 0..<segments {
+        let planeMesh = MeshResource.generatePlane(width: 2 * radius, depth: 2 * radius)
+        let frontPlaneEntity = ModelEntity(mesh: planeMesh, materials: [material])
+        let backPlaneEntity = ModelEntity(mesh: planeMesh, materials: [material])
+        
+        // Rotar el plano para que esté en posición vertical
+        frontPlaneEntity.transform.rotation = simd_quatf(angle: .pi / 2, axis: SIMD3<Float>(1, 0, 0))
+        backPlaneEntity.transform.rotation = simd_quatf(angle: -.pi / 2, axis: SIMD3<Float>(1, 0, 0)) // Plano opuesto
 
-      // Crear la entidad del disco trasero con la misma malla y material, pero invertida
-      let backDiskEntity = ModelEntity(mesh: diskMesh, materials: [material])
-      backDiskEntity.transform.rotation = simd_quatf(angle: -.pi / 2, axis: SIMD3<Float>(1, 0, 0))
-      
-      // Agrupar ambas caras en una entidad principal
-      let doubleSidedDiskEntity = ModelEntity()
-      doubleSidedDiskEntity.addChild(frontDiskEntity)
-      doubleSidedDiskEntity.addChild(backDiskEntity)
+        // Posicionar cada plano a lo largo del eje Z para crear el grosor
+        let offset = Float(i) * segmentSpacing - (thickness / 2)
+        frontPlaneEntity.position = SIMD3(0, 0, offset)
+        backPlaneEntity.position = SIMD3(0, 0, offset)
+        
+        // Agregar los planos a la entidad principal
+        thickCircularEntity.addChild(frontPlaneEntity)
+        thickCircularEntity.addChild(backPlaneEntity)
+    }
 
-      return doubleSidedDiskEntity
+    return thickCircularEntity
 }
 
 
@@ -208,6 +220,29 @@ func createTextEntity(text: String, position: SIMD3<Float>, arView: ARView) -> M
     }
     
     return textEntity
+}
+
+
+func rotateIconPoi(arView: ARView){
+    
+    if let fixedPOIAnchor = arView.scene.anchors.first(where: { $0.name == "fixedPOIAnchor" }) as? AnchorEntity {
+        for child in fixedPOIAnchor.children {
+            if let poiEntity = child as? ModelEntity, poiEntity.name.starts(with: "poi_") {
+               
+
+                var currentRotation = poiEntity.orientation
+                                    
+                // Definir una rotación incremental en el eje Y (continua)
+                let rotationAngle: Float = .pi / 360 // Un pequeño ángulo en cada actualización (1 grado)
+                let rotationIncrement = simd_quatf(angle: rotationAngle, axis: SIMD3<Float>(0, 1, 0))
+                
+                // Aplicar la rotación incremental a la entidad
+                currentRotation = simd_mul(currentRotation, rotationIncrement)
+                poiEntity.orientation = currentRotation
+            }
+        }
+    }
+    
 }
 
 func updateTextOrientation(arView: ARView) {       

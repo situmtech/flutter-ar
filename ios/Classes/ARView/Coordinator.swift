@@ -24,8 +24,6 @@ class Coordinator: NSObject, ARSessionDelegate {
     var poisStored: [String: Any] = [:]
     
     
-    
-    
     init(locationManager: LocationManager) {        
         self.locationManager = locationManager
     }
@@ -34,7 +32,7 @@ class Coordinator: NSObject, ARSessionDelegate {
     func session(_ session: ARSession, didUpdate frame: ARFrame) {
        
         guard let arView = self.arView else {
-            return // Si arView es nil, salir de la función
+            return
         }
         
         // Obtener el yaw respecto al norte
@@ -48,6 +46,7 @@ class Coordinator: NSObject, ARSessionDelegate {
         
         updateArrowPositionAndDirection()
         updateTextOrientation(arView: arView)
+        rotateIconPoi(arView: arView)
 
         
     }
