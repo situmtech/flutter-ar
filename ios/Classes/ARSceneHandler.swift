@@ -114,14 +114,18 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     
     //Update AR
     
-   /* func updateRefreshing() {
+    func updateRefreshing() {
         var hasToRefresh = true
-        guard let arPosQualityState = _arPosQualityState else {
+        guard let arPosQualityState = arQuality else {
             return
         }
         
-        hasToRefresh = arPosQualityState.checkIfHasToRefreshForAndroid()
-        
+        if let arQuality = arQuality {
+            hasToRefresh = arQuality.hasToResetWorld()
+        } else {
+            hasToRefresh = false
+        }
+
         if hasToRefresh {
             let numRefresh = 1
             startRefreshing(numRefresh)
@@ -137,7 +141,9 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     func refresh() {
         let currentTimestamp = Int(Date().timeIntervalSince1970 * 1000) // Obtener el timestamp en milisegundos
         if currentTimestamp > timestampLastRefresh + 5000 {
-            _unityViewController?.send("MessageManager", methodName: "ForceReposition", message: "null")
+            if let coordinator = self.coordinator {
+                coordinator.updatePOIs()
+            }
             timestampLastRefresh = currentTimestamp
         }
     }
@@ -145,15 +151,15 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     
 
     func startRefreshing(_ numRefresh: Int) {
-        ARModeDebugValues.refresh.value = true
+        //ARModeDebugValues.refresh.value = true
         refresh()
         refreshingTimer = numRefresh
     }
     
     func stopRefreshing() {
-        ARModeDebugValues.refresh.value = false
-        _unityViewController?.send("MessageManager", methodName: "SendRefressData", message: "1000000")
-    }*/
+        /*ARModeDebugValues.refresh.value = false
+        _unityViewController?.send("MessageManager", methodName: "SendRefressData", message: "1000000")*/
+    }
 
 
     func updateArQuality(location: SITLocation) {
