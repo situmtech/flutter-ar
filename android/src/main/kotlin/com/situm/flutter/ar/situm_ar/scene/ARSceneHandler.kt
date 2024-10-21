@@ -10,7 +10,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.google.android.filament.Texture
-import com.google.android.filament.TextureSampler
 //import com.google.android.filament.Material
 import com.google.ar.core.Anchor
 import com.google.ar.core.Plane
@@ -38,7 +37,6 @@ import io.github.sceneview.collision.Vector3
 import io.github.sceneview.geometries.Cylinder
 import io.github.sceneview.geometries.Sphere
 import io.github.sceneview.loaders.MaterialLoader
-import io.github.sceneview.material.setTexture
 import io.github.sceneview.math.Color
 import io.github.sceneview.math.Position
 import io.github.sceneview.math.Rotation
@@ -46,13 +44,11 @@ import io.github.sceneview.node.GeometryNode
 import io.github.sceneview.node.ModelNode
 import io.github.sceneview.node.Node
 import io.github.sceneview.node.ViewNode
-import io.github.sceneview.texture.setBitmap
 import io.github.sceneview.utils.getResourceUri
 import kotlinx.coroutines.launch
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.URL
 import java.nio.ByteBuffer
@@ -71,6 +67,8 @@ class ARSceneHandler(
 
     private lateinit var targetArrowSitumCoordinates: Point
     private val context: Context = activity
+
+    private var arQuality: ARQuality = ARQuality()
 
     private var arrowNode: ModelNode? = null
     private var targetArrow: Position? = null
@@ -881,6 +879,11 @@ class ARSceneHandler(
 
     override fun onLocationChanged(location: Location) {
         this.setCurrentLocation(location)
+        arQuality.updateSitumLocation(location)
+        arQuality.updateARLocation(sceneView.cameraNode.worldPosition, sceneView.cameraNode.worldRotation)
+        if (arQuality.hasToResetWorld()){
+            worldRedraw()
+        }
     }
 
     override fun onStatusChanged(p0: LocationStatus) {
