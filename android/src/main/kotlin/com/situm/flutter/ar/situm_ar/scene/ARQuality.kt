@@ -13,6 +13,7 @@ import kotlin.math.sqrt
 
 const val BUFFER_SIZE = 15
 
+const val DEFAULT_REFRESH_THRESHOLD = 0.2
 const val CONSTANT_QUALITY_DECREASE_RATE = 0.005        // Every iteration always decreases this
 const val QUALITY_THRESHOLD_DECREASE_RATE = 0.03        // when low quality, threshold decreases faster
 
@@ -52,7 +53,7 @@ class ARQuality {
         if (situmLocationBuffer.isNotEmpty() && situmLocationBuffer.last().floorIdentifier != location.floorIdentifier){
             situmLocationBuffer.clear()
             arLocationBuffer.clear()
-            // TODO: RESET Threshold
+            resetThreshold()
         }
         situmLocationBuffer.add(LocationCoordinates(location.cartesianCoordinate.x, location.cartesianCoordinate.y,location.cartesianBearing.degrees(),System.currentTimeMillis(),location.floorIdentifier,
             location.accuracy.toLong(), location.hasBearing() ))
@@ -235,7 +236,9 @@ class ARQuality {
     }
 
     private fun resetThreshold() {
-
+        currentRefreshThreshold.timestamp = System.currentTimeMillis()
+        currentRefreshThreshold.value = DEFAULT_REFRESH_THRESHOLD
+        dynamicRefreshThreshold = currentRefreshThreshold
 
     }
 
