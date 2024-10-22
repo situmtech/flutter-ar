@@ -9,7 +9,9 @@ class Coordinator: NSObject, ARSessionDelegate {
     var locationManager: LocationManager
     var arrowAnchor: AnchorEntity?
     var fixedAnchor: AnchorEntity?
-    var arView: ARView?    
+    var arSceneHandler: ARSceneHandler?
+
+    var arView: ARView?
     var yawLabel: UILabel?
     
 
@@ -47,6 +49,8 @@ class Coordinator: NSObject, ARSessionDelegate {
         updateArrowPositionAndDirection()
         updateTextOrientation(arView: arView)
         rotateIconPoi(arView: arView)
+        arSceneHandler?.handleFrameUpdate(frame: frame) // Reenviar al ARSceneHandler
+
 
         
     }

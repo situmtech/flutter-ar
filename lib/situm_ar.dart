@@ -110,10 +110,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
           children: [
             // Add the AR Widget at the bottom of the stack. It will start
             // loading even when it is not visible.
-            arView,
-            ArScreenBackButton(onPressed: () {
-              arController.onArGone();
-            }),
+            arView,           
             if (loadingArMessage) const ARLoadingWidget()
           ],
         ),

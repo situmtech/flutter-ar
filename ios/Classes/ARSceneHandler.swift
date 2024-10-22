@@ -19,6 +19,11 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     var arQuality: ARQuality?
     var refreshingTimer = 5
     var timestampLastRefresh = 0
+    var hasToRefresh = true
+    var isInfoVisible = false
+    var currentAlert: UIAlertController?
+
+    
     
     func setupSceneView(arSceneView: CustomARSceneView) {
 
@@ -29,6 +34,9 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         
         configuration.planeDetection = []
         arSceneView.session.run(configuration)
+        
+         
+        arQuality = ARQuality()
         
         //Fija un ancla en el origen de coordenadas
         setupFixedAnchor(arSceneView: arSceneView)
@@ -52,38 +60,59 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         self.coordinator?.arrowAnchor = arrowAnchor // Asigna el ancla de la flecha
         arSceneView.session.delegate = self.coordinator
         
-        setupUpdatePOIsButton(view: arSceneView)
+        setupUpdateDebugInfo(view: arSceneView)
 
                
     }
     
-    func setupUpdatePOIsButton(view: UIView) {
+    func setupUpdateDebugInfo(view: UIView) {
             // Crear el botón
             updateButton = UIButton(type: .system)
-            updateButton?.setTitle("Update POIs", for: .normal)
+            updateButton?.setTitle("Toggle Info", for: .normal)
             updateButton?.frame = CGRect(x: 20, y: 50, width: 150, height: 50)
             updateButton?.backgroundColor = .systemBlue
             updateButton?.setTitleColor(.white, for: .normal)
             updateButton?.layer.cornerRadius = 10
 
             // Añadir la acción del botón
-            updateButton?.addTarget(self, action: #selector(updatePOIsButtonTapped), for: .touchUpInside)
+            updateButton?.addTarget(self, action: #selector(toggleInfoDebug), for: .touchUpInside)
 
             // Añadir el botón a la vista principal
             if let button = updateButton {
                 view.addSubview(button)
             }
         }
-        
-        // Acción cuando se pulsa el botón
-        @objc func updatePOIsButtonTapped() {
-            print("Update POIs button tapped!")
+
+    // Función para alternar entre mostrar y ocultar la información
+        @objc func toggleInfoDebug() {
+            if isInfoVisible {
+                dismissInfoDebug() // Ocultar la información si está visible
+            } else {
+                showInfoDebug() // Mostrar la información si no está visible
+            }
+            isInfoVisible.toggle() // Alternar el estado
+        }
+
+        // Mostrar la alerta con la información
+        func showInfoDebug() {
             if let coordinator = self.coordinator {
-                print("Update POIs button tapped?!")
-                coordinator.updatePOIs()
+                if let viewController = coordinator.arView?.window?.rootViewController {
+                    // Crear y mostrar la alerta
+                    let alert = UIAlertController(title: nil, message: "hasToRefresh: \(hasToRefresh)", preferredStyle: .alert)
+                    currentAlert = alert
+                    viewController.present(alert, animated: true, completion: nil)
+                }
             }
         }
 
+        // Ocultar la alerta
+        func dismissInfoDebug() {
+            if let alert = currentAlert {
+                alert.dismiss(animated: true, completion: {
+                    self.currentAlert = nil // Limpiar la referencia a la alerta después de que se haya cerrado
+                })
+            }
+        }
     
     
     func setupFixedAnchor(arSceneView: CustomARSceneView) {
@@ -97,7 +126,9 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     
     func makeCoordinator() -> Coordinator {
         let locationManager = LocationManager()
-        return Coordinator(locationManager: locationManager)
+        let coordinator = Coordinator(locationManager: locationManager)
+        coordinator.arSceneHandler = self // Asigna el ARSceneHandler al Coordinator
+        return coordinator
     }
 
 
@@ -105,27 +136,38 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
      Called once per frame.
      */
     func session(_ session: ARSession, didUpdate frame: ARFrame) {
-        
+        print("Actualiza en cada frame")
         //self.coordinator.handlePointUpdate()
-        //self.coordinator.handleLocationUpdate()   
+        //self.coordinator.handleLocationUpdate()
     }
     
+    func handleFrameUpdate(frame: ARFrame) {
+        print("Actualiza en cada frame desde el Coordinator")
+        showInfoDebug()
+        // Aquí puedes agregar la lógica que necesitas para manejar el frame
+    }
     
+    func infoDebug(){
+        if let coordinator = self.coordinator {
+            if let viewController = coordinator.arView?.window?.rootViewController {
+                showAlert(message: "hasToRefresh: \(hasToRefresh)", on: viewController)
+            }
+        }
+        
+    }
     
     //Update AR
     
     func updateRefreshing() {
-        var hasToRefresh = true
-        guard let arPosQualityState = arQuality else {
-            return
-        }
+        
+        hasToRefresh = true
         
         if let arQuality = arQuality {
             hasToRefresh = arQuality.hasToResetWorld()
         } else {
             hasToRefresh = false
         }
-
+        
         if hasToRefresh {
             let numRefresh = 1
             startRefreshing(numRefresh)
@@ -142,6 +184,11 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         let currentTimestamp = Int(Date().timeIntervalSince1970 * 1000) // Obtener el timestamp en milisegundos
         if currentTimestamp > timestampLastRefresh + 5000 {
             if let coordinator = self.coordinator {
+             /*   if let viewController = coordinator.arView?.window?.rootViewController {
+                   
+                    showAlert(message: "Refresh!", on: viewController)
+                }*/
+                
                 coordinator.updatePOIs()
             }
             timestampLastRefresh = currentTimestamp
@@ -152,6 +199,10 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
 
     func startRefreshing(_ numRefresh: Int) {
         //ARModeDebugValues.refresh.value = true
+       /* if let viewController = coordinator?.arView?.window?.rootViewController {
+            showAlert(message: "Update POIs button tapped!", on: viewController)
+        }
+        print("Start Resfresss!!!!!")*/
         refresh()
         refreshingTimer = numRefresh
     }
@@ -163,6 +214,8 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
 
 
     func updateArQuality(location: SITLocation) {
+        
+        updateRefreshing()
         arQuality?.updateSitumLocation(location: location)
 
         // Desempaquetar los valores opcionales de coordenadas de cámara
@@ -254,4 +307,19 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     func navigationManager(_ navigationManager: SITNavigationInterface, didCancelOn route: SITRoute) {
         print("Situm> Navigation cancelled on route: \(route)")
     }
+    
+    
+    
+    func showAlert(message: String, on viewController: UIViewController) {
+            let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
+            viewController.present(alert, animated: true, completion: nil)
+
+            // Duración de la alerta (en segundos)
+            let duration: Double = 2.0
+
+            // Cerrar la alerta después de `duration` segundos
+            DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
+                alert.dismiss(animated: true, completion: nil)
+            }
+        }
 }
