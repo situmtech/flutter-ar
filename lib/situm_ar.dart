@@ -251,7 +251,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
     setState(() {
       loadingArMessage = true;
     });
-    loadingArMessageTimer = Timer(const Duration(seconds: 10), () {
+    loadingArMessageTimer = Timer(const Duration(seconds: 2), () {
       setState(() {
         loadingArMessageTimer = null;
         loadingArMessage = false;
