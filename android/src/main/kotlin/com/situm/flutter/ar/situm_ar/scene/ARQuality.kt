@@ -242,5 +242,16 @@ class ARQuality {
 
     }
 
+    fun getCurrentStatusLog(): String {
+        return  "quality: %.2f \n".format(quality) +
+                "dynamicRefreshThreshold: %.2f\n".format(dynamicRefreshThreshold.value) +
+                "odometriesDistanceConf: %.2f \n".format(odometriesDistanceConf) +
+                "situmConf: %.2f \n".format(situmConf) +
+                "situmDisplacementConf: %.2f \n".format(situmDisplacementConf) +
+                "arconf: %.2f \n".format(arConf) +
+                "arDisplacementConf: %.2f \n".format(arDisplacementConf)
+    }
+
+
 
 }

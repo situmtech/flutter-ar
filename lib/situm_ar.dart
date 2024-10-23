@@ -65,6 +65,9 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
   static const Duration animationDurationWithDelay =
       Duration(milliseconds: animationMillis + 100);
 
+  Timer? _timer;
+  String debugInfo = "Initializing...";
+
   @override
   void initState() {
     super.initState();
@@ -84,10 +87,21 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
     }
 
     ARController()._onARWidgetState(this);
+    _startUpdatingText();
   }
 
   void _onARViewCreated(BuildContext context, ARController? controller) async {
     // Do nothing. TODO: delete?
+  }
+
+  void _startUpdatingText() {
+    _timer = Timer.periodic(Duration(seconds: 1), (timer) async {
+      // Obtener el valor de arController.getStatus de manera asíncrona
+      String status = await arController.getStatus();
+      setState(() {
+        debugInfo = status; // Actualizamos el texto con el valor obtenido
+      });
+    });
   }
 
   @override
@@ -122,7 +136,23 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
                 arController.updateArrowTarget();
               }),
             ],
-            if (loadingArMessage) const ARLoadingWidget()
+            if (loadingArMessage) const ARLoadingWidget(),
+            ////////////////////
+            Positioned(
+              top: 20, // Ajusta la posición en la pantalla
+              left: 20,
+              child: Container(
+                padding: EdgeInsets.all(8.0),
+                color: Colors.black.withOpacity(0.5), // Fondo semi-transparente
+                child: Text(
+                  debugInfo,
+                  style: TextStyle(
+                    color: Colors.white, // Color del texto
+                    fontSize: 16.0, // Tamaño del texto
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
         // ============== MapView ==============================================
@@ -208,6 +238,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
   void dispose() {
     super.dispose();
     WidgetsBinding.instance.removeObserver(this);
+    _timer?.cancel();
   }
 
   @override

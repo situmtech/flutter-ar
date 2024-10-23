@@ -110,4 +110,8 @@ class ARController(
     fun updateArrowTarget(){
         arSceneHandler.updateArrowTarget()
     }
+
+    fun getDebugInfo(): String {
+        return  arSceneHandler.getCurrentStatusLog()
+    }
 }
