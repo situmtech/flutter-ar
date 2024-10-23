@@ -26,7 +26,8 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     var infoLabel4: UILabel?
     var infoLabel5: UILabel?
 
-    
+    var configTextField1: UITextField?
+    var configTextField2: UITextField?
     
     var arQuality: ARQuality?
     var refreshingTimer = 5
@@ -135,17 +136,31 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
             infoPanel?.addSubview(infoLabel5!)
 
             // Sección de configuración
-            let configLabel = UILabel(frame: CGRect(x: 10, y: 110, width: 200, height: 20))
+        
+            // Sección de configuración
+            let configLabel = UILabel(frame: CGRect(x: 10, y: 120, width: 200, height: 20))
             configLabel.text = "Activar Configuración:"
             configLabel.textColor = .gray
             infoPanel?.addSubview(configLabel)
 
-            let configSwitch = UISwitch(frame: CGRect(x: infoPanel!.frame.width - 70, y: 110, width: 50, height: 30))
+            let configSwitch = UISwitch(frame: CGRect(x: infoPanel!.frame.width - 70, y: 120, width: 50, height: 30))
             configSwitch.isOn = false
             configSwitch.addTarget(self, action: #selector(configSwitchChanged(_:)), for: .valueChanged)
             infoPanel?.addSubview(configSwitch)
 
-            // Agregar el panel a la vista pero inicialmente oculto
+            // Campos de configuración (ocultos inicialmente)
+            configTextField1 = UITextField(frame: CGRect(x: 10, y: 150, width: infoPanel!.frame.width - 20, height: 30))
+            configTextField1?.placeholder = "Config Field 1"
+            configTextField1?.borderStyle = .roundedRect
+            configTextField1?.isHidden = true
+            infoPanel?.addSubview(configTextField1!)
+
+            configTextField2 = UITextField(frame: CGRect(x: 10, y: 190, width: infoPanel!.frame.width - 20, height: 30))
+            configTextField2?.placeholder = "Config Field 2"
+            configTextField2?.borderStyle = .roundedRect
+            configTextField2?.isHidden = true
+            infoPanel?.addSubview(configTextField2!)
+            
             if let panel = infoPanel {
                 panel.isHidden = true
                 view.addSubview(panel)
@@ -153,11 +168,15 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         }
 
         // Función que se llama cuando se cambia el valor del switch de configuración
-        @objc func configSwitchChanged(_ sender: UISwitch) {
+    @objc func configSwitchChanged(_ sender: UISwitch) {
             if sender.isOn {
-                print("Configuración activada")
+                configTextField1?.isHidden = false
+                configTextField2?.isHidden = false
+                infoPanel?.frame.size.height = 250 // Expandir panel para mostrar campos
             } else {
-                print("Configuración desactivada")
+                configTextField1?.isHidden = true
+                configTextField2?.isHidden = true
+                infoPanel?.frame.size.height = 150 // Reducir panel cuando los campos están ocultos
             }
         }
 
