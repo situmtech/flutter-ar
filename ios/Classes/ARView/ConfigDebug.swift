@@ -55,7 +55,7 @@ class ConfigDebug {
         // Crear el panel de información y configuración
     func setupInfoPanel(view: UIView) {
  
-            infoPanel = UIView(frame: CGRect(x: 10, y: 50, width: view.frame.width - 40, height: 300))
+            infoPanel = UIView(frame: CGRect(x: 10, y: 50, width: view.frame.width - 40, height: 350))
             infoPanel?.backgroundColor = .clear
             infoPanel?.layer.cornerRadius = 10
             infoPanel?.layer.borderWidth = 2
@@ -105,6 +105,8 @@ class ConfigDebug {
             configTextField1?.borderStyle = .roundedRect
             configTextField1?.isHidden = true
             configTextField1?.text = String(qualityDecrease)
+            configTextField1?.isUserInteractionEnabled = true
+            configTextField1?.isEnabled = true
             configTextField1?.addTarget(self, action: #selector(configTextFieldDidChange(_:)), for: .editingChanged)
             infoPanel?.addSubview(configTextField1!)
 
@@ -113,6 +115,8 @@ class ConfigDebug {
             configTextField2?.borderStyle = .roundedRect
             configTextField2?.isHidden = true
             configTextField2?.text = String(thresholdDecrease)
+            configTextField2?.isUserInteractionEnabled = true
+            configTextField2?.isEnabled = true
             configTextField2?.addTarget(self, action: #selector(configTextFieldDidChange(_:)), for: .editingChanged)
             infoPanel?.addSubview(configTextField2!)
         
@@ -121,6 +125,8 @@ class ConfigDebug {
             configTextField3?.borderStyle = .roundedRect
             configTextField3?.isHidden = true
             configTextField3?.text = String(cameraDeph)
+            configTextField3?.isEnabled = true
+            configTextField3?.isUserInteractionEnabled = true
             configTextField3?.addTarget(self, action: #selector(configTextFieldDidChange(_:)), for: .editingChanged)
             infoPanel?.addSubview(configTextField3!)
             
@@ -129,14 +135,24 @@ class ConfigDebug {
             configTextField4?.borderStyle = .roundedRect
             configTextField4?.isHidden = true
             configTextField4?.text = String(arrowDistance)
+            configTextField4?.isEnabled = true
+            configTextField4?.isUserInteractionEnabled = true
             configTextField4?.addTarget(self, action: #selector(configTextFieldDidChange(_:)), for: .editingChanged)
             infoPanel?.addSubview(configTextField4!)
+        
+        
             
             if let panel = infoPanel {
                 panel.isHidden = true
                 view.addSubview(panel)
+ 
             }
+        
         }
+    func setParametersUpdated(){
+        arQuality?.setQualityDecrease(qualityDecrease: Float(qualityDecrease))
+        arQuality?.setThresholdDecrease(thresholdDecrease: Float(thresholdDecrease))
+    }
     
     func getConfigParameters() -> [String: Double]{
         
@@ -197,7 +213,8 @@ class ConfigDebug {
                 configTextField2?.isHidden = false
                 configTextField3?.isHidden = false
                 configTextField4?.isHidden = false
-                infoPanel?.frame.size.height = 320
+                infoPanel?.frame.size.height = 350
+                
             } else {
                 configTextField1?.isHidden = true
                 configTextField2?.isHidden = true
@@ -207,22 +224,24 @@ class ConfigDebug {
             }
         }
 
-        // Función para alternar entre mostrar y ocultar el panel
-        @objc func toggleInfoDebug() {
-            if let panel = infoPanel {
-                panel.isHidden = !panel.isHidden // Alterna la visibilidad
-                isInfoVisible.toggle()
-            }
+    // Función para alternar entre mostrar y ocultar el panel
+    @objc func toggleInfoDebug() {
+        if let panel = infoPanel {
+            panel.isHidden = !panel.isHidden // Alterna la visibilidad
+            isInfoVisible.toggle()
         }
+    }
 
-        // Función para iniciar el refresco de la información en tiempo real
-        func startRefreshingInfo() {
-            // Detener cualquier timer existente
-            refreshTimer?.invalidate()
-            
-            // Crear un nuevo Timer que actualice la información cada 1 segundo
-            refreshTimer = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(updateInfoPanel), userInfo: nil, repeats: true)
-        }
+    // Función para iniciar el refresco de la información en tiempo real
+    func startRefreshingInfo() {
+        refreshTimer?.invalidate()
+        refreshTimer = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(updateAll), userInfo: nil, repeats: true)
+    }
+    
+    @objc func updateAll() {
+         setParametersUpdated()
+         updateInfoPanel()
+     }
 
         // Función que actualiza la información mostrada en el panel
     @objc func updateInfoPanel() {

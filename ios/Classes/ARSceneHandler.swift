@@ -95,6 +95,12 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     
     func handleFrameUpdate(frame: ARFrame) {
         //print("Actualiza en cada frame desde el Coordinator")
+        if let configParameters = configDebug?.getConfigParameters(),
+               let arrowDistance = configParameters["arrowDistance"] {               
+                coordinator?.setArrowDistance(arrowDistance: arrowDistance)
+            } else {
+                print("Error: No se pudo obtener arrowDistance de los parámetros de configuración")
+            }
     }
     
     func infoDebug(){
@@ -149,32 +155,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         
         configDebug.setupUpdateDebugInfo(view: arSceneView)
         configDebug.setupInfoPanel(view: arSceneView) // Crear el panel de información
-        configDebug.startRefreshingInfo()
-        
-        if configDebug.isInfoVisible{
-            let mapConfigParameters = configDebug.getConfigParameters()
-            
-            if let qualityDecrease = mapConfigParameters["qualityDecrease"] {
-                print("qualityDecrease: " , mapConfigParameters["qualityDecrease"])
-                arQuality?.setQualityDecrease(qualityDecrease: Float(qualityDecrease))
-
-            }
-            if let thresholdDecrease = mapConfigParameters["thresholdDecrease"] {
-                print("thresholdDecrease: " , mapConfigParameters["thresholdDecrease"])
-                arQuality?.setThresholdDecrease(thresholdDecrease: Float(thresholdDecrease))
-
-            }
-            if let cameraDeph = mapConfigParameters["cameraDeph"] {
-                print("cameraDeph: " , mapConfigParameters["cameraDeph"])
-
-            }
-            
-            if let arrowDistance = mapConfigParameters["arrowDistance"] {
-                print("arrowDistance: " , mapConfigParameters["arrowDistance"])
-                coordinator?.setArrowDistance(arrowDistance: arrowDistance)
-            }
-
-        }
+        configDebug.startRefreshingInfo() 
     }
 
     func startRefreshing(_ numRefresh: Int) {

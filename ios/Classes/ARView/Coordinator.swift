@@ -52,13 +52,7 @@ class Coordinator: NSObject, ARSessionDelegate {
         updateTextOrientation(arView: arView)
         rotateIconPoi(arView: arView)
         arSceneHandler?.handleFrameUpdate(frame: frame) // Reenviar al ARSceneHandler
-
-
         
-    }
-    
-    func setArrowDistance (arrowDistance: Double){
-        self.arrowDistance = arrowDistance
     }
     
     func arePointsDifferent(_ oldPoints: [[String: Any]], _ newPoints: [[String: Any]]) -> Bool {
@@ -117,6 +111,9 @@ class Coordinator: NSObject, ARSessionDelegate {
         }
     }
     
+    func setArrowDistance(arrowDistance: Double){
+        self.arrowDistance = arrowDistance
+    }
     
     
     func calculateDistanceToCamera(x: Float, z: Float) -> Float{

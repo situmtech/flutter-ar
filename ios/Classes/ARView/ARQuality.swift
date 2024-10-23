@@ -47,8 +47,7 @@ class ARQuality {
     }
 
     func setQualityDecrease(qualityDecrease: Float){
-        self.CONSTANT_QUALITY_DECREASE_RATE = Double(qualityDecrease)
-        
+        self.CONSTANT_QUALITY_DECREASE_RATE = Double(qualityDecrease)        
     }
     func setThresholdDecrease(thresholdDecrease: Float){
         self.QUALITY_THRESHOLD_DECREASE_RATE = Double(thresholdDecrease)
@@ -210,7 +209,7 @@ class ARQuality {
             resetThreshold()
             return true
         }
-
+print("CONSTANT_QUALITY_DECREASE_RATE:   ", CONSTANT_QUALITY_DECREASE_RATE)
         if currentRefreshThreshold.value > 0.20 && currentTimestamp - currentRefreshThreshold.timestamp > 1000 {
             currentRefreshThreshold.value -= CONSTANT_QUALITY_DECREASE_RATE
         }
