@@ -62,18 +62,8 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
             return
         }
         
-        configDebug.setupUpdateDebugInfo(view: arSceneView)
-        configDebug.setupInfoPanel(view: arSceneView) // Crear el panel de información
-        configDebug.startRefreshingInfo()
         
-        if configDebug.isInfoVisible{
-            let mapConfigParameters = configDebug.getConfigParameters()
-            print("qualityDecrease: " , mapConfigParameters["qualityDecrease"])
-            print("thresholdDecrease: " , mapConfigParameters["thresholdDecrease"])
-            print("cameraDeph: " , mapConfigParameters["cameraDeph"])
-            print("arrowDistance: " , mapConfigParameters["arrowDistance"])
-
-        }
+        setupAndUpdateConfigDebug(arSceneView: arSceneView)
                
     }    
  
@@ -150,7 +140,26 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         }
     }
 
-    
+    func setupAndUpdateConfigDebug(arSceneView: CustomARSceneView){
+        
+        guard let configDebug = configDebug else {
+            print("Error: configDebug es nil")
+            return
+        }
+        
+        configDebug.setupUpdateDebugInfo(view: arSceneView)
+        configDebug.setupInfoPanel(view: arSceneView) // Crear el panel de información
+        configDebug.startRefreshingInfo()
+        
+        if configDebug.isInfoVisible{
+            let mapConfigParameters = configDebug.getConfigParameters()
+            print("qualityDecrease: " , mapConfigParameters["qualityDecrease"])
+            print("thresholdDecrease: " , mapConfigParameters["thresholdDecrease"])
+            print("cameraDeph: " , mapConfigParameters["cameraDeph"])
+            print("arrowDistance: " , mapConfigParameters["arrowDistance"])
+
+        }
+    }
 
     func startRefreshing(_ numRefresh: Int) {
         refresh()
