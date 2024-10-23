@@ -4,8 +4,6 @@ import CoreLocation
 import SitumSDK
 
 let BUFFER_SIZE = 15
-let CONSTANT_QUALITY_DECREASE_RATE = 0.005
-let QUALITY_THRESHOLD_DECREASE_RATE = 0.03
 
 struct RefreshThreshold {
     var value: Double
@@ -31,6 +29,9 @@ class ARQuality {
 
     private var arLocationBuffer: [LocationCoordinates] = []
     private var situmLocationBuffer: [LocationCoordinates] = []
+    
+    var CONSTANT_QUALITY_DECREASE_RATE = 0.005
+    var QUALITY_THRESHOLD_DECREASE_RATE = 0.03
 
     func updateARLocation(worldPosition: SCNVector3, worldRotation: SCNQuaternion) {
         let currentTime = Date().timeIntervalSince1970 * 1000 // Esto ya es Double (TimeInterval)
@@ -43,6 +44,14 @@ class ARQuality {
         if arLocationBuffer.count > BUFFER_SIZE {
             arLocationBuffer.removeFirst()
         }
+    }
+
+    func setQualityDecrease(qualityDecrease: Float){
+        self.CONSTANT_QUALITY_DECREASE_RATE = Double(qualityDecrease)
+        
+    }
+    func setThresholdDecrease(thresholdDecrease: Float){
+        self.QUALITY_THRESHOLD_DECREASE_RATE = Double(thresholdDecrease)
     }
 
 

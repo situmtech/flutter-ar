@@ -153,10 +153,26 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         
         if configDebug.isInfoVisible{
             let mapConfigParameters = configDebug.getConfigParameters()
-            print("qualityDecrease: " , mapConfigParameters["qualityDecrease"])
-            print("thresholdDecrease: " , mapConfigParameters["thresholdDecrease"])
-            print("cameraDeph: " , mapConfigParameters["cameraDeph"])
-            print("arrowDistance: " , mapConfigParameters["arrowDistance"])
+            
+            if let qualityDecrease = mapConfigParameters["qualityDecrease"] {
+                print("qualityDecrease: " , mapConfigParameters["qualityDecrease"])
+                arQuality?.setQualityDecrease(qualityDecrease: Float(qualityDecrease))
+
+            }
+            if let thresholdDecrease = mapConfigParameters["thresholdDecrease"] {
+                print("thresholdDecrease: " , mapConfigParameters["thresholdDecrease"])
+                arQuality?.setThresholdDecrease(thresholdDecrease: Float(thresholdDecrease))
+
+            }
+            if let cameraDeph = mapConfigParameters["cameraDeph"] {
+                print("cameraDeph: " , mapConfigParameters["cameraDeph"])
+
+            }
+            
+            if let arrowDistance = mapConfigParameters["arrowDistance"] {
+                print("arrowDistance: " , mapConfigParameters["arrowDistance"])
+                coordinator?.setArrowDistance(arrowDistance: arrowDistance)
+            }
 
         }
     }
