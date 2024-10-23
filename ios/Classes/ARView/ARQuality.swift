@@ -230,5 +230,22 @@ class ARQuality {
         currentRefreshThreshold = RefreshThreshold(value: 0.2, timestamp: Date().timeIntervalSince1970 * 1000)
         dynamicRefreshThreshold = currentRefreshThreshold
     }
+    
+    func getInfoParameters() -> [String: Double]{
+        
+        var infoDebug: [String: Double] = [
+            "globalQuality": quality,
+            "DynamicRefreshThreshold": Double(dynamicRefreshThreshold.value),
+            "arConf": arConf,
+            "situmConf" : situmConf
+        
+        ]
+        
+        return infoDebug
+        
+    }
+    
+    
+    
 }
 

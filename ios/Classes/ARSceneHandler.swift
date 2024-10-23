@@ -14,15 +14,25 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
      */
 
     var coordinator: Coordinator?
+    
     var updateButton: UIButton?
+    var infoPanel: UIView?
+    var infoLabel: UILabel?
+    var isInfoVisible = false
+    var refreshTimer: Timer?
+    var infoLabel1: UILabel?
+    var infoLabel2: UILabel?
+    var infoLabel3: UILabel?
+    var infoLabel4: UILabel?
+    var infoLabel5: UILabel?
+
+    
     
     var arQuality: ARQuality?
     var refreshingTimer = 5
     var timestampLastRefresh = 0
     var hasToRefresh = true
-    var isInfoVisible = false
     var currentAlert: UIAlertController?
-
     
     
     func setupSceneView(arSceneView: CustomARSceneView) {
@@ -61,15 +71,22 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         arSceneView.session.delegate = self.coordinator
         
         setupUpdateDebugInfo(view: arSceneView)
-
+        setupInfoPanel(view: arSceneView) // Crear el panel de información
+        startRefreshingInfo()
                
     }
     
-    func setupUpdateDebugInfo(view: UIView) {
+    
+    
+////Panel info debug
+    
+    
+    // Función para crear el botón de Toggle Info
+        func setupUpdateDebugInfo(view: UIView) {
             // Crear el botón
             updateButton = UIButton(type: .system)
-            updateButton?.setTitle("Toggle Info", for: .normal)
-            updateButton?.frame = CGRect(x: 20, y: 50, width: 150, height: 50)
+            updateButton?.setTitle("Info Debug", for: .normal)
+            updateButton?.frame = CGRect(x: 20, y: 20, width: 100, height: 30)
             updateButton?.backgroundColor = .systemBlue
             updateButton?.setTitleColor(.white, for: .normal)
             updateButton?.layer.cornerRadius = 10
@@ -83,36 +100,128 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
             }
         }
 
-    // Función para alternar entre mostrar y ocultar la información
-        @objc func toggleInfoDebug() {
-            if isInfoVisible {
-                dismissInfoDebug() // Ocultar la información si está visible
+        // Crear el panel de información y configuración
+    func setupInfoPanel(view: UIView) {
+ 
+            infoPanel = UIView(frame: CGRect(x: 10, y: 50, width: view.frame.width - 40, height: 300))
+            infoPanel?.backgroundColor = .clear
+            infoPanel?.layer.cornerRadius = 10
+            infoPanel?.layer.borderWidth = 2
+            infoPanel?.layer.borderColor = UIColor.lightGray.cgColor
+
+            infoLabel1 = UILabel(frame: CGRect(x: 10, y: 10, width: infoPanel!.frame.width - 20, height: 20))
+            infoLabel1?.textAlignment = .left
+            infoLabel1?.textColor = .gray
+            infoPanel?.addSubview(infoLabel1!)
+
+            infoLabel2 = UILabel(frame: CGRect(x: 10, y: 30, width: infoPanel!.frame.width - 20, height: 20))
+            infoLabel2?.textAlignment = .left
+            infoLabel2?.textColor = .gray
+            infoPanel?.addSubview(infoLabel2!)
+
+            infoLabel3 = UILabel(frame: CGRect(x: 10, y: 50, width: infoPanel!.frame.width - 20, height: 20))
+            infoLabel3?.textAlignment = .left
+            infoLabel3?.textColor = .gray
+            infoPanel?.addSubview(infoLabel3!)
+
+            infoLabel4 = UILabel(frame: CGRect(x: 10, y: 70, width: infoPanel!.frame.width - 20, height: 20))
+            infoLabel4?.textAlignment = .left
+            infoLabel4?.textColor = .gray
+            infoPanel?.addSubview(infoLabel4!)
+
+            infoLabel5 = UILabel(frame: CGRect(x: 10, y: 90, width: infoPanel!.frame.width - 20, height: 20))
+            infoLabel5?.textAlignment = .left
+            infoLabel5?.textColor = .gray
+            infoPanel?.addSubview(infoLabel5!)
+
+            // Sección de configuración
+            let configLabel = UILabel(frame: CGRect(x: 10, y: 110, width: 200, height: 20))
+            configLabel.text = "Activar Configuración:"
+            configLabel.textColor = .gray
+            infoPanel?.addSubview(configLabel)
+
+            let configSwitch = UISwitch(frame: CGRect(x: infoPanel!.frame.width - 70, y: 110, width: 50, height: 30))
+            configSwitch.isOn = false
+            configSwitch.addTarget(self, action: #selector(configSwitchChanged(_:)), for: .valueChanged)
+            infoPanel?.addSubview(configSwitch)
+
+            // Agregar el panel a la vista pero inicialmente oculto
+            if let panel = infoPanel {
+                panel.isHidden = true
+                view.addSubview(panel)
+            }
+        }
+
+        // Función que se llama cuando se cambia el valor del switch de configuración
+        @objc func configSwitchChanged(_ sender: UISwitch) {
+            if sender.isOn {
+                print("Configuración activada")
             } else {
-                showInfoDebug() // Mostrar la información si no está visible
-            }
-            isInfoVisible.toggle() // Alternar el estado
-        }
-
-        // Mostrar la alerta con la información
-        func showInfoDebug() {
-            if let coordinator = self.coordinator {
-                if let viewController = coordinator.arView?.window?.rootViewController {
-                    // Crear y mostrar la alerta
-                    let alert = UIAlertController(title: nil, message: "hasToRefresh: \(hasToRefresh)", preferredStyle: .alert)
-                    currentAlert = alert
-                    viewController.present(alert, animated: true, completion: nil)
-                }
+                print("Configuración desactivada")
             }
         }
 
-        // Ocultar la alerta
-        func dismissInfoDebug() {
-            if let alert = currentAlert {
-                alert.dismiss(animated: true, completion: {
-                    self.currentAlert = nil // Limpiar la referencia a la alerta después de que se haya cerrado
-                })
+        // Función para alternar entre mostrar y ocultar el panel
+        @objc func toggleInfoDebug() {
+            if let panel = infoPanel {
+                panel.isHidden = !panel.isHidden // Alterna la visibilidad
+                isInfoVisible.toggle()
             }
         }
+
+        // Función para iniciar el refresco de la información en tiempo real
+        func startRefreshingInfo() {
+            // Detener cualquier timer existente
+            refreshTimer?.invalidate()
+            
+            // Crear un nuevo Timer que actualice la información cada 1 segundo
+            refreshTimer = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(updateInfoPanel), userInfo: nil, repeats: true)
+        }
+
+        // Función que actualiza la información mostrada en el panel
+    @objc func updateInfoPanel() {
+        
+        guard let arQuality = arQuality else {
+            print("Error: arQuality es nil")
+            return
+        }
+        
+        // Obtener la información actualizada de arQuality
+        let infoDebug = arQuality.getInfoParameters()
+        
+        guard let globalQuality = infoDebug["globalQuality"] as? Double else {
+            print("Error: global quality es nil o no es un Double")
+            return
+        }
+        
+        let roundedQuality = (globalQuality * 100).rounded() / 100
+
+        // Actualizar las etiquetas con los nuevos valores
+        infoLabel1?.text = "HasToRefresh: \(hasToRefresh)"
+        infoLabel2?.text = "GlobalQuality: \(roundedQuality)"
+        infoLabel3?.text = "DynamicRefreshThreshold: \(infoDebug["DynamicRefreshThreshold"])"
+        infoLabel4?.text = "ArConf: \(infoDebug["arConf"])"
+        infoLabel5?.text = "SitumConf: \(infoDebug["situmConf"])"
+            
+            
+            
+        }
+
+        // Detener el refresco cuando no sea necesario
+        func stopRefreshingInfo() {
+            refreshTimer?.invalidate()
+            refreshTimer = nil
+        }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+///Fin panel info debug
     
     
     func setupFixedAnchor(arSceneView: CustomARSceneView) {
@@ -136,15 +245,13 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
      Called once per frame.
      */
     func session(_ session: ARSession, didUpdate frame: ARFrame) {
-        print("Actualiza en cada frame")
         //self.coordinator.handlePointUpdate()
         //self.coordinator.handleLocationUpdate()
     }
     
     func handleFrameUpdate(frame: ARFrame) {
         print("Actualiza en cada frame desde el Coordinator")
-        showInfoDebug()
-        // Aquí puedes agregar la lógica que necesitas para manejar el frame
+        //showInfoDebug()
     }
     
     func infoDebug(){
