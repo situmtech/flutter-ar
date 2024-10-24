@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory
 import android.util.Log
 import android.webkit.WebView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
@@ -35,6 +36,7 @@ import io.github.sceneview.ar.arcore.getUpdatedPlanes
 import io.github.sceneview.ar.node.AnchorNode
 import io.github.sceneview.collision.Vector3
 import io.github.sceneview.geometries.Cylinder
+import io.github.sceneview.geometries.Geometry
 import io.github.sceneview.geometries.Sphere
 import io.github.sceneview.loaders.MaterialLoader
 import io.github.sceneview.math.Color
@@ -73,6 +75,8 @@ class ARSceneHandler(
     private var arrowNode: ModelNode? = null
     private var targetArrow: Position? = null
     private var anchorNode: AnchorNode? = null
+    private lateinit var diskGeometry: Geometry
+
 
     private lateinit var pois: List<Poi>
     val poisTexturesMap = mutableMapOf<String, Texture?>()
@@ -163,7 +167,7 @@ class ARSceneHandler(
         this.sceneView = sceneView
         sceneView.apply {
             Log.d(TAG, "Setup ARSceneView")
-            planeRenderer.isEnabled = true
+            planeRenderer.isEnabled = false
             onSessionResumed = { session ->
                 Log.i(TAG, "onSessionCreated")
             }
@@ -182,6 +186,9 @@ class ARSceneHandler(
                         diskModel = buildModelNode(R.raw.disc, 0.5f)
                     }
 
+                }
+                if(!::diskGeometry.isInitialized){
+                    diskGeometry = Cylinder.Builder().radius(0.5f).height(0.01f).build(sceneView.engine)
                 }
                 if (anchorNode == null) {
                     frame.getUpdatedPlanes()
@@ -310,7 +317,7 @@ class ARSceneHandler(
         return arCorePositions
     }
 
-    private fun addPoisToScene(pois: List<Poi>, arcorePositions: List<Vector3>) {
+    private suspend fun addPoisToScene(pois: List<Poi>, arcorePositions: List<Vector3>) {
         clearPoiNodes()
         for (i in pois.indices) {
             val poi = pois[i]
@@ -325,14 +332,15 @@ class ARSceneHandler(
                 TAG,
                 "> Situm . Adding poi to scene: ${poi.name} , ${poi.infoHtml}, ${poi.cartesianCoordinate} "
             )
-
-            loadTextViewInAR(
-                position, poi.name
-            )
-
+            withContext(Dispatchers.Main) {
+                loadTextViewInAR(
+                    position, poi.name
+                )
+            }
             val positionDisk = Position(arcorePosition.x, arcorePosition.y - 0.5f, arcorePosition.z)
 
             drawDiskWithImage(positionDisk, poi.category)
+            //drawDiskWithImage(positionDisk, poi.category)
 //            if (poi.infoHtml.isNotEmpty()) {
 //                loadWebViewInAR(
 //                    Position(arcorePosition.x, arcorePosition.y - 1, arcorePosition.z), poi.infoHtml
@@ -346,7 +354,7 @@ class ARSceneHandler(
         val textView = TextView(context).apply {
             text = textString
             textSize = 50f
-            setTextColor(android.graphics.Color.WHITE) // Establece el color del texto
+            setTextColor(android.graphics.Color.WHITE)
         }
         ViewRenderable.builder().setView(context, textView).build(sceneView.engine)
             .thenAccept { viewRenderable ->
@@ -427,17 +435,16 @@ class ARSceneHandler(
                 Log.d(TAG, "> Situm add spheres to scene: $position")
 
                 // Crear un nuevo modelo para cada posición
-                //val modelNode = buildModelNode(R.raw.sphere_low, sphereRadius)
-                val modelNode = buildModelNode(R.raw.eren_hiphop_dance, sphereRadius)
-                modelNode?.let {
+//                val modelNode = buildModelNode(R.raw.eren_hiphop_dance, sphereRadius)
+//                modelNode?.let {
                     // Crear un nuevo nodo para cada posición
                     val node = Node(sceneView.engine).apply {
                         worldPosition = Position(position.x, position.y, position.z)
-                        addChildNode(it) // Agregar el modelo como hijo del nodo
+//                        addChildNode(it) // Agregar el modelo como hijo del nodo
                     }
 
                     routeNodes.add(node) // Agregar a la lista de nodos
-                }
+//                }
             }
 
             // Añadir todos los nodos a la escena de una vez
@@ -760,20 +767,14 @@ class ARSceneHandler(
     }
 
 
-    //TODO: Que no aparezcan giradas y que miren siempre a camara.
     fun drawDiskWithImage(arPosition: Position, poiCategory: PoiCategory) {
-
-        val diskGeometry = Cylinder.Builder().radius(0.5f).height(0.01f).build(sceneView.engine)
 
         val texture = poisTexturesMap[poiCategory.identifier]
         if (texture != null) {
-            // Crear la geometría del cilindro (simulando un disco)
-
 
             // Cargar el material con la textura
             val materialInstance =
                 MaterialLoader(sceneView.engine, context).createTextureInstance(texture, true)
-
             // Crear el nodo con el disco (cilindro plano) y el material con la textura
             val diskNode = GeometryNode(sceneView.engine, diskGeometry, materialInstance)
             //diskNode.worldPosition = arPosition
@@ -784,8 +785,7 @@ class ARSceneHandler(
             node.lookAt(sceneView.cameraNode)
             poisDiskNodes.add(diskNode)
             poisNodes.add(node)
-
-
+            
             // Añadir el nodo a la escena
             sceneView.addChildNode(node)
             Log.d(TAG, ">> Disk added to scene with texture.")
@@ -809,7 +809,7 @@ class ARSceneHandler(
         }
     }
 
-    private fun loadPois() {
+    private suspend fun loadPois() {
         if (::currentPosition.isInitialized && this.currentPosition != null && ::pois.isInitialized && pois.isNotEmpty()) {
             var nearPois = filterPoisByDistanceAndFloor(pois, currentPosition, 50)
             Log.d(TAG, "> Situm: load  pois: $nearPois")
@@ -879,27 +879,38 @@ class ARSceneHandler(
         clearRouteNodes()
     }
 
+    fun clearAllNodes(node: Node) {
+        node.childNodes.forEach { clearAllNodes(it) }  // Limpia recursivamente
+        node.parent?.removeChildNode(node)           // Elimina el nodo del padre
+
+    }
+
     private fun clearPoiNodes() {
 
         for (poiNode in poisTextNodes) {
-            poiNode.parent = null
+            clearAllNodes(poiNode)
+            //poiNode.parent = null
         }
+
         sceneView.removeChildNodes(poisTextNodes)
         poisTextNodes.clear()
 
         for (poiNode in poisDiskNodes) {
-            poiNode.parent = null
+            clearAllNodes(poiNode)
+            //poiNode.parent = null
         }
         sceneView.removeChildNodes(poisDiskNodes)
         poisDiskNodes.clear()
 
         for (poiNode in poinModelNode) {
+            clearAllNodes(poiNode)
             poiNode.parent = null
         }
         sceneView.removeChildNodes(poinModelNode)
         poinModelNode.clear()
 
         for (poiNode in poisNodes) {
+            clearAllNodes(poiNode)
             poiNode.parent = null
         }
         sceneView.removeChildNodes(poisNodes)
@@ -965,7 +976,8 @@ class ARSceneHandler(
         if (arQuality.hasToResetWorld()) {
             Log.e(TAG, ">> Situm : has to reset!")
             val timestampRedraw = System.currentTimeMillis()
-            if (timestampRedraw - lastTimestampRedraw > 3000) {
+            if (timestampRedraw - lastTimestampRedraw > 5000) {
+                Toast.makeText(context, "Refresh!", Toast.LENGTH_SHORT).show()
                 worldRedraw()
                 lastTimestampRedraw = timestampRedraw
             }
@@ -985,9 +997,12 @@ class ARSceneHandler(
 
     // callable from dart
     fun worldRedraw() {
-        loadPois()
-        updateRouteNodes()
-        updateTargetArrowOnARRoute(DIRECTION_ARROW_TARGET_DISTANCE)
+
+        CoroutineScope(Dispatchers.IO).launch {
+            loadPois()
+//            updateRouteNodes()
+//            updateTargetArrowOnARRoute(DIRECTION_ARROW_TARGET_DISTANCE)
+        }
     }
 
     fun updateArrowTarget() {
