@@ -208,6 +208,7 @@ func createTextEntity(text: String, position: SIMD3<Float>, arView: ARView) -> M
     textEntity.scale = SIMD3<Float>(0.3, 0.3, 0.3)
     textEntity.position = SIMD3<Float>(position.x, position.y + 0.5, position.z)
     
+    
    // Actualizar la orientación del texto en relación con la cámara sin voltearse
     arView.scene.subscribe(to: SceneEvents.Update.self) { _ in
         let cameraTransform = arView.cameraTransform

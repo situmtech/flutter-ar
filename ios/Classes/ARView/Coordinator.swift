@@ -375,10 +375,13 @@ class Coordinator: NSObject, ARSessionDelegate {
                         poiEntity.position = transformedPosition
                         poiEntity.name = "poi_\(index)"
                         
-                    let textEntity = createTextEntity(text: name, position: transformedPosition, arView: arView)
+                        let textEntity = createTextEntity(text: name, position: transformedPosition, arView: arView)
                         textEntity.name = "text_\(index)"
                         
                         // Añadir ambos al ancla
+                        let bound = textEntity.visualBounds(relativeTo: nil)
+                        let textWidth = bound.extents.x
+                        textEntity.position.x -= textWidth / 2.0
                         fixedPOIAnchor.addChild(poiEntity)
                         fixedPOIAnchor.addChild(textEntity)
                   
