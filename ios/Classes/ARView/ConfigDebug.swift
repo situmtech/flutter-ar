@@ -65,6 +65,7 @@ class ConfigDebug {
          infoPanel?.layer.cornerRadius = 10
          infoPanel?.layer.borderWidth = 2
          infoPanel?.layer.borderColor = UIColor.lightGray.cgColor
+         infoPanel?.isHidden = true
          
          // Crear la vista de configuración
          configTextField1 = createTextField(placeholder: "Quality decrease", value: String(qualityDecrease))
@@ -237,7 +238,7 @@ class ConfigDebug {
     }
 
 
-        // Función que se llama cuando se cambia el valor del switch de configuración
+     // Función que se llama cuando se cambia el valor del switch de configuración
     @objc func toggleInfoDebug() {
             guard let panel = infoPanel else { return }
             panel.isHidden.toggle()
