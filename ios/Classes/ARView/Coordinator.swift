@@ -302,7 +302,7 @@ class Coordinator: NSObject, ARSessionDelegate {
             speed: 0,
             timestamp: Date()
         )
-        
+        print("NEW LOCATION:   ", newLocation.altitude)
         locationManager.initialLocation = newLocation
     }
     
@@ -329,7 +329,7 @@ class Coordinator: NSObject, ARSessionDelegate {
         }
         
         print("pois list!:  ", poisList)
-        
+        print("floor id:   ", initialLocation.altitude)
         // Añadir los nuevos POIs
         for (index, poi) in poisList.enumerated() {
             if let position = poi["position"] as? [String: Any],
@@ -428,7 +428,7 @@ class Coordinator: NSObject, ARSessionDelegate {
         // Trasladar la posición al sistema de la cámara
         positionRotatedAndTranslatedToCamera.x = cameraPosition.x + positionRotatedAndTranslatedToCamera.x
         positionRotatedAndTranslatedToCamera.z = cameraPosition.z - positionRotatedAndTranslatedToCamera.z
-        positionRotatedAndTranslatedToCamera.y = -1
+        positionRotatedAndTranslatedToCamera.y = cameraPosition.y - 1
         
         
         return positionRotatedAndTranslatedToCamera
