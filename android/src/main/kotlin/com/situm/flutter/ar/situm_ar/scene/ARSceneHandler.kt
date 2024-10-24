@@ -71,6 +71,7 @@ class ARSceneHandler(
     private val context: Context = activity
 
     private var arQuality: ARQuality = ARQuality()
+    private var poiUtils: PoiUtils = PoiUtils()
 
     private var arrowNode: ModelNode? = null
     private var targetArrow: Position? = null
@@ -78,13 +79,16 @@ class ARSceneHandler(
     private lateinit var diskGeometry: Geometry
 
 
+
     private lateinit var pois: List<Poi>
+    val poisAR =  mutableMapOf<String,PoiAR>()
+
     val poisTexturesMap = mutableMapOf<String, Texture?>()
-    private var poisTextNodes: MutableList<ViewNode> = mutableListOf()
-    private var poisNodes: MutableList<Node> = mutableListOf()
-    private var poisDiskNodes: MutableList<GeometryNode> = mutableListOf()
-    private var poisDiskModelNodes: MutableList<ModelNode> = mutableListOf()
-    private var poinModelNode: MutableList<Node> = mutableListOf()
+    //private val poisTextNodes: MutableList<ViewNode> = mutableListOf()
+    //private val poisNodes: MutableList<Node> = mutableListOf()
+    //private val poisDiskNodes: MutableList<GeometryNode> = mutableListOf()
+    private val poisDiskModelNodes: MutableList<ModelNode> = mutableListOf()
+    private val poiModelNode: MutableList<Node> = mutableListOf()
 
     private lateinit var currentSegment: RouteSegment
     private lateinit var route: Route
@@ -115,6 +119,11 @@ class ARSceneHandler(
 
     fun setPois(pois: List<Poi>) {
         this.pois = pois
+    }
+    fun updatePoisAR(){
+        for (poi in pois){
+            poisAR.set(poi.identifier, PoiAR(poi))
+        }
     }
 
     fun loadPoiImages() {
@@ -156,6 +165,7 @@ class ARSceneHandler(
         Log.d(TAG, "set building info : $buildingInfo")
         this.buildingInfo = buildingInfo
         setPois(buildingInfo.indoorPOIs as List<Poi>)
+        updatePoisAR()
         loadPoiImages()
     }
 
@@ -318,9 +328,10 @@ class ARSceneHandler(
     }
 
     private suspend fun addPoisToScene(pois: List<Poi>, arcorePositions: List<Vector3>) {
-        clearPoiNodes()
+        //clearPoiNodes()
         for (i in pois.indices) {
-            val poi = pois[i]
+            poisAR.get(pois[i].identifier)
+            //val poi = pois[i].identifier
             val arcorePosition = arcorePositions[i]
             arcorePosition.x
             arcorePosition.y
@@ -330,16 +341,19 @@ class ARSceneHandler(
 
             Log.w(
                 TAG,
-                "> Situm . Adding poi to scene: ${poi.name} , ${poi.infoHtml}, ${poi.cartesianCoordinate} "
+                "> Situm . Adding poi to scene: ${poisAR.get(pois[i].identifier)?.poi?.name} , ${poisAR.get(pois[i].identifier)?.poi?.infoHtml}, ${poisAR.get(pois[i].identifier)?.poi?.cartesianCoordinate} "
             )
             withContext(Dispatchers.Main) {
-                loadTextViewInAR(
-                    position, poi.name
-                )
+                poisAR.get(pois[i].identifier)?.let {
+                    loadTextViewInAR(
+                        it,
+                        position, poisAR.get(pois[i].identifier)!!.poi.name
+                    )
+                }
             }
             val positionDisk = Position(arcorePosition.x, arcorePosition.y - 0.5f, arcorePosition.z)
 
-            drawDiskWithImage(positionDisk, poi.category)
+            poisAR.get(pois[i].identifier)?.poi?.let { drawDiskWithImage(poisAR.get(pois[i].identifier)!!,positionDisk, it.category) }
             //drawDiskWithImage(positionDisk, poi.category)
 //            if (poi.infoHtml.isNotEmpty()) {
 //                loadWebViewInAR(
@@ -349,8 +363,16 @@ class ARSceneHandler(
         }
     }
 
-    private fun loadTextViewInAR(position: Position, textString: String) {
+    private fun loadTextViewInAR(poiAR: PoiAR, position: Position, textString: String) {
 
+        if (poiAR.viewNode!=null){
+            Log.e(TAG, ">> YA EXISTE POI VIEWNODE")
+            poiAR.viewNode!!.position = position
+            poiAR.viewNode!!.lookAt(sceneView.cameraNode)
+            poiAR.viewNode!!.scale = Float3(-1f, 1f, 1f)
+            return
+
+        }
         val textView = TextView(context).apply {
             text = textString
             textSize = 50f
@@ -365,7 +387,8 @@ class ARSceneHandler(
                 viewNode.position = position
                 viewNode.lookAt(sceneView.cameraNode)
                 viewNode.scale = Float3(-1f, 1f, 1f) // Inv. Needed to show text correctly
-                poisTextNodes.add(viewNode)
+                //poisTextNodes.add(viewNode)
+                poiAR.viewNode = viewNode
                 sceneView.addChildNode(viewNode)
             }.exceptionally { throwable ->
                 throwable.printStackTrace()
@@ -401,7 +424,7 @@ class ARSceneHandler(
                 viewNode.position = position
                 viewNode.lookAt(sceneView.cameraNode)
                 viewNode.scale = Float3(-1f, 1f, 1f)
-                poisTextNodes.add(viewNode)
+                //poisTextNodes.add(viewNode)
 
                 sceneView.addChildNode(viewNode)
             }.exceptionally { throwable ->
@@ -715,7 +738,7 @@ class ARSceneHandler(
             }
             this.worldPosition = arPosition
             this.lookAt(sceneView.cameraNode)
-            poinModelNode.add(this)
+            poiModelNode.add(this)
             // add to structyre
 
         })
@@ -767,25 +790,35 @@ class ARSceneHandler(
     }
 
 
-    fun drawDiskWithImage(arPosition: Position, poiCategory: PoiCategory) {
+    fun drawDiskWithImage(poiAR:PoiAR, arPosition: Position, poiCategory: PoiCategory) {
+
+        if (poiAR.node!=null){
+            poiAR.node?.worldPosition = arPosition
+            return
+        }
 
         val texture = poisTexturesMap[poiCategory.identifier]
         if (texture != null) {
-
             // Cargar el material con la textura
             val materialInstance =
                 MaterialLoader(sceneView.engine, context).createTextureInstance(texture, true)
             // Crear el nodo con el disco (cilindro plano) y el material con la textura
-            val diskNode = GeometryNode(sceneView.engine, diskGeometry, materialInstance)
+            val diskGeometry2 = Cylinder.Builder().radius(0.5f).height(0.01f).build(sceneView.engine)
+
+            val diskNode = GeometryNode(sceneView.engine, diskGeometry2, materialInstance)
+
             //diskNode.worldPosition = arPosition
             diskNode.rotation = Rotation(-90f, 0f, 0f)
             var node: Node = Node(sceneView.engine)
             node.addChildNode(diskNode)
             node.worldPosition = arPosition
             node.lookAt(sceneView.cameraNode)
-            poisDiskNodes.add(diskNode)
-            poisNodes.add(node)
-            
+
+            poiAR.geometryNode = diskNode
+            poiAR.node = node
+            //poisDiskNodes.add(diskNode)
+            //poisNodes.add(node)
+
             // Añadir el nodo a la escena
             sceneView.addChildNode(node)
             Log.d(TAG, ">> Disk added to scene with texture.")
@@ -811,7 +844,7 @@ class ARSceneHandler(
 
     private suspend fun loadPois() {
         if (::currentPosition.isInitialized && this.currentPosition != null && ::pois.isInitialized && pois.isNotEmpty()) {
-            var nearPois = filterPoisByDistanceAndFloor(pois, currentPosition, 50)
+            var nearPois = poiUtils.filterPoisByDistanceAndFloor(pois, currentPosition, 50)
             Log.d(TAG, "> Situm: load  pois: $nearPois")
             var arcorePositions = generateARCorePositions(
                 nearPois, currentPosition
@@ -877,44 +910,53 @@ class ARSceneHandler(
         arrowNode = null
         clearPoiNodes()
         clearRouteNodes()
+        pois = emptyList()
+        poisTexturesMap.clear()
     }
 
     fun clearAllNodes(node: Node) {
         node.childNodes.forEach { clearAllNodes(it) }  // Limpia recursivamente
         node.parent?.removeChildNode(node)           // Elimina el nodo del padre
+        node.destroy()
 
     }
 
     private fun clearPoiNodes() {
 
-        for (poiNode in poisTextNodes) {
-            clearAllNodes(poiNode)
-            //poiNode.parent = null
+        for (poi in poisAR.values){
+            poi.node?.let { sceneView.removeChildNode(it) }
+            poi.geometryNode?.let { sceneView.removeChildNode(it) }
+            poi.clear()
         }
+        poisAR.clear()
+//        for (poiNode in poisTextNodes) {
+//            clearAllNodes(poiNode)
+//            //poiNode.parent = null
+//        }
 
-        sceneView.removeChildNodes(poisTextNodes)
-        poisTextNodes.clear()
-
-        for (poiNode in poisDiskNodes) {
-            clearAllNodes(poiNode)
-            //poiNode.parent = null
-        }
-        sceneView.removeChildNodes(poisDiskNodes)
-        poisDiskNodes.clear()
-
-        for (poiNode in poinModelNode) {
-            clearAllNodes(poiNode)
-            poiNode.parent = null
-        }
-        sceneView.removeChildNodes(poinModelNode)
-        poinModelNode.clear()
-
-        for (poiNode in poisNodes) {
-            clearAllNodes(poiNode)
-            poiNode.parent = null
-        }
-        sceneView.removeChildNodes(poisNodes)
-        poisNodes.clear()
+//        sceneView.removeChildNodes(poisTextNodes)
+//        poisTextNodes.clear()
+//
+//        for (poiNode in poisDiskNodes) {
+//            clearAllNodes(poiNode)
+//            //poiNode.parent = null
+//        }
+//        sceneView.removeChildNodes(poisDiskNodes)
+//        poisDiskNodes.clear()
+//
+//        for (poiNode in poiModelNode) {
+//            clearAllNodes(poiNode)
+//            poiNode.parent = null
+//        }
+//        sceneView.removeChildNodes(poiModelNode)
+//        poiModelNode.clear()
+//
+//        for (poiNode in poisNodes) {
+//            clearAllNodes(poiNode)
+//            poiNode.parent = null
+//        }
+//        sceneView.removeChildNodes(poisNodes)
+//        poisNodes.clear()
     }
 
     private fun clearRouteNodes() {
