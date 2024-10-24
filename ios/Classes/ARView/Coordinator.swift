@@ -202,30 +202,45 @@ class Coordinator: NSObject, ARSessionDelegate {
     
     
     func updateArrowPositionAndDirection() {
-        guard let arView = arView, let arrowAnchor = arrowAnchor else { return }
-        
-        // Obtener la posición y orientación de la cámara
-        let cameraTransform = arView.cameraTransform
-        let cameraPosition = cameraTransform.translation
-
-        // Definir la posición fija relativa a la cámara
-        let offsetFromCamera: SIMD3<Float> = SIMD3<Float>(0, 0.0, -2.0) // Ajusta el offset para la posición deseada
-
-        // Calcular la posición de la flecha en coordenadas del mundo
-        let cameraMatrix = cameraTransform.matrix
-        let offsetInWorldSpace = cameraMatrix * SIMD4<Float>(offsetFromCamera.x, offsetFromCamera.y, offsetFromCamera.z, 1.0)
-        let arrowPosition = cameraPosition + SIMD3<Float>(offsetInWorldSpace.x, offsetInWorldSpace.y, offsetInWorldSpace.z)
-
-        // Actualizar la posición del ancla de la flecha para que esté fija en la cámara
-        arrowAnchor.position = arrowPosition
-        
-        // Mantener la orientación de la flecha fija
-        if let arrowEntity = arrowAnchor.children.first {
-            // Establecer la orientación para que siempre apunte hacia adelante de la cámara
-            let fixedRotation = simd_quatf(angle: .pi / 2, axis: SIMD3<Float>(1, 0, 0))
-            arrowEntity.orientation = fixedRotation
+            guard let arView = arView, let arrowAnchor = arrowAnchor else { return }
+            
+            // Obtener la posición de la cámara
+            let cameraTransform = arView.cameraTransform
+            let cameraPosition = cameraTransform.translation
+            
+            // Calcular una posición fija en frente de la cámara
+            let distanceInFrontOfCamera: Float = 1.0 // Define la distancia fija frente a la cámara
+            let forwardDirection = cameraTransform.matrix.columns.2 // Vector hacia adelante de la cámara
+            
+            // Calcular la nueva posición de la flecha
+            let forwardVector = SIMD3<Float>(forwardDirection.x, forwardDirection.y, forwardDirection.z) * distanceInFrontOfCamera
+            let arrowPosition = cameraPosition - forwardVector
+            
+            self.calculateAndSetTargetPoint()
+            self.showPointTarget()
+            
+            if self.targetX != 0 && self.targetZ != 0 {
+                if let yawPoint = calculateAngleToTarget(){
+                    
+                    if let arrowEntity = arrowAnchor.children.first {
+                        
+                        if yawPoint != 0.0 {
+                            // Primero aplicar la rotación de pi/2 alrededor del eje X (ajuste de orientación)
+                            let rotationX = simd_quatf(angle: .pi / 2, axis: SIMD3<Float>(1, 0, 0))
+                            // Luego aplicar la rotación alrededor del eje Y basada en yawPoint
+                            let rotationY = simd_quatf(angle: yawPoint, axis: SIMD3<Float>(0, -1, 0))
+                            // Multiplicar los cuaterniones, primero rotación en X y luego en Y
+                            let combinedRotation = rotationY * rotationX
+                            arrowEntity.orientation = combinedRotation
+                        }
+                    }
+                    
+                }
+            }
+            
+            // Actualizar la posición del ancla de la flecha
+            arrowAnchor.position = SIMD3<Float>(arrowPosition.x, 0.5 , arrowPosition.z)
         }
-    }
     
     
     func setupFixedAnchor() {
