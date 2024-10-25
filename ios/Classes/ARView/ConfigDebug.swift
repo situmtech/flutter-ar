@@ -74,112 +74,143 @@ class ConfigDebug {
 
         // Crear el panel de información y configuración
     func setupInfoPanel(view: UIView) {
-         infoPanel = UIView()
-         infoPanel?.translatesAutoresizingMaskIntoConstraints = false
-         infoPanel?.backgroundColor = .clear
-         infoPanel?.layer.cornerRadius = 10
-         infoPanel?.layer.borderWidth = 2
-         infoPanel?.layer.borderColor = UIColor.lightGray.cgColor
-         infoPanel?.isHidden = true
-         
-         // Crear la vista de configuración
-         configTextField1 = createTextField(placeholder: "Quality decrease", value: String(qualityDecrease))
-         configTextField2 = createTextField(placeholder: "Threshold decrease", value: String(thresholdDecrease))
-         configTextField3 = createTextField(placeholder: "Camera depth", value: String(cameraDeph))
-         configTextField4 = createTextField(placeholder: "Arrow distance", value: String(arrowDistance))
-         
-         // Organizar los campos de configuración en un UIStackView
-         configStackView = UIStackView(arrangedSubviews: [configTextField1!, configTextField2!, configTextField3!, configTextField4!])
-         configStackView?.axis = .vertical
-         configStackView?.spacing = 10
-         configStackView?.alignment = .fill
-         
-         // Crear la parte superior de configuración con un switch
-         let configView = UIView()
-         let configLabel = UILabel()
-         configLabel.text = "Activar Configuración:"
-         configLabel.textColor = .black
-         
-         let configSwitch = UISwitch()
-         configSwitch.isOn = false
-         configSwitch.addTarget(self, action: #selector(configSwitchChanged(_:)), for: .valueChanged)
-         
-         let configHeaderStackView = UIStackView(arrangedSubviews: [configLabel, configSwitch])
-         configHeaderStackView.axis = .horizontal
-         configHeaderStackView.spacing = 10
-         configHeaderStackView.alignment = .center
-         
-         // Agregar la cabecera y campos de configuración al configView
-         configView.addSubview(configHeaderStackView)
-         configView.addSubview(configStackView!)
-         
-         // Ajustar el layout con Auto Layout
-         configHeaderStackView.translatesAutoresizingMaskIntoConstraints = false
-         configStackView?.translatesAutoresizingMaskIntoConstraints = false
-         
-         NSLayoutConstraint.activate([
-             configHeaderStackView.topAnchor.constraint(equalTo: configView.topAnchor, constant: 10),
-             configHeaderStackView.leadingAnchor.constraint(equalTo: configView.leadingAnchor, constant: 10),
-             configHeaderStackView.trailingAnchor.constraint(equalTo: configView.trailingAnchor, constant: -10),
-             
-             configStackView!.topAnchor.constraint(equalTo: configHeaderStackView.bottomAnchor, constant: 10),
-             configStackView!.leadingAnchor.constraint(equalTo: configView.leadingAnchor, constant: 10),
-             configStackView!.trailingAnchor.constraint(equalTo: configView.trailingAnchor, constant: -10),
-             configStackView!.bottomAnchor.constraint(equalTo: configView.bottomAnchor, constant: -10)
-         ])
-         
-         // Ocultar configuración inicialmente
-         configStackView?.isHidden = true
-         
-         // Crear las etiquetas de información
-         infoLabel1 = UILabel()
-         infoLabel2 = UILabel()
-         infoLabel3 = UILabel()
-         infoLabel4 = UILabel()
-         infoLabel5 = UILabel()
-         
-         // Configurar las etiquetas
-         [infoLabel1, infoLabel2, infoLabel3, infoLabel4, infoLabel5].forEach { label in
-             label?.textAlignment = .left
-             label?.textColor = .black
-         }
-         
-         // Organizar las etiquetas de información en un UIStackView
-         infoStackView = UIStackView(arrangedSubviews: [infoLabel1!, infoLabel2!, infoLabel3!, infoLabel4!, infoLabel5!])
-         infoStackView?.axis = .vertical
-         infoStackView?.spacing = 5
-         infoStackView?.alignment = .fill
-         
-         // Crear el StackView principal que contiene la configuración y la información
-         mainStackView = UIStackView(arrangedSubviews: [configView, infoStackView!])
-         mainStackView?.axis = .vertical
-         mainStackView?.spacing = collapsedSpacing // Espaciado inicial cuando la configuración está oculta
-         mainStackView?.translatesAutoresizingMaskIntoConstraints = false
-         
-         // Agregar el StackView principal a la vista infoPanel
-         infoPanel?.addSubview(mainStackView!)
-         
-         // Configurar restricciones para el mainStackView
-         NSLayoutConstraint.activate([
-             mainStackView!.leadingAnchor.constraint(equalTo: infoPanel!.leadingAnchor, constant: 10),
-             mainStackView!.trailingAnchor.constraint(equalTo: infoPanel!.trailingAnchor, constant: -10),
-             mainStackView!.topAnchor.constraint(equalTo: infoPanel!.topAnchor, constant: 10),
-             mainStackView!.bottomAnchor.constraint(equalTo: infoPanel!.bottomAnchor, constant: -10)
-         ])
-         
-         // Agregar infoPanel a la vista principal
-         if let panel = infoPanel {
-             view.addSubview(panel)
-             
-             // Configurar restricciones para infoPanel
-             NSLayoutConstraint.activate([
-                 panel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-                 panel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-                 panel.topAnchor.constraint(equalTo: debugButton!.bottomAnchor, constant: 10),
-                 panel.topAnchor.constraint(equalTo: updateButton!.bottomAnchor, constant: 10)
-             ])
-         }
-     }
+        infoPanel = UIView()
+        infoPanel?.translatesAutoresizingMaskIntoConstraints = false
+        infoPanel?.backgroundColor = .clear
+        infoPanel?.layer.cornerRadius = 10
+        infoPanel?.layer.borderWidth = 2
+        infoPanel?.layer.borderColor = UIColor.lightGray.cgColor
+        infoPanel?.isHidden = true
+
+        // Crear la vista de configuración con etiquetas informativas
+        let qualityDecreaseField = createLabeledTextField(labelText: "Quality Decrease:", placeholder: "Decrease in quality", value: String(qualityDecrease))
+        let thresholdDecreaseField = createLabeledTextField(labelText: "Threshold Decrease:", placeholder: "Decrease in threshold", value: String(thresholdDecrease))
+        let cameraDepthField = createLabeledTextField(labelText: "Camera Depth:", placeholder: "Max camera depth", value: String(cameraDeph))
+        let arrowDistanceField = createLabeledTextField(labelText: "Arrow Distance:", placeholder: "Distance for arrow", value: String(arrowDistance))
+
+        // Extraer los UITextFields de los UIStackViews
+        configTextField1 = qualityDecreaseField.arrangedSubviews[1] as? UITextField
+        configTextField2 = thresholdDecreaseField.arrangedSubviews[1] as? UITextField
+        configTextField3 = cameraDepthField.arrangedSubviews[1] as? UITextField
+        configTextField4 = arrowDistanceField.arrangedSubviews[1] as? UITextField
+
+        // Organizar los campos de configuración en un UIStackView
+        configStackView = UIStackView(arrangedSubviews: [qualityDecreaseField, thresholdDecreaseField, cameraDepthField, arrowDistanceField])
+        configStackView?.axis = .vertical
+        configStackView?.spacing = 10
+        configStackView?.alignment = .fill
+
+        // Crear la parte superior de configuración con un switch
+        let configView = UIView()
+        let configLabel = UILabel()
+        configLabel.text = "Activar Configuración:"
+        configLabel.textColor = .black
+
+        let configSwitch = UISwitch()
+        configSwitch.isOn = false
+        configSwitch.addTarget(self, action: #selector(configSwitchChanged(_:)), for: .valueChanged)
+
+        let configHeaderStackView = UIStackView(arrangedSubviews: [configLabel, configSwitch])
+        configHeaderStackView.axis = .horizontal
+        configHeaderStackView.spacing = 10
+        configHeaderStackView.alignment = .center
+
+        // Agregar la cabecera y campos de configuración al configView
+        configView.addSubview(configHeaderStackView)
+        configView.addSubview(configStackView!)
+
+        // Ajustar el layout con Auto Layout
+        configHeaderStackView.translatesAutoresizingMaskIntoConstraints = false
+        configStackView?.translatesAutoresizingMaskIntoConstraints = false
+
+        NSLayoutConstraint.activate([
+            configHeaderStackView.topAnchor.constraint(equalTo: configView.topAnchor, constant: 10),
+            configHeaderStackView.leadingAnchor.constraint(equalTo: configView.leadingAnchor, constant: 10),
+            configHeaderStackView.trailingAnchor.constraint(equalTo: configView.trailingAnchor, constant: -10),
+
+            configStackView!.topAnchor.constraint(equalTo: configHeaderStackView.bottomAnchor, constant: 10),
+            configStackView!.leadingAnchor.constraint(equalTo: configView.leadingAnchor, constant: 10),
+            configStackView!.trailingAnchor.constraint(equalTo: configView.trailingAnchor, constant: -10),
+            configStackView!.bottomAnchor.constraint(equalTo: configView.bottomAnchor, constant: -10)
+        ])
+
+        // Ocultar configuración inicialmente
+        configStackView?.isHidden = true
+
+        // Crear las etiquetas de información
+        infoLabel1 = UILabel()
+        infoLabel2 = UILabel()
+        infoLabel3 = UILabel()
+        infoLabel4 = UILabel()
+        infoLabel5 = UILabel()
+
+        // Configurar las etiquetas
+        [infoLabel1, infoLabel2, infoLabel3, infoLabel4, infoLabel5].forEach { label in
+            label?.textAlignment = .left
+            label?.textColor = .black
+        }
+
+        // Organizar las etiquetas de información en un UIStackView
+        infoStackView = UIStackView(arrangedSubviews: [infoLabel1!, infoLabel2!, infoLabel3!, infoLabel4!, infoLabel5!])
+        infoStackView?.axis = .vertical
+        infoStackView?.spacing = 5
+        infoStackView?.alignment = .fill
+
+        // Crear el StackView principal que contiene la configuración y la información
+        mainStackView = UIStackView(arrangedSubviews: [configView, infoStackView!])
+        mainStackView?.axis = .vertical
+        mainStackView?.spacing = collapsedSpacing // Espaciado inicial cuando la configuración está oculta
+        mainStackView?.translatesAutoresizingMaskIntoConstraints = false
+
+        // Agregar el StackView principal a la vista infoPanel
+        infoPanel?.addSubview(mainStackView!)
+
+        // Configurar restricciones para el mainStackView
+        NSLayoutConstraint.activate([
+            mainStackView!.leadingAnchor.constraint(equalTo: infoPanel!.leadingAnchor, constant: 10),
+            mainStackView!.trailingAnchor.constraint(equalTo: infoPanel!.trailingAnchor, constant: -10),
+            mainStackView!.topAnchor.constraint(equalTo: infoPanel!.topAnchor, constant: 10),
+            mainStackView!.bottomAnchor.constraint(equalTo: infoPanel!.bottomAnchor, constant: -10)
+        ])
+
+        // Agregar infoPanel a la vista principal
+        if let panel = infoPanel {
+            view.addSubview(panel)
+
+            // Configurar restricciones para infoPanel
+            NSLayoutConstraint.activate([
+                panel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+                panel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+                panel.topAnchor.constraint(equalTo: debugButton!.bottomAnchor, constant: 10),
+                panel.topAnchor.constraint(equalTo: updateButton!.bottomAnchor, constant: 10)
+            ])
+        }
+    }
+
+    // Método para crear un campo de texto etiquetado
+    private func createLabeledTextField(labelText: String, placeholder: String, value: String) -> UIStackView {
+        let label = UILabel()
+        label.text = labelText
+        label.textColor = .black
+        label.font = UIFont.systemFont(ofSize: 14)
+        label.widthAnchor.constraint(equalToConstant: 150).isActive = true
+
+        let textField = UITextField()
+        textField.placeholder = placeholder
+        textField.borderStyle = .roundedRect
+        textField.text = value
+        textField.isUserInteractionEnabled = true
+        textField.isEnabled = true
+        textField.addTarget(self, action: #selector(configTextFieldDidChange(_:)), for: .editingChanged)
+
+        let stackView = UIStackView(arrangedSubviews: [label, textField])
+        stackView.axis = .horizontal
+        stackView.spacing = 10
+        stackView.alignment = .center
+
+        return stackView
+    }
+
            
       
     private func createTextField(placeholder: String, value: String) -> UITextField {

@@ -84,7 +84,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
  
     func adjustVisibilityBasedOnDistance(arSceneView: CustomARSceneView, mainAnchor: AnchorEntity, nearDistance: Float, farDistance: Float) {
         let cameraPosition = arSceneView.cameraTransform.translation
-print("camera deph  ", farDistance)
+
         for child in mainAnchor.children {
             // Calcula la distancia entre la cámara y cada hijo del ancla principal
             let distance = simd_distance(cameraPosition, child.transform.translation)
