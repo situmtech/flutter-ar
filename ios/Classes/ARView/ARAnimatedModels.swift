@@ -7,7 +7,7 @@ func createArrowAnchor() -> AnchorEntity {
 
     do {
         let arrowEntity = try ModelEntity.load(named: "arrow_situm.usdz")
-        arrowEntity.scale = SIMD3<Float>(0.025, 0.025, 0.025)
+        arrowEntity.scale = SIMD3<Float>(0.02, 0.02, 0.02)
         arrowEntity.orientation = simd_quatf(angle: .pi / 2, axis: [1, 0, 0])
         arrowEntity.position = SIMD3<Float>(0.0, 0.0, 0.0)
         anchor.addChild(arrowEntity)
