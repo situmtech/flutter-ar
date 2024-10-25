@@ -6,6 +6,7 @@ class ConfigDebug {
     var arQuality: ARQuality?
     var hasToRefresh: Bool
     
+    var debugButton: UIButton?
     var updateButton: UIButton?
     var infoPanel: UIView?
     var infoLabel: UILabel?
@@ -34,6 +35,8 @@ class ConfigDebug {
     
     let expandedSpacing: CGFloat = 20
     let collapsedSpacing: CGFloat = -180
+    
+    var hasToReset = false
 
     
     init(arQuality: ARQuality?, hasToRefresh: Bool) {
@@ -44,16 +47,28 @@ class ConfigDebug {
     
     // Función para crear el botón de Toggle Info
     func setupUpdateDebugInfo(view: UIView) {
+        debugButton = UIButton(type: .system)
+        debugButton?.setTitle("Info Debug", for: .normal)
+        debugButton?.backgroundColor = .systemBlue
+        debugButton?.setTitleColor(.white, for: .normal)
+        debugButton?.layer.cornerRadius = 10
+        debugButton?.frame = CGRect(x: 20, y: 20, width: 100, height: 30)
+        debugButton?.addTarget(self, action: #selector(toggleInfoDebug), for: .touchUpInside)
+        
+        if let debugButton = debugButton {
+            view.addSubview(debugButton)
+        }
+        
         updateButton = UIButton(type: .system)
-        updateButton?.setTitle("Info Debug", for: .normal)
+        updateButton?.setTitle("Reset", for: .normal)
         updateButton?.backgroundColor = .systemBlue
         updateButton?.setTitleColor(.white, for: .normal)
         updateButton?.layer.cornerRadius = 10
-        updateButton?.frame = CGRect(x: 20, y: 20, width: 100, height: 30)
-        updateButton?.addTarget(self, action: #selector(toggleInfoDebug), for: .touchUpInside)
+        updateButton?.frame = CGRect(x: 260, y: 20, width: 100, height: 30)
+        updateButton?.addTarget(self, action: #selector(resetARWorld), for: .touchUpInside)
         
-        if let button = updateButton {
-            view.addSubview(button)
+        if let resetButton = updateButton {
+            view.addSubview(resetButton)
         }
     }
 
@@ -160,6 +175,7 @@ class ConfigDebug {
              NSLayoutConstraint.activate([
                  panel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
                  panel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+                 panel.topAnchor.constraint(equalTo: debugButton!.bottomAnchor, constant: 10),
                  panel.topAnchor.constraint(equalTo: updateButton!.bottomAnchor, constant: 10)
              ])
          }
@@ -244,6 +260,14 @@ class ConfigDebug {
             panel.isHidden.toggle()
             isInfoVisible.toggle()
         }
+    
+    @objc func resetARWorld(){
+        hasToReset = true
+    }
+    
+    func disableHasToReset(){
+        self.hasToReset = false
+    }
 
         // Función para iniciar el refresco de la información en tiempo real
         func startRefreshingInfo() {

@@ -32,7 +32,12 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         
          
         arQuality = ARQuality()
-        configDebug = ConfigDebug(arQuality: arQuality, hasToRefresh: hasToRefresh)
+        
+        #if DEBUG
+            configDebug = ConfigDebug(arQuality: arQuality, hasToRefresh: hasToRefresh)
+            print("Configuración de modo debug activada")
+
+        #endif
 
         //Fija un ancla en el origen de coordenadas
         setupFixedAnchor(arSceneView: arSceneView)
@@ -101,6 +106,13 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
             } else {
                 print("Error: No se pudo obtener arrowDistance de los parámetros de configuración")
             }
+        
+        let hasToReset = configDebug?.hasToReset ?? false
+
+        if hasToReset{
+            coordinator?.updatePOIs()
+            configDebug?.disableHasToReset()
+        }
     }
     
     func infoDebug(){
