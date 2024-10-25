@@ -19,6 +19,10 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     var hasToRefresh = true
     var currentAlert: UIAlertController?
     
+    var mainAnchor: AnchorEntity? // Declara mainAnchor como propiedad de la clase
+    var updateTimer: Timer?
+    var cameraDeph = 25.0
+    
     
     func setupSceneView(arSceneView: CustomARSceneView) {
 
@@ -44,6 +48,12 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         
         // Agregar la luz direccional
         addDirectionalLight(to: arSceneView)
+        
+        // Inicializa el temporizador para ajustar la visibilidad de los objetos en función de la distancia
+        updateTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+            guard let self = self, let mainAnchor = self.mainAnchor else { return }
+            self.adjustVisibilityBasedOnDistance(arSceneView: arSceneView, mainAnchor: mainAnchor, nearDistance: 0.1, farDistance: Float(cameraDeph))
+        }
         
         //Arrow
         let arrowAnchor = createArrowAnchor()
@@ -72,6 +82,27 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
                
     }    
  
+    func adjustVisibilityBasedOnDistance(arSceneView: CustomARSceneView, mainAnchor: AnchorEntity, nearDistance: Float, farDistance: Float) {
+        let cameraPosition = arSceneView.cameraTransform.translation
+print("camera deph  ", farDistance)
+        for child in mainAnchor.children {
+            // Calcula la distancia entre la cámara y cada hijo del ancla principal
+            let distance = simd_distance(cameraPosition, child.transform.translation)
+            
+            // Filtrar la visibilidad basada en la distancia
+            if distance < nearDistance || distance > farDistance {
+                child.isEnabled = false // Desactivar la visibilidad del objeto
+            } else {
+                child.isEnabled = true // Activar la visibilidad del objeto
+            }
+        }
+    }
+
+    
+    deinit {
+        updateTimer?.invalidate()
+    }
+
     
     func setupFixedAnchor(arSceneView: CustomARSceneView) {
         
@@ -79,7 +110,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         fixedAnchor.name = "fixedPOIAnchor"
 
         arSceneView.scene.anchors.append(fixedAnchor)
-        //self.fixedAnchor = fixedAnchor
+        self.mainAnchor = fixedAnchor
     }
     
     func makeCoordinator() -> Coordinator {
@@ -100,20 +131,25 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     
     func handleFrameUpdate(frame: ARFrame) {
         //print("Actualiza en cada frame desde el Coordinator")
-        if let configParameters = configDebug?.getConfigParameters(),
-               let arrowDistance = configParameters["arrowDistance"] {               
-                coordinator?.setArrowDistance(arrowDistance: arrowDistance)
-            } else {
-                print("Error: No se pudo obtener arrowDistance de los parámetros de configuración")
-            }
+        guard let configParameters = configDebug?.getConfigParameters(),
+              let arrowDistance = configParameters["arrowDistance"],
+              let cameraDepth = configParameters["cameraDeph"] else {
+            print("Error: No se pudo obtener arrowDistance o cameraDeph de los parámetros de configuración")
+            return
+        }
         
+        coordinator?.setArrowDistance(arrowDistance: arrowDistance) // Asegúrate de que el tipo sea correcto
+        self.cameraDeph = Double(cameraDepth) // Asegúrate de que cameraDepth esté en el tipo correcto
+        //print("camera deph  a", self.cameraDeph)
+
         let hasToReset = configDebug?.hasToReset ?? false
 
-        if hasToReset{
+        if hasToReset {
             coordinator?.updatePOIs()
             configDebug?.disableHasToReset()
         }
     }
+
     
     func infoDebug(){
         if let coordinator = self.coordinator {
