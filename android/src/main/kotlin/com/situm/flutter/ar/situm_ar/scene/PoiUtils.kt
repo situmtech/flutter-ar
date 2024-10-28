@@ -11,7 +11,7 @@ import kotlin.math.sqrt
 
 data class PoiAR(
     val poi: Poi,
-    var viewNode: ViewNode? = null, // TextView
+    var viewNode: ViewNode? = null, // TextView with poi name
     var geometryNode: GeometryNode? = null, // disk
     var node: Node? = null
 ) {

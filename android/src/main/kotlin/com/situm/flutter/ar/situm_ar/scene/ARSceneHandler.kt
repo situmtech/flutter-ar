@@ -75,6 +75,8 @@ class ARSceneHandler(
 
     private var arrowNode: ModelNode? = null
     private var targetArrow: Position? = null
+    private var targetNode: GeometryNode? = null
+
     private var anchorNode: AnchorNode? = null
     private lateinit var diskGeometry: Geometry
 
@@ -84,13 +86,11 @@ class ARSceneHandler(
     val poisAR =  mutableMapOf<String,PoiAR>()
 
     val poisTexturesMap = mutableMapOf<String, Texture?>()
-    //private val poisTextNodes: MutableList<ViewNode> = mutableListOf()
-    //private val poisNodes: MutableList<Node> = mutableListOf()
-    //private val poisDiskNodes: MutableList<GeometryNode> = mutableListOf()
     private val poisDiskModelNodes: MutableList<ModelNode> = mutableListOf()
     private val poiModelNode: MutableList<Node> = mutableListOf()
 
     private lateinit var currentSegment: RouteSegment
+    private  var routePointsAR: MutableList<Vector3> = mutableListOf()
     private lateinit var route: Route
 
     //private var routeNodes: MutableList<GeometryNode> = mutableListOf()
@@ -330,6 +330,7 @@ class ARSceneHandler(
     private suspend fun addPoisToScene(pois: List<Poi>, arcorePositions: List<Vector3>) {
         //clearPoiNodes()
         for (i in pois.indices) {
+
             poisAR.get(pois[i].identifier)
             //val poi = pois[i].identifier
             val arcorePosition = arcorePositions[i]
@@ -434,155 +435,148 @@ class ARSceneHandler(
     }
 
     private fun updateRouteNodes() {
+        Log.d(TAG, ">> updateRouteNodes 1  ")
         if (!this::currentSegment.isInitialized || !this::currentPosition.isInitialized) {
             return
         }
-
+        Log.d(TAG, ">> updateRouteNodes 2 ")
         currentSegment.points.let { nonNullRoute ->
             val arCorePositionsForPoints = generateARCorePositions(
                 nonNullRoute, currentPosition
             ) { point -> point.cartesianCoordinate }
 
-            val pathInterpolated = interpolatePositions(arCorePositionsForPoints, 1.0f)
-            addSpheresToScene(pathInterpolated)
+            routePointsAR = interpolatePositions(arCorePositionsForPoints, 1.0f)
+            addSpheresToScene(routePointsAR)
         }
     }
 
-    private fun addSpheresToScene(positions: List<Vector3>, sphereRadius: Float = 0.3f) {
-        // Forzar la limpieza de la ruta anterior si existe
-        clearRouteNodes()
-
-        // Lanzar una coroutine en el contexto del ciclo de vida de la actividad
-        (activity as? LifecycleOwner)?.lifecycleScope?.launch {
-            positions.forEach { position ->
-                Log.d(TAG, "> Situm add spheres to scene: $position")
-
-                // Crear un nuevo modelo para cada posición
-//                val modelNode = buildModelNode(R.raw.eren_hiphop_dance, sphereRadius)
-//                modelNode?.let {
-                    // Crear un nuevo nodo para cada posición
-                    val node = Node(sceneView.engine).apply {
-                        worldPosition = Position(position.x, position.y, position.z)
-//                        addChildNode(it) // Agregar el modelo como hijo del nodo
-                    }
-
-                    routeNodes.add(node) // Agregar a la lista de nodos
+//    private fun addSpheresToScene(positions: List<Vector3>, sphereRadius: Float = 0.3f) {
+//        // Forzar la limpieza de la ruta anterior si existe
+//        clearRouteNodes()
+//
+//        // Lanzar una coroutine en el contexto del ciclo de vida de la actividad
+//        (activity as? LifecycleOwner)?.lifecycleScope?.launch {
+//            positions.forEach { position ->
+//                Log.d(TAG, "> Situm add spheres to scene: $position")
+//
+//                // Crear un nuevo modelo para cada posición
+////                val modelNode = buildModelNode(R.raw.eren_hiphop_dance, sphereRadius)
+////                modelNode?.let {
+//                    // Crear un nuevo nodo para cada posición
+//                    val node = Node(sceneView.engine).apply {
+//                        worldPosition = Position(position.x, position.y, position.z)
+////                        addChildNode(it) // Agregar el modelo como hijo del nodo
+//                    }
+//
+//                    routeNodes.add(node) // Agregar a la lista de nodos
+////                }
+//            }
+//
+//            // Añadir todos los nodos a la escena de una vez
+//            sceneView.addChildNodes(routeNodes)
+//        }
+//    }
+//
+//    private fun addSpheresToScene___(positions: List<Vector3>, sphereRadius: Float = 0.1f) {
+//        // Forzar la limpieza de la ruta anterior si existe
+//        clearRouteNodes()
+//
+//        // Lanzar una coroutine en el contexto del lifecycle
+//        (activity as? LifecycleOwner)?.lifecycleScope?.launch {
+//            val modelNode = buildModelNode(R.raw.sphere, 0.05f) // Cargar el nodo una vez
+//            modelNode?.let {
+//                positions.forEach { position ->
+//                    Log.d(TAG, "> Situm add spheres to scene: $position")
+//                    val node: Node = Node(sceneView.engine).apply {
+//                        worldPosition = Position(position.x, position.y, position.z)
+//                        addChildNode(it)
+//                    }
+//
+//                    routeNodes.add(node) // Agregar a la lista
+//                    // sceneView.addChildNode(node)
 //                }
-            }
+//                sceneView.addChildNodes(routeNodes) // Añadir todos los nodos a la escena
+//            }
+//        }
+//    }
 
-            // Añadir todos los nodos a la escena de una vez
-            sceneView.addChildNodes(routeNodes)
+    private fun initSpheresRoute(numSpheres : Int, sphereRadius: Float = 0.1f) {
+        val material = MaterialLoader(sceneView.engine, context).createColorInstance(Color(0f, 0f, 1f, 0.5f))
+        val sphereGeometry =
+            Sphere.Builder().radius(sphereRadius).center(Position(0f,0f,0f)).build(sceneView.engine)
+        for (i in 0 until numSpheres){
+            routeNodes.add(GeometryNode(sceneView.engine, sphereGeometry, material).apply { isVisible = false })
         }
     }
 
-    private fun addSpheresToScene___(positions: List<Vector3>, sphereRadius: Float = 0.1f) {
-        // Forzar la limpieza de la ruta anterior si existe
-        clearRouteNodes()
-
-        // Lanzar una coroutine en el contexto del lifecycle
-        (activity as? LifecycleOwner)?.lifecycleScope?.launch {
-            val modelNode = buildModelNode(R.raw.sphere, 0.05f) // Cargar el nodo una vez
-            modelNode?.let {
-                positions.forEach { position ->
-                    Log.d(TAG, "> Situm add spheres to scene: $position")
-                    val node: Node = Node(sceneView.engine).apply {
-                        worldPosition = Position(position.x, position.y, position.z)
-                        addChildNode(it)
-                    }
-
-                    routeNodes.add(node) // Agregar a la lista
-                    // sceneView.addChildNode(node)
-                }
-                sceneView.addChildNodes(routeNodes) // Añadir todos los nodos a la escena
-            }
-        }
-    }
-
-    private fun addSpheresToScene_old(positions: List<Vector3>, sphereRadius: Float = 0.1f) {
-        // force clear previous route if exists
-        clearRouteNodes()
-
-//        val material = MaterialLoader(sceneView.engine, context).createColorInstance(
-//            Color(
-//                0f, 0f, 1f, 0.5f
-//            )
-//        )
-//        val sphereGeometry =
-//            Sphere.Builder().radius(sphereRadius).center(Position(0f,0f,0f)).build(sceneView.engine)
-        (activity as? LifecycleOwner)?.lifecycleScope?.launch {
-            buildModelNode(R.raw.sphere, 0.05f)?.let {
-                positions.forEach { position ->
-                    Log.d(TAG, "> Situm add spheres to scene: $position")
-                    val center = Position(position.x, position.y, position.z)
-                    it.worldPosition = center
-                    routeNodes.add(it)
-                }
-
-            }
+    private fun makeRouteInvisible(){
+        for (node in routeNodes){
+            node.isVisible = false
         }
         sceneView.addChildNodes(routeNodes)
-//        Log.d(TAG, "> Situm add spheres to scene")
-//        positions.forEach { position ->
-//            Log.d(TAG, "> Situm add spheres to scene: $position")
-//            val center = Position(position.x, position.y, position.z)
-//            val sphereNode = GeometryNode(sceneView.engine, sphereGeometry, material)
-//            sphereNode.worldPosition = center
-//            routeNodes.add(sphereNode)
-//        }
-//        sceneView.addChildNodes(routeNodes)
+    }
+
+    private fun addSpheresToScene(positions: List<Vector3>) {
+
+        if (routeNodes.isEmpty()){
+            initSpheresRoute(20)
+        }
+        makeRouteInvisible()
+        val maxIndex = minOf(positions.size, routeNodes.size)
+
+        for (i in 0 until maxIndex){
+            routeNodes.get(i).apply {
+                worldPosition = Position(positions.get(i).x, positions.get(i).y,positions.get(i).z)
+                isVisible = true
+            }
+        }
     }
 
     // from current AR position and AR RouteNodes, projects position on route and finds next node at n distance (?)
     private fun updateTargetArrowOnARRoute(minDistanceMeters: Float) {
         val cameraPosition = sceneView.cameraNode.worldPosition
-        var closestNode: Node? = null
+        var closestPoint: Vector3? = null
+        var targetPoint: Vector3? = null
         var minDistanceToCamera = Float.MAX_VALUE
 
+        Log.d(TAG, ">> updateTargetArrowOnARRoute  ")
         //  Find closest node
-        for (node in routeNodes) {
-            Log.d(TAG, "> node: ${node.worldPosition} / ${node.position}")
-            val nodePosition = node.worldPosition
+        for (point in routePointsAR) {
+            Log.d(TAG, "> route point: ${point} ")
             val distanceToCamera = calculate2DDistance(
                 Vector3(cameraPosition.x, cameraPosition.y, cameraPosition.z),
-                Vector3(nodePosition.x, nodePosition.y, nodePosition.z)
+                point
             )
 
             if (distanceToCamera < minDistanceToCamera) {
                 minDistanceToCamera = distanceToCamera
-                closestNode = node
+                closestPoint = point
             }
         }
-        if (closestNode == null) {
+        if (closestPoint == null) {
             Log.w(TAG, "> No closest node found.")
             return
         } else {
-            Log.w(TAG, "< Closest node: ${closestNode.worldPosition}, ${closestNode.position}")
+            Log.w(TAG, "< Closest node: ${closestPoint}")
         }
 
-        drawCurrentProjectedPosition(closestNode.worldPosition)
-        var targetNode: Node? = null
+        //drawCurrentProjectedPosition(Position(closestPoint.x,closestPoint.y,closestPoint.z))
 
-        for (i in routeNodes.indexOf(closestNode) until routeNodes.size) {
-            val node = routeNodes[i]
-            val distanceFromClosest = calculate2DDistance(
-                Vector3(
-                    closestNode.worldPosition.x,
-                    closestNode.worldPosition.y,
-                    closestNode.worldPosition.z
-                ), Vector3(node.worldPosition.x, node.worldPosition.y, node.worldPosition.z)
-            )
+        for (i in routePointsAR.indexOf(closestPoint) until routePointsAR.size) {
+            val position = routePointsAR[i]
+            val distanceFromClosest = calculate2DDistance(closestPoint, position)
             Log.d(
                 TAG,
-                "> Distance from closest: ${closestNode.worldPosition} to node: ${node.worldPosition}  : $distanceFromClosest "
+                ">> Distance from closest: ${closestPoint} to node: ${position}  : $distanceFromClosest "
             )
             if (distanceFromClosest >= minDistanceMeters) {
-                targetNode = node
+                targetPoint = position
                 break
             }
         }
-        if (targetNode != null) {
-            Log.d(TAG, "> Target node found at position: ${targetNode.worldPosition}")
-            pointArrowToPosition(targetNode.worldPosition)
+        if (targetPoint != null) {
+            Log.d(TAG, "> Target node found at position: ${targetPoint}")
+            pointArrowToPosition(Position(targetPoint.x,targetPoint.y,targetPoint.z))
         } else {
             Log.w(
                 TAG,
@@ -612,10 +606,16 @@ class ARSceneHandler(
         targetArrow = targetARPosition
         arrowNode?.lookAt(targetARPosition, smooth = true)
         // debug
-        if (::currentTargetNodeGeometry.isInitialized) {
-            sceneView.removeChildNode(currentTargetNodeGeometry)
+        if (!::currentTargetNodeGeometry.isInitialized || currentTargetNodeGeometry ==null) {
+            val sphereGeometry =
+                Sphere.Builder().radius(0.15f).build(sceneView.engine)
+            val material = MaterialLoader(sceneView.engine, context).createColorInstance( Color(0f, 1f, 0f, 0.8f))
+             targetNode = GeometryNode(sceneView.engine, sphereGeometry, material)
+            sceneView.addChildNode(targetNode!!)
+        }else {
+            targetNode!!.worldPosition = targetARPosition
         }
-        currentTargetNodeGeometry = drawSphereOnPosition(targetARPosition, Color(0f, 1f, 0f, 0.8f))
+
     }
 
     private fun drawCurrentProjectedPosition(projectedARPosition: Position) {
@@ -1042,8 +1042,8 @@ class ARSceneHandler(
 
         CoroutineScope(Dispatchers.IO).launch {
             loadPois()
-//            updateRouteNodes()
-//            updateTargetArrowOnARRoute(DIRECTION_ARROW_TARGET_DISTANCE)
+            updateRouteNodes()
+            updateTargetArrowOnARRoute(DIRECTION_ARROW_TARGET_DISTANCE)
         }
     }
 

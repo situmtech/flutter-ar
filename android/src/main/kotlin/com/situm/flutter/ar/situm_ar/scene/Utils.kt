@@ -11,7 +11,7 @@ data class RelativePosition(
     }
 }
 
-fun interpolatePositions(positions: List<Vector3>, distanceBetweenPoints: Float = 1.0f): List<Vector3> {
+fun interpolatePositions(positions: List<Vector3>, distanceBetweenPoints: Float = 1.0f): MutableList<Vector3> {
     val interpolatedPositions = mutableListOf<Vector3>()
 
     for (i in 0 until positions.size - 1) {
