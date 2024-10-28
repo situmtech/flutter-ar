@@ -56,7 +56,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
   ARController arController = ARController();
   bool isArVisible = false;
   bool isMapCollapsed = false;
-  bool loadingArMessage = false;
+  bool loadingArMessage = true;
   Timer? loadingArMessageTimer;
   ScrollController scrollController = ScrollController();
   static const int animationMillis = 200;
