@@ -264,3 +264,26 @@ func updateTextOrientation(arView: ARView) {
     }
 
 
+extension simd_float4x4 {
+    func eulerAngles() -> (x: Float, y: Float, z: Float) {
+        let sy = sqrt(self.columns.0.x * self.columns.0.x + self.columns.1.x * self.columns.1.x)
+        
+        let singular = sy < 1e-6 // Casi cero
+        var x: Float, y: Float, z: Float
+        
+        if !singular {
+            x = atan2(self.columns.2.y, self.columns.2.z)
+            y = atan2(-self.columns.2.x, sy)
+            z = atan2(self.columns.1.x, self.columns.0.x)
+        } else {
+            x = atan2(-self.columns.1.z, self.columns.1.y)
+            y = atan2(-self.columns.2.x, sy)
+            z = 0
+        }
+        
+        return (x, y, z)
+    }
+}
+
+
+

@@ -23,6 +23,9 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     var updateTimer: Timer?
     var cameraDeph = 25.0
     
+    var sitArData: SITArData?
+    var lastTimestamp = 0
+    var sitExternalSensorManager: SITExternalSensorManager?
     
     func setupSceneView(arSceneView: CustomARSceneView) {
 
@@ -36,6 +39,8 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         
          
         arQuality = ARQuality()
+        sitArData = SITArData()
+        sitExternalSensorManager = SITExternalSensorManager()
         
         #if DEBUG
             configDebug = ConfigDebug(arQuality: arQuality, hasToRefresh: hasToRefresh)
@@ -79,6 +84,8 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         
         
         setupAndUpdateConfigDebug(arSceneView: arSceneView)
+        
+        
                
     }    
  
@@ -233,6 +240,8 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
                                          worldRotation.axis.z,
                                          worldRotation.angle)
             arQuality?.updateARLocation(worldPosition: position, worldRotation: rotation)
+            
+            self.setSitArData()
         } else {
             print("Error: no se pudieron obtener los valores de la cámara")
         }
@@ -326,4 +335,50 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
                 alert.dismiss(animated: true, completion: nil)
             }
         }
+    
+    func setSitArData() {
+        guard let worldPosition = coordinator?.arView?.cameraTransform.translation else {
+            print("Error: No se pudo obtener la posición de la cámara.")
+            return
+        }
+
+        let currentTimestamp = Int(Date().timeIntervalSince1970 * 1000)
+        
+        if lastTimestamp != 0 {
+            // Asegúrate de que sitArData no sea nil
+            guard var sitArData = self.sitArData else {
+                print("Error: sitArData no está inicializado.")
+                return
+            }
+
+            sitArData.dt = Float(currentTimestamp - lastTimestamp)
+            sitArData.x = Float(worldPosition.x)
+            sitArData.y = Float(worldPosition.y) // Asignar correctamente el eje Y
+            sitArData.z = Float(worldPosition.z) // Asignar correctamente el eje Z
+            sitArData.timestamp = Double(currentTimestamp)
+
+            // Obtener el frame actual
+            guard let frame = coordinator?.arView?.session.currentFrame else {
+                print("Error: No se pudo obtener el frame actual de la sesión.")
+                return
+            }
+
+            // Obtener la matriz de transformación de la cámara
+            let cameraTransform = frame.camera.transform
+
+            // Calcular los ángulos de Euler a partir de la matriz de transformación
+            let eulerAngles = cameraTransform.eulerAngles()
+            
+            sitArData.xEuler = Float(eulerAngles.x) // Roll
+            sitArData.yEuler = Float(eulerAngles.y) // Pitch
+            sitArData.zEuler = Float(eulerAngles.z) // Yaw
+
+            // Llama a setArData sin la etiqueta
+            sitExternalSensorManager?.setArData(sitArData) // Aquí se pasa sitArData directamente
+        }
+        
+        lastTimestamp = currentTimestamp
+    }
+
+
 }
