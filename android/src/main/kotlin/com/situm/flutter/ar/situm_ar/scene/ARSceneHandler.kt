@@ -1,5 +1,7 @@
 package com.situm.flutter.ar.situm_ar.scene
 
+//import com.google.android.filament.Material
+
 import android.app.Activity
 import android.content.Context
 import android.graphics.BitmapFactory
@@ -11,7 +13,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.google.android.filament.Texture
-//import com.google.android.filament.Material
 import com.google.ar.core.Anchor
 import com.google.ar.core.Plane
 import com.google.ar.sceneform.rendering.ViewAttachmentManager
@@ -19,7 +20,9 @@ import com.google.ar.sceneform.rendering.ViewRenderable
 import com.situm.flutter.ar.situm_ar.CustomARSceneView
 import com.situm.flutter.ar.situm_ar.R
 import dev.romainguy.kotlin.math.Float3
+import es.situm.sdk.SitumSdk
 import es.situm.sdk.error.Error
+import es.situm.sdk.location.ExternalArData
 import es.situm.sdk.location.LocationListener
 import es.situm.sdk.location.LocationStatus
 import es.situm.sdk.model.cartography.BuildingInfo
@@ -47,10 +50,9 @@ import io.github.sceneview.node.ModelNode
 import io.github.sceneview.node.Node
 import io.github.sceneview.node.ViewNode
 import io.github.sceneview.utils.getResourceUri
-import kotlinx.coroutines.launch
-
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.URL
 import java.nio.ByteBuffer
@@ -81,16 +83,15 @@ class ARSceneHandler(
     private lateinit var diskGeometry: Geometry
 
 
-
     private lateinit var pois: List<Poi>
-    val poisAR =  mutableMapOf<String,PoiAR>()
+    val poisAR = mutableMapOf<String, PoiAR>()
 
     val poisTexturesMap = mutableMapOf<String, Texture?>()
     private val poisDiskModelNodes: MutableList<ModelNode> = mutableListOf()
     private val poiModelNode: MutableList<Node> = mutableListOf()
 
     private lateinit var currentSegment: RouteSegment
-    private  var routePointsAR: MutableList<Vector3> = mutableListOf()
+    private var routePointsAR: MutableList<Vector3> = mutableListOf()
     private lateinit var route: Route
 
     //private var routeNodes: MutableList<GeometryNode> = mutableListOf()
@@ -120,8 +121,9 @@ class ARSceneHandler(
     fun setPois(pois: List<Poi>) {
         this.pois = pois
     }
-    fun updatePoisAR(){
-        for (poi in pois){
+
+    fun updatePoisAR() {
+        for (poi in pois) {
             poisAR.set(poi.identifier, PoiAR(poi))
         }
     }
@@ -197,8 +199,9 @@ class ARSceneHandler(
                     }
 
                 }
-                if(!::diskGeometry.isInitialized){
-                    diskGeometry = Cylinder.Builder().radius(0.5f).height(0.01f).build(sceneView.engine)
+                if (!::diskGeometry.isInitialized) {
+                    diskGeometry =
+                        Cylinder.Builder().radius(0.5f).height(0.01f).build(sceneView.engine)
                 }
                 if (anchorNode == null) {
                     frame.getUpdatedPlanes()
@@ -258,12 +261,13 @@ class ARSceneHandler(
                             )
                         }
                     }
-                    for (poi in poisAR.values){     // force to look at camera. Maybe node and view node should be children form same node
+                    for (poi in poisAR.values) {     // force to look at camera. Maybe node and view node should be children form same node
                         poi.node?.lookAt(sceneView.cameraNode)
                         poi.viewNode?.lookAt(sceneView.cameraNode)
                         poi.viewNode?.scale = Float3(-1f, 1f, 1f)
                     }
 
+                    updateVisualOdometry()
                 }
             }
         }
@@ -348,7 +352,11 @@ class ARSceneHandler(
 
             Log.w(
                 TAG,
-                "> Situm . Adding poi to scene: ${poisAR.get(pois[i].identifier)?.poi?.name} , ${poisAR.get(pois[i].identifier)?.poi?.infoHtml}, ${poisAR.get(pois[i].identifier)?.poi?.cartesianCoordinate} "
+                "> Situm . Adding poi to scene: ${poisAR.get(pois[i].identifier)?.poi?.name} , ${
+                    poisAR.get(
+                        pois[i].identifier
+                    )?.poi?.infoHtml
+                }, ${poisAR.get(pois[i].identifier)?.poi?.cartesianCoordinate} "
             )
             withContext(Dispatchers.Main) {
                 poisAR.get(pois[i].identifier)?.let {
@@ -360,7 +368,13 @@ class ARSceneHandler(
             }
             val positionDisk = Position(arcorePosition.x, arcorePosition.y - 0.5f, arcorePosition.z)
 
-            poisAR.get(pois[i].identifier)?.poi?.let { drawDiskWithImage(poisAR.get(pois[i].identifier)!!,positionDisk, it.category) }
+            poisAR.get(pois[i].identifier)?.poi?.let {
+                drawDiskWithImage(
+                    poisAR.get(pois[i].identifier)!!,
+                    positionDisk,
+                    it.category
+                )
+            }
             //drawDiskWithImage(positionDisk, poi.category)
 //            if (poi.infoHtml.isNotEmpty()) {
 //                loadWebViewInAR(
@@ -372,7 +386,7 @@ class ARSceneHandler(
 
     private fun loadTextViewInAR(poiAR: PoiAR, position: Position, textString: String) {
 
-        if (poiAR.viewNode!=null){
+        if (poiAR.viewNode != null) {
             Log.e(TAG, ">> YA EXISTE POI VIEWNODE")
             poiAR.viewNode!!.position = position
             poiAR.viewNode!!.lookAt(sceneView.cameraNode)
@@ -506,17 +520,24 @@ class ARSceneHandler(
 //        }
 //    }
 
-    private fun initSpheresRoute(numSpheres : Int, sphereRadius: Float = 0.1f) {
-        val material = MaterialLoader(sceneView.engine, context).createColorInstance(Color(0f, 0f, 1f, 0.5f))
+    private fun initSpheresRoute(numSpheres: Int, sphereRadius: Float = 0.1f) {
+        val material =
+            MaterialLoader(sceneView.engine, context).createColorInstance(Color(0f, 0f, 1f, 0.5f))
         val sphereGeometry =
-            Sphere.Builder().radius(sphereRadius).center(Position(0f,0f,0f)).build(sceneView.engine)
-        for (i in 0 until numSpheres){
-            routeNodes.add(GeometryNode(sceneView.engine, sphereGeometry, material).apply { isVisible = false })
+            Sphere.Builder().radius(sphereRadius).center(Position(0f, 0f, 0f))
+                .build(sceneView.engine)
+        for (i in 0 until numSpheres) {
+            routeNodes.add(
+                GeometryNode(
+                    sceneView.engine,
+                    sphereGeometry,
+                    material
+                ).apply { isVisible = false })
         }
     }
 
-    private fun makeRouteInvisible(){
-        for (node in routeNodes){
+    private fun makeRouteInvisible() {
+        for (node in routeNodes) {
             node.isVisible = false
         }
         sceneView.addChildNodes(routeNodes)
@@ -524,15 +545,15 @@ class ARSceneHandler(
 
     private fun addSpheresToScene(positions: List<Vector3>) {
 
-        if (routeNodes.isEmpty()){
+        if (routeNodes.isEmpty()) {
             initSpheresRoute(20)
         }
         makeRouteInvisible()
         val maxIndex = minOf(positions.size, routeNodes.size)
 
-        for (i in 0 until maxIndex){
+        for (i in 0 until maxIndex) {
             routeNodes.get(i).apply {
-                worldPosition = Position(positions.get(i).x, positions.get(i).y,positions.get(i).z)
+                worldPosition = Position(positions.get(i).x, positions.get(i).y, positions.get(i).z)
                 isVisible = true
             }
         }
@@ -582,7 +603,7 @@ class ARSceneHandler(
         }
         if (targetPoint != null) {
             Log.d(TAG, "> Target node found at position: ${targetPoint}")
-            pointArrowToPosition(Position(targetPoint.x,targetPoint.y,targetPoint.z))
+            pointArrowToPosition(Position(targetPoint.x, targetPoint.y, targetPoint.z))
         } else {
             Log.w(
                 TAG,
@@ -612,13 +633,20 @@ class ARSceneHandler(
         targetArrow = targetARPosition
         arrowNode?.lookAt(targetARPosition, smooth = true)
         // debug
-        if (!::currentTargetNodeGeometry.isInitialized || currentTargetNodeGeometry ==null) {
+        if (!::currentTargetNodeGeometry.isInitialized || currentTargetNodeGeometry == null) {
             val sphereGeometry =
                 Sphere.Builder().radius(0.15f).build(sceneView.engine)
-            val material = MaterialLoader(sceneView.engine, context).createColorInstance( Color(0f, 1f, 0f, 0.8f))
-             targetNode = GeometryNode(sceneView.engine, sphereGeometry, material)
+            val material = MaterialLoader(sceneView.engine, context).createColorInstance(
+                Color(
+                    0f,
+                    1f,
+                    0f,
+                    0.8f
+                )
+            )
+            targetNode = GeometryNode(sceneView.engine, sphereGeometry, material)
             sceneView.addChildNode(targetNode!!)
-        }else {
+        } else {
             targetNode!!.worldPosition = targetARPosition
         }
 
@@ -796,9 +824,9 @@ class ARSceneHandler(
     }
 
 
-    fun drawDiskWithImage(poiAR:PoiAR, arPosition: Position, poiCategory: PoiCategory) {
+    fun drawDiskWithImage(poiAR: PoiAR, arPosition: Position, poiCategory: PoiCategory) {
 
-        if (poiAR.node!=null){
+        if (poiAR.node != null) {
             poiAR.node?.worldPosition = arPosition
             poiAR.node?.lookAt(sceneView.cameraNode)
             return
@@ -810,7 +838,8 @@ class ARSceneHandler(
             val materialInstance =
                 MaterialLoader(sceneView.engine, context).createTextureInstance(texture, true)
             // Crear el nodo con el disco (cilindro plano) y el material con la textura
-            val diskGeometry2 = Cylinder.Builder().radius(0.5f).height(0.01f).build(sceneView.engine)
+            val diskGeometry2 =
+                Cylinder.Builder().radius(0.5f).height(0.01f).build(sceneView.engine)
 
             val diskNode = GeometryNode(sceneView.engine, diskGeometry2, materialInstance)
 
@@ -931,7 +960,7 @@ class ARSceneHandler(
 
     private fun clearPoiNodes() {
 
-        for (poi in poisAR.values){
+        for (poi in poisAR.values) {
             poi.node?.let { sceneView.removeChildNode(it) }
             poi.geometryNode?.let { sceneView.removeChildNode(it) }
             poi.clear()
@@ -1061,4 +1090,29 @@ class ARSceneHandler(
         return arQuality.getCurrentStatusLog()
     }
 
+    fun getVisualOdometry(): String {
+        val timestamp = System.currentTimeMillis()
+
+        return """
+            {"message":{
+                "position": {
+                    "x": ${this.sceneView.cameraNode.worldPosition.x},
+                    "y": ${this.sceneView.cameraNode.worldPosition.y},
+                    "z": ${-this.sceneView.cameraNode.worldPosition.z}
+                },
+                "eulerRotation": {
+                    "x": ${this.sceneView.cameraNode.worldRotation.x},
+                    "y": ${this.sceneView.cameraNode.worldRotation.y},
+                    "z": ${this.sceneView.cameraNode.worldRotation.z}
+                },
+                "timestamp": $timestamp
+             }
+            }
+        """.trimIndent()
+    }
+
+    fun updateVisualOdometry() {
+        val externalAR = ExternalArData.Builder().rawJsonString(getVisualOdometry()).build()
+        SitumSdk.locationManager().addExternalArData(externalAR)
+    }
 }
