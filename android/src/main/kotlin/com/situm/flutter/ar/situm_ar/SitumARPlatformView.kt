@@ -86,5 +86,6 @@ class SitumARPlatformView(
         // modified to avoid multiple crashes.
         rootView.removeView(sceneView)
         lifecycle.removeObserver(arController)
+
     }
 }

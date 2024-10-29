@@ -258,6 +258,12 @@ class ARSceneHandler(
                             )
                         }
                     }
+                    for (poi in poisAR.values){     // force to look at camera. Maybe node and view node should be children form same node
+                        poi.node?.lookAt(sceneView.cameraNode)
+                        poi.viewNode?.lookAt(sceneView.cameraNode)
+                        poi.viewNode?.scale = Float3(-1f, 1f, 1f)
+                    }
+
                 }
             }
         }
@@ -794,6 +800,7 @@ class ARSceneHandler(
 
         if (poiAR.node!=null){
             poiAR.node?.worldPosition = arPosition
+            poiAR.node?.lookAt(sceneView.cameraNode)
             return
         }
 
@@ -909,6 +916,7 @@ class ARSceneHandler(
         arrowNode?.let { sceneView.removeChildNode(it) }
         arrowNode = null
         clearPoiNodes()
+        makeRouteInvisible()
         clearRouteNodes()
         pois = emptyList()
         poisTexturesMap.clear()
@@ -995,15 +1003,13 @@ class ARSceneHandler(
 
     override fun onCancellation() {
         Log.w(TAG, ">> Situm navigation onCancellation")
-        clearRouteNodes()
-        clearRoute()
+        makeRouteInvisible()
         super.onCancellation()
     }
 
     override fun onDestinationReached(route: Route?) {
         Log.w(TAG, ">> Situm navigation on destination reached")
-        clearRouteNodes()
-        clearRoute()
+        makeRouteInvisible()
         super.onDestinationReached(route)
     }
     // Location Listener
