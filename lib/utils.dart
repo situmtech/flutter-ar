@@ -50,8 +50,8 @@ Widget _createDebugModeSwitchButton(VoidCallback onPressed) {
   );
 }
 
-Widget _createButtonsDebugAR(
-    VoidCallback onRedrawPressed, VoidCallback onUpdatePressed) {
+Widget _createButtonsDebugAR(VoidCallback onRedrawPressed,
+    VoidCallback onUpdatePressed, VoidCallback onShowRoutePressed) {
   return Align(
     alignment: Alignment.bottomRight,
     child: Column(
@@ -61,6 +61,10 @@ Widget _createButtonsDebugAR(
         ElevatedButton(onPressed: onRedrawPressed, child: Text('Redraw World')),
         SizedBox(height: 10), // Espacio entre los botones
         ElevatedButton(onPressed: onUpdatePressed, child: Text('Update Arrow')),
+        SizedBox(height: 10), // Espacio entre los botones
+        ElevatedButton(
+            onPressed: onShowRoutePressed,
+            child: Text('Show route')), // Nuevo botón
       ],
     ),
   );

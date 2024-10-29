@@ -67,6 +67,7 @@ class ARSceneHandler(
         const val TAG = "Situm> AR>"
     }
 
+    private var hasToShowDebugRoute: Boolean = false
     private val dashboardDomain: String = "https://dashboard.situm.com"
 
     private lateinit var targetArrowSitumCoordinates: Point
@@ -85,18 +86,14 @@ class ARSceneHandler(
 
     private lateinit var pois: List<Poi>
     val poisAR = mutableMapOf<String, PoiAR>()
-
     val poisTexturesMap = mutableMapOf<String, Texture?>()
-    private val poisDiskModelNodes: MutableList<ModelNode> = mutableListOf()
-    private val poiModelNode: MutableList<Node> = mutableListOf()
 
     private lateinit var currentSegment: RouteSegment
     private var routePointsAR: MutableList<Vector3> = mutableListOf()
     private lateinit var route: Route
 
-    //private var routeNodes: MutableList<GeometryNode> = mutableListOf()
-    //private var routeNodes: MutableList<ModelNode> = mutableListOf()
-    private var routeNodes: MutableList<Node> = mutableListOf()
+    private val routeNodes: MutableList<Node> = mutableListOf()     // only for debug
+
     private lateinit var currentTargetNodeGeometry: GeometryNode
     private lateinit var currentProjectedNodeGeometry: GeometryNode
 
@@ -197,33 +194,27 @@ class ARSceneHandler(
                     (activity as? LifecycleOwner)?.lifecycleScope?.launch {
                         diskModel = buildModelNode(R.raw.disc, 0.5f)
                     }
-
                 }
                 if (!::diskGeometry.isInitialized) {
                     diskGeometry =
                         Cylinder.Builder().radius(0.5f).height(0.01f).build(sceneView.engine)
                 }
-                if (anchorNode == null) {
-                    frame.getUpdatedPlanes()
-                        .firstOrNull { it.type == Plane.Type.HORIZONTAL_UPWARD_FACING }
-                        ?.let { plane ->
-                            addAnchorNode(plane.createAnchor(plane.centerPose))
-
-                            //loadTextViewInAR(plane.centerPose.position, "Dance")
-                        }
-                }
+//                if (anchorNode == null) {
+//                    frame.getUpdatedPlanes()
+//                        .firstOrNull { it.type == Plane.Type.HORIZONTAL_UPWARD_FACING }
+//                        ?.let { plane ->
+//                            addAnchorNode(plane.createAnchor(plane.centerPose))
+//
+//                            //loadTextViewInAR(plane.centerPose.position, "Dance")
+//                        }
+//                }
             }
             onTrackingFailureChanged = { reason ->
                 //this@ARView.trackingFailureReason = reason
             }
-            Log.d("ARView", "setp scene view 2")
-
         }
 
-
         (activity as? LifecycleOwner)?.lifecycleScope?.launch {
-            Log.d("ARView", "buildAndAddArrowNode 3")
-
             if (lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
                 // Actualiza el nodo en cada frame
                 buildAndAddArrowNode()
@@ -263,6 +254,7 @@ class ARSceneHandler(
                     }
                     for (poi in poisAR.values) {     // force to look at camera. Maybe node and view node should be children form same node
                         poi.node?.lookAt(sceneView.cameraNode)
+                        poi.node?.scale = Float3(-1f, 1f, 1f)
                         poi.viewNode?.lookAt(sceneView.cameraNode)
                         poi.viewNode?.scale = Float3(-1f, 1f, 1f)
                     }
@@ -271,11 +263,6 @@ class ARSceneHandler(
                 }
             }
         }
-        //
-//        var position =
-//            io.github.sceneview.math.Position(0.0f, 0.0f, -1.0f) // 1 metro frente a la cámara
-        //loadTextViewInAR(position, "init Text")
-
     }
 
 
@@ -322,7 +309,7 @@ class ARSceneHandler(
                     cameraHorizontalRotation, positionMinusSitumRotated
                 ).apply {
                     x = cameraPosition.x + this.x
-                    y = 0f
+                    y = cameraPosition.y
                     z = cameraPosition.z - this.z
                 }
 
@@ -339,25 +326,12 @@ class ARSceneHandler(
 
     private suspend fun addPoisToScene(pois: List<Poi>, arcorePositions: List<Vector3>) {
         //clearPoiNodes()
+        makePoiNodesInvisible()
         for (i in pois.indices) {
 
-            poisAR.get(pois[i].identifier)
-            //val poi = pois[i].identifier
             val arcorePosition = arcorePositions[i]
-            arcorePosition.x
-            arcorePosition.y
-            arcorePosition.z
-
             val position = Position(arcorePosition.x, arcorePosition.y, arcorePosition.z)
 
-            Log.w(
-                TAG,
-                "> Situm . Adding poi to scene: ${poisAR.get(pois[i].identifier)?.poi?.name} , ${
-                    poisAR.get(
-                        pois[i].identifier
-                    )?.poi?.infoHtml
-                }, ${poisAR.get(pois[i].identifier)?.poi?.cartesianCoordinate} "
-            )
             withContext(Dispatchers.Main) {
                 poisAR.get(pois[i].identifier)?.let {
                     loadTextViewInAR(
@@ -391,6 +365,7 @@ class ARSceneHandler(
             poiAR.viewNode!!.position = position
             poiAR.viewNode!!.lookAt(sceneView.cameraNode)
             poiAR.viewNode!!.scale = Float3(-1f, 1f, 1f)
+            poiAR.viewNode!!.isVisible = true
             return
 
         }
@@ -466,59 +441,11 @@ class ARSceneHandler(
             ) { point -> point.cartesianCoordinate }
 
             routePointsAR = interpolatePositions(arCorePositionsForPoints, 1.0f)
-            addSpheresToScene(routePointsAR)
+            if(hasToShowDebugRoute) {
+                addSpheresToScene(routePointsAR)
+            }
         }
     }
-
-//    private fun addSpheresToScene(positions: List<Vector3>, sphereRadius: Float = 0.3f) {
-//        // Forzar la limpieza de la ruta anterior si existe
-//        clearRouteNodes()
-//
-//        // Lanzar una coroutine en el contexto del ciclo de vida de la actividad
-//        (activity as? LifecycleOwner)?.lifecycleScope?.launch {
-//            positions.forEach { position ->
-//                Log.d(TAG, "> Situm add spheres to scene: $position")
-//
-//                // Crear un nuevo modelo para cada posición
-////                val modelNode = buildModelNode(R.raw.eren_hiphop_dance, sphereRadius)
-////                modelNode?.let {
-//                    // Crear un nuevo nodo para cada posición
-//                    val node = Node(sceneView.engine).apply {
-//                        worldPosition = Position(position.x, position.y, position.z)
-////                        addChildNode(it) // Agregar el modelo como hijo del nodo
-//                    }
-//
-//                    routeNodes.add(node) // Agregar a la lista de nodos
-////                }
-//            }
-//
-//            // Añadir todos los nodos a la escena de una vez
-//            sceneView.addChildNodes(routeNodes)
-//        }
-//    }
-//
-//    private fun addSpheresToScene___(positions: List<Vector3>, sphereRadius: Float = 0.1f) {
-//        // Forzar la limpieza de la ruta anterior si existe
-//        clearRouteNodes()
-//
-//        // Lanzar una coroutine en el contexto del lifecycle
-//        (activity as? LifecycleOwner)?.lifecycleScope?.launch {
-//            val modelNode = buildModelNode(R.raw.sphere, 0.05f) // Cargar el nodo una vez
-//            modelNode?.let {
-//                positions.forEach { position ->
-//                    Log.d(TAG, "> Situm add spheres to scene: $position")
-//                    val node: Node = Node(sceneView.engine).apply {
-//                        worldPosition = Position(position.x, position.y, position.z)
-//                        addChildNode(it)
-//                    }
-//
-//                    routeNodes.add(node) // Agregar a la lista
-//                    // sceneView.addChildNode(node)
-//                }
-//                sceneView.addChildNodes(routeNodes) // Añadir todos los nodos a la escena
-//            }
-//        }
-//    }
 
     private fun initSpheresRoute(numSpheres: Int, sphereRadius: Float = 0.1f) {
         val material =
@@ -697,165 +624,33 @@ class ARSceneHandler(
         }
     }
 
-    //    // Función para dibujar el modelo con diferentes texturas
-    fun drawDiskWithImage__new(arPosition: Position, poiCategory: PoiCategory) {
-        // Verifica si el modelo ya fue cargado
-//        if (diskModel == null) {
-//            Log.e(TAG, ">> Disk model not loaded yet.")
-//            return
-//        }
-
-        val texture = poisTexturesMap[poiCategory.identifier]
-        sceneView.addChildNode(Node(sceneView.engine).apply {
-            isEditable = true
-            (activity as? LifecycleOwner)?.lifecycleScope?.launch {
-                buildModelNode(R.raw.cilinder, 0.5f)?.let {
-                    it.rotation = Rotation(-90f, 0f, 0f)
-                    if (texture != null) {
-                        val materialInstance =
-                            MaterialLoader(sceneView.engine, context).createTextureInstance(
-                                texture,
-                                true
-                            )
-
-                        // Asignar el material clonado al modelo
-                        //clonedDiskNode.modelInstance?.material = materialInstance
-                        Log.e(TAG, ">> Set TEXTURE")
-//                            it.modelInstance.materialInstances[0].setTexture("texture",texture)
-
-                        it.modelInstance.materialInstances?.let { materialInstances ->
-                            for (mi in materialInstances) {
-                                Log.d(
-                                    TAG,
-                                    ">> mi: ${mi.name} / ${mi.material.name} / ${mi.material.parameterCount}"
-                                )
-                                for (i in 0 until mi.material.parameterCount) {
-                                    Log.d(
-                                        TAG,
-                                        " >> mi.material.parameters[i].name: ${mi.material.parameters[i].name}"
-                                    )
-                                }
-                                //mi.material.parameters.fin
-                                //mi.material.setDefaultParameter("Texture",texture,TextureSampler())
-                                // mi.setTexture(texture)
-                                //mi.setParameter("tex-global", texture, TextureSampler())
-//                                    for (i in 0 until mi.setParameter("texture",texture)) {
-//                                        val paramName = mi.getParameterName(i)
-//                                        Log.d(TAG, ">> Parameter: $paramName")
-//                                    }
-                                // mi.setParameter("texture",texture, TextureSampler())
-//                                    try {
-                                // mi.setTexture("tex-global",texture)
-//                                    }catch (e:Exception){
-//                                        Log.e(TAG,">> Exception $e")
-//                                    }
-
-//                                    mi.setTexture(texture)
-                            }
-
-                        }
-//                                it.modelInstance?.asset?.let { asset ->
-//                                    for (entity in asset.entities) {
-////                                        // Verificamos si el entity tiene un material asociado
-//                                        val material = sceneView.engine.renderableManager.getMaterialInstanceAt(entity, 0)
-////                                        if (material != null) {
-////                                            // Asignamos la nueva textura al material
-////                                            material.setTexture("baseColorMap", texture)
-////                                        }
-//                                    }
-//                                }
-                    }
-
-
-                    addChildNode(it)
-                }
-            }
-            this.worldPosition = arPosition
-            this.lookAt(sceneView.cameraNode)
-            poiModelNode.add(this)
-            // add to structyre
-
-        })
-//
-//        val texture = poisTexturesMap[poiCategory.identifier]
-//        if (texture != null) {
-//            // Clonar el nodo del modelo cargado
-//            val clonedDiskNode = diskModel?.modelInstance?.let { modelInstance ->
-//                ModelNode(
-//                    modelInstance = modelInstance,
-//                ).apply {
-//                    isEditable = true
-//                    isVisible = true
-//                }
-//            }
-//
-//            if (clonedDiskNode != null) {
-//                // Cargar el material con la textura
-////                val materialInstance =
-////                    MaterialLoader(sceneView.engine, context).createTextureInstance(texture, true)
-////
-////                // Asignar el material clonado al modelo
-////                //clonedDiskNode.modelInstance?.material = materialInstance
-////                clonedDiskNode.modelInstance?.asset?.let { asset ->
-////                    for (entity in asset.entities) {
-////                        // Verificamos si el entity tiene un material asociado
-////                        val material = sceneView.engine.renderableManager.getMaterialInstanceAt(entity, 0)
-////                        if (material != null) {
-////                            // Asignamos la nueva textura al material
-////                            material.setTexture("baseColorMap", texture)
-////                        }
-////                    }
-////                }
-////                // Ajustar la posición en AR
-//                clonedDiskNode.worldPosition = arPosition
-//                clonedDiskNode.lookAt(sceneView.cameraNode)
-//
-//                // Añadir el nodo clonado a la escena
-//                sceneView.addChildNode(clonedDiskNode)
-//
-//                // Guardar el nodo si es necesario
-//                poisDiskModelNodes.add(clonedDiskNode)
-//
-//                Log.d(TAG, ">> Disk node added to scene with texture. poisDiskModelNodes: ${poisDiskModelNodes.size}")
-//            }
-//        } else {
-//            Log.e(TAG, ">> Failed to load texture.")
-//        }
-    }
-
-
     fun drawDiskWithImage(poiAR: PoiAR, arPosition: Position, poiCategory: PoiCategory) {
 
         if (poiAR.node != null) {
             poiAR.node?.worldPosition = arPosition
             poiAR.node?.lookAt(sceneView.cameraNode)
+            poiAR.node?.isVisible = true
             return
         }
 
         val texture = poisTexturesMap[poiCategory.identifier]
         if (texture != null) {
-            // Cargar el material con la textura
             val materialInstance =
                 MaterialLoader(sceneView.engine, context).createTextureInstance(texture, true)
-            // Crear el nodo con el disco (cilindro plano) y el material con la textura
             val diskGeometry2 =
                 Cylinder.Builder().radius(0.5f).height(0.01f).build(sceneView.engine)
 
             val diskNode = GeometryNode(sceneView.engine, diskGeometry2, materialInstance)
 
-            //diskNode.worldPosition = arPosition
             diskNode.rotation = Rotation(-90f, 0f, 0f)
-            var node: Node = Node(sceneView.engine)
+            var node = Node(sceneView.engine)
             node.addChildNode(diskNode)
             node.worldPosition = arPosition
             node.lookAt(sceneView.cameraNode)
 
             poiAR.geometryNode = diskNode
             poiAR.node = node
-            //poisDiskNodes.add(diskNode)
-            //poisNodes.add(node)
 
-            // Añadir el nodo a la escena
             sceneView.addChildNode(node)
             Log.d(TAG, ">> Disk added to scene with texture.")
         } else {
@@ -958,6 +753,12 @@ class ARSceneHandler(
 
     }
 
+    private fun makePoiNodesInvisible() {
+        for (poi in poisAR.values) {
+            poi.node?.isVisible = false
+            poi.viewNode?.isVisible = false
+        }
+    }
     private fun clearPoiNodes() {
 
         for (poi in poisAR.values) {
@@ -1114,5 +915,9 @@ class ARSceneHandler(
     fun updateVisualOdometry() {
         val externalAR = ExternalArData.Builder().rawJsonString(getVisualOdometry()).build()
         SitumSdk.locationManager().addExternalArData(externalAR)
+    }
+
+    fun switchShowRouteOnAR() {
+        hasToShowDebugRoute = !hasToShowDebugRoute
     }
 }

@@ -114,4 +114,8 @@ class ARController(
     fun getDebugInfo(): String {
         return  arSceneHandler.getCurrentStatusLog()
     }
+
+    fun showRouteOnAR() {
+        arSceneHandler.switchShowRouteOnAR()
+    }
 }

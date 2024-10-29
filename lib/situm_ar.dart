@@ -134,6 +134,8 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
                 arController.worldRedraw();
               }, () {
                 arController.updateArrowTarget();
+              }, () {
+                arController.showRouteOnAR();
               }),
             ],
             if (loadingArMessage) const ARLoadingWidget(),

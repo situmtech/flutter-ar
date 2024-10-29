@@ -98,6 +98,11 @@ class ARController {
     await _channel.invokeMethod("updateArrowTarget", {});
   }
 
+  Future<void> showRouteOnAR() async {
+    debugPrint("Situm > AR> show route on ar.");
+    await _channel.invokeMethod("showRouteOnAR", {});
+  }
+
   Future<String> getStatus() async {
     debugPrint("Situm > AR>getStatus.");
     final String status = await _channel.invokeMethod("getDebugInfo", {});
