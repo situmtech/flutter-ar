@@ -37,6 +37,8 @@ class ConfigDebug {
     let collapsedSpacing: CGFloat = -180
     
     var hasToReset = false
+    var tapCount = 0 // Contador de toques para infoDebug
+
 
     
     init(arQuality: ARQuality?, hasToRefresh: Bool) {
@@ -44,17 +46,32 @@ class ConfigDebug {
             self.hasToRefresh = hasToRefresh
         }
 
+    @objc func handleDebugButtonTap() {
+        tapCount += 1
+        if tapCount == 5 {
+            if let panel = infoPanel {
+                panel.isHidden = !panel.isHidden // Alternar visibilidad del panel
+                updateButton?.isHidden = panel.isHidden // Alternar visibilidad del botón de Reset
+            }
+            tapCount = 0 // Reiniciar el contador después de mostrar/ocultar
+        }
+    }
+
     
     // Función para crear el botón de Toggle Info
     func setupUpdateDebugInfo(view: UIView) {
         debugButton = UIButton(type: .system)
-        debugButton?.setTitle("Info Debug", for: .normal)
+        if let image = UIImage(named: "conf") {
+    } else {
+        print("Error: No se pudo cargar la imagen info_icon!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!.")
+    }
+        debugButton?.tintColor = .white
         debugButton?.backgroundColor = .systemBlue
         debugButton?.setTitleColor(.white, for: .normal)
         debugButton?.layer.cornerRadius = 10
-        debugButton?.frame = CGRect(x: 20, y: 20, width: 100, height: 30)
-        debugButton?.addTarget(self, action: #selector(toggleInfoDebug), for: .touchUpInside)
-        
+        debugButton?.frame = CGRect(x: 20, y: 20, width: 50, height: 50) // Asegúrate de que el tamaño sea suficiente para ver el ícono
+        debugButton?.addTarget(self, action: #selector(handleDebugButtonTap), for: .touchUpInside)
+
         if let debugButton = debugButton {
             view.addSubview(debugButton)
         }
@@ -66,6 +83,7 @@ class ConfigDebug {
         updateButton?.layer.cornerRadius = 10
         updateButton?.frame = CGRect(x: 260, y: 20, width: 100, height: 30)
         updateButton?.addTarget(self, action: #selector(resetARWorld), for: .touchUpInside)
+        updateButton?.isHidden = true
         
         if let resetButton = updateButton {
             view.addSubview(resetButton)

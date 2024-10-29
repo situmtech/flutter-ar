@@ -36,7 +36,7 @@ class ARWidget extends StatefulWidget {
     required this.onDisposed,
     this.onARVisibilityChanged,
     this.mapView,
-    this.arHeightRatio = 2 / 3,
+    this.arHeightRatio = 2.8 / 4,
     this.debugMode = false,
     this.apiDomain = "https://dashboard.situm.com",
     // TODO: restore.

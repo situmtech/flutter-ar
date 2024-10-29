@@ -128,66 +128,80 @@ func createSphereEntity(radius: Float, color: UIColor, transparency: Float) -> M
 
 @available(iOS 15.0, *)
 func createDiskEntityWithImage(radius: Float, image: UIImage) -> ModelEntity {
-    // Entidad principal que contendrá todos los planos para formar el disco grueso
     let thickCircularEntity = ModelEntity()
     let thickness = Float(0.1)
     let segments = 10
 
-    // Crear textura a partir de la imagen original
     guard let cgImage = image.cgImage else {
         print("Error: No se pudo convertir UIImage a CGImage.")
         return ModelEntity()
     }
     
-    // Voltear la imagen horizontalmente y crear la textura
     let flippedImage = image.withHorizontallyFlippedOrientation()
     guard let flippedCGImage = flippedImage.cgImage else {
         print("Error: No se pudo convertir UIImage flípeada a CGImage.")
         return ModelEntity()
     }
 
-    // Generar las texturas desde las imágenes original y volteada
     guard let originalTexture = try? TextureResource.generate(from: cgImage, options: .init(semantic: .color)),
           let flippedTexture = try? TextureResource.generate(from: flippedCGImage, options: .init(semantic: .color)) else {
         print("Error: No se pudo generar la textura desde las imágenes.")
         return ModelEntity()
     }
 
-    // Crear materiales para ambas texturas
+    // Usar UnlitMaterial para respetar la transparencia del canal alfa
     var originalMaterial = UnlitMaterial()
     originalMaterial.baseColor = .texture(originalTexture)
-    originalMaterial.opacityThreshold = 0.5  // Respetar la transparencia del PNG
+    originalMaterial.opacityThreshold = 0.5  // Preserva la transparencia del PNG
 
     var flippedMaterial = UnlitMaterial()
     flippedMaterial.baseColor = .texture(flippedTexture)
-    flippedMaterial.opacityThreshold = 0.5  // Respetar la transparencia del PNG
+    flippedMaterial.opacityThreshold = 0.5  // Preserva la transparencia del PNG
 
-    // Calcular la distancia entre cada plano para crear el grosor
     let segmentSpacing = thickness / Float(segments - 1)
 
-    // Generar y posicionar cada plano para crear el efecto de grosor
     for i in 0..<segments {
         let planeMesh = MeshResource.generatePlane(width: 2 * radius, depth: 2 * radius)
         let frontPlaneEntity = ModelEntity(mesh: planeMesh, materials: [originalMaterial])
         let backPlaneEntity = ModelEntity(mesh: planeMesh, materials: [flippedMaterial])
         
-        // Rotar el plano para que esté en posición vertical
         frontPlaneEntity.transform.rotation = simd_quatf(angle: .pi / 2, axis: SIMD3<Float>(1, 0, 0))
-        
-        // Rotar el plano trasero 180 grados en Z para evitar que la imagen aparezca invertida
         backPlaneEntity.transform.rotation = simd_quatf(angle: .pi / 2, axis: SIMD3<Float>(1, 0, 0)) * simd_quatf(angle: .pi, axis: SIMD3<Float>(0, 0, 1))
 
-        // Posicionar cada plano a lo largo del eje Z para crear el grosor
         let offset = Float(i) * segmentSpacing - (thickness / 2)
         frontPlaneEntity.position = SIMD3(0, 0, offset)
         backPlaneEntity.position = SIMD3(0, 0, offset)
         
-        // Agregar los planos a la entidad principal
         thickCircularEntity.addChild(frontPlaneEntity)
         thickCircularEntity.addChild(backPlaneEntity)
     }
 
     return thickCircularEntity
+}
+
+
+@available(iOS 15.0, *)
+func addPointLightToScene(at position: SIMD3<Float>, arView: ARView) {
+    let lightEntity = PointLight()
+    lightEntity.light.intensity = 25000  // Ajusta según el nivel de brillo que desees
+    lightEntity.light.color = .white
+    
+    let lightAnchor = AnchorEntity(world: position)
+    lightAnchor.addChild(lightEntity)
+    arView.scene.addAnchor(lightAnchor)
+}
+
+
+@available(iOS 15.0, *)
+func addLightToScene(arView: ARView) {
+    let lightEntity = DirectionalLight()
+    lightEntity.light.intensity = 15000  // Aumenta la intensidad según el nivel de iluminación deseado
+    lightEntity.light.color = .white
+    lightEntity.orientation = simd_quatf(angle: -.pi / 2, axis: SIMD3<Float>(1, 0, 0))
+    
+    let lightAnchor = AnchorEntity(world: SIMD3<Float>(0, 3, 0)) // Posición de la luz sobre los POIs
+    lightAnchor.addChild(lightEntity)
+    arView.scene.addAnchor(lightAnchor)
 }
 
 
@@ -205,12 +219,13 @@ func createDiskEntityWithImageFromURL(radius: Float, thickness: Float, url: URL,
     }
 }
 
+
 @available(iOS 15.0, *)
-func createTextEntity(text: String, position: SIMD3<Float>, arView: ARView) -> ModelEntity {
+func createTextEntity(text: String, poiPosition: SIMD3<Float>, arView: ARView) -> ModelEntity {
     let mesh = MeshResource.generateText(
         text,
         extrusionDepth: 0.02,
-        font: .systemFont(ofSize: 1.3),
+        font: .systemFont(ofSize: 1.0),
         containerFrame: .zero,
         alignment: .center,
         lineBreakMode: .byWordWrapping
@@ -219,20 +234,14 @@ func createTextEntity(text: String, position: SIMD3<Float>, arView: ARView) -> M
     let material = SimpleMaterial(color: .white, isMetallic: false)
     let textEntity = ModelEntity(mesh: mesh, materials: [material])
     
+    // Escalar el texto y colocarlo directamente encima del POI en posición fija
     textEntity.scale = SIMD3<Float>(0.3, 0.3, 0.3)
-    textEntity.position = SIMD3<Float>(position.x, position.y + 0.5, position.z)
-    
-    
-   // Actualizar la orientación del texto en relación con la cámara sin voltearse
-    arView.scene.subscribe(to: SceneEvents.Update.self) { _ in
-        let cameraTransform = arView.cameraTransform
-        let cameraForward = cameraTransform.matrix.columns.2 // Dirección hacia adelante de la cámara
-        
-        // Obtener la dirección que la entidad debe mirar sin voltear en el eje Y
-        let newForward = normalize(SIMD3<Float>(-cameraForward.x, 0, -cameraForward.z))
-        let rotation = simd_quatf(from: SIMD3<Float>(0, 0, -1), to: newForward)
-        textEntity.orientation = rotation
-    }
+    textEntity.position = SIMD3<Float>(poiPosition.x, poiPosition.y + 1.0, poiPosition.z) // Posición fija en Y para colocarlo encima del POI
+
+    // Ajustar la posición del texto para centrarlo horizontalmente
+    let bound = textEntity.visualBounds(relativeTo: nil)
+    let textWidth = bound.extents.x
+    textEntity.position.x -= textWidth / 2.0
     
     return textEntity
 }

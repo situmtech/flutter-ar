@@ -37,16 +37,18 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         configuration.planeDetection = []
         arSceneView.session.run(configuration)
         
+   
+        addLightToScene(arView: arSceneView)
          
         arQuality = ARQuality()
         sitArData = SITArData()
         sitExternalSensorManager = SITExternalSensorManager()
         
-        #if DEBUG
+       // #if DEBUG
             configDebug = ConfigDebug(arQuality: arQuality, hasToRefresh: hasToRefresh)
             print("Configuración de modo debug activada")
 
-        #endif
+       // #endif
 
         //Fija un ancla en el origen de coordenadas
         setupFixedAnchor(arSceneView: arSceneView)
@@ -353,8 +355,8 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
 
             sitArData.dt = Float(currentTimestamp - lastTimestamp)
             sitArData.x = Float(worldPosition.x)
-            sitArData.y = Float(worldPosition.y) // Asignar correctamente el eje Y
-            sitArData.z = Float(worldPosition.z) // Asignar correctamente el eje Z
+            sitArData.y = Float(worldPosition.y)
+            sitArData.z = -1.0*Float(worldPosition.z)
             sitArData.timestamp = Double(currentTimestamp)
 
             // Obtener el frame actual
@@ -374,7 +376,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
             sitArData.zEuler = Float(eulerAngles.z) // Yaw
 
             // Llama a setArData sin la etiqueta
-            sitExternalSensorManager?.setArData(sitArData) // Aquí se pasa sitArData directamente
+           // sitExternalSensorManager?.setArData(sitArData) // Aquí se pasa sitArData directamente
         }
         
         lastTimestamp = currentTimestamp
