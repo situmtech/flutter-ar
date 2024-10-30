@@ -36,7 +36,7 @@ class ARWidget extends StatefulWidget {
     required this.onDisposed,
     this.onARVisibilityChanged,
     this.mapView,
-    this.arHeightRatio = 2.8 / 4,
+    this.arHeightRatio = 2 / 3,
     this.debugMode = false,
     this.apiDomain = "https://dashboard.situm.com",
     // TODO: restore.
@@ -56,7 +56,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
   ARController arController = ARController();
   bool isArVisible = false;
   bool isMapCollapsed = false;
-  bool loadingArMessage = true;
+  bool loadingArMessage = false;
   Timer? loadingArMessageTimer;
   ScrollController scrollController = ScrollController();
   static const int animationMillis = 200;
@@ -65,6 +65,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
   static const Duration animationDurationWithDelay =
       Duration(milliseconds: animationMillis + 100);
 
+  
   @override
   void initState() {
     super.initState();
@@ -84,6 +85,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
     }
 
     ARController()._onARWidgetState(this);
+    //_startUpdatingText();
   }
 
   void _onARViewCreated(BuildContext context, ARController? controller) async {
@@ -110,8 +112,10 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
           children: [
             // Add the AR Widget at the bottom of the stack. It will start
             // loading even when it is not visible.
-            arView,           
-            if (loadingArMessage) const ARLoadingWidget()
+            arView,
+            ArScreenBackButton(onPressed: () {
+              arController.onArGone();
+            }),
           ],
         ),
         // ============== MapView ==============================================
@@ -129,7 +133,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
                   // If the AR is not visible, make the MapView full height:
                   : constraints.maxHeight;
               return AbsorbPointer(
-                absorbing: false,
+                absorbing: isArVisible,
                 child: AnimatedContainer(
                   // NOTE: visibleMapHeight must be a property of AnimatedContainer
                   // as it will not animate changes on a child.
@@ -251,7 +255,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
     setState(() {
       loadingArMessage = true;
     });
-    loadingArMessageTimer = Timer(const Duration(seconds: 2), () {
+    loadingArMessageTimer = Timer(const Duration(seconds: 10), () {
       setState(() {
         loadingArMessageTimer = null;
         loadingArMessage = false;
@@ -267,3 +271,4 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
     });
   }
 }
+
