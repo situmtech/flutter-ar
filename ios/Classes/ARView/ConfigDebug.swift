@@ -61,29 +61,32 @@ class ConfigDebug {
     // Función para crear el botón de Toggle Info
     func setupUpdateDebugInfo(view: UIView) {
         debugButton = UIButton(type: .system)
-        if let image = UIImage(named: "conf") {
-    } else {
-        print("Error: No se pudo cargar la imagen info_icon!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!.")
-    }
+        debugButton?.setImage(UIImage(systemName: "gear"), for: .normal) // Cambia a un ícono del sistema
         debugButton?.tintColor = .white
-        debugButton?.backgroundColor = .systemBlue
+        debugButton?.backgroundColor = .systemGray
         debugButton?.setTitleColor(.white, for: .normal)
         debugButton?.layer.cornerRadius = 10
         debugButton?.frame = CGRect(x: 320, y: 30, width: 40, height: 40) // Asegúrate de que el tamaño sea suficiente para ver el ícono
+        debugButton?.layer.borderColor = UIColor.white.cgColor // Establecer el color del borde
+        debugButton?.layer.borderWidth = 2.0
         debugButton?.addTarget(self, action: #selector(handleDebugButtonTap), for: .touchUpInside)
 
         if let debugButton = debugButton {
             view.addSubview(debugButton)
         }
-        
-        updateButton = UIButton(type: .system)
-        updateButton?.setTitle("Reset", for: .normal)
-        updateButton?.backgroundColor = .systemBlue
-        updateButton?.setTitleColor(.white, for: .normal)
+                
+        updateButton = UIButton(type: .custom)
+        updateButton?.setImage(UIImage(systemName: "gobackward"), for: .normal)
+        updateButton?.tintColor = .white // Cambiar el color del ícono a blanco
+        updateButton?.backgroundColor = .systemGray
         updateButton?.layer.cornerRadius = 10
-        updateButton?.frame = CGRect(x: 260, y: 20, width: 100, height: 30)
+        updateButton?.frame = CGRect(x: 270, y: 30, width: 40, height: 40)
         updateButton?.addTarget(self, action: #selector(resetARWorld), for: .touchUpInside)
         updateButton?.isHidden = true
+        // Añadir borde blanco
+        updateButton?.layer.borderColor = UIColor.white.cgColor
+        updateButton?.layer.borderWidth = 2.0
+
         
         if let resetButton = updateButton {
             view.addSubview(resetButton)
