@@ -43,12 +43,8 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         arQuality = ARQuality()
         sitArData = SITArData()
         sitExternalSensorManager = SITExternalSensorManager()
-        
-       // #if DEBUG
-            configDebug = ConfigDebug(arQuality: arQuality, hasToRefresh: hasToRefresh)
-            print("Configuración de modo debug activada")
-
-       // #endif
+     
+        configDebug = ConfigDebug(arQuality: arQuality, hasToRefresh: hasToRefresh)
 
         //Fija un ancla en el origen de coordenadas
         setupFixedAnchor(arSceneView: arSceneView)
@@ -157,6 +153,12 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
             coordinator?.updatePOIs()
             configDebug?.disableHasToReset()
         }
+        
+        if let hiddenPanelInfo = configParameters["HiddenPanelInfo"] {
+            self.coordinator?.isDebugEnabled = hiddenPanelInfo == 1.0
+        }
+       
+
     }
 
     

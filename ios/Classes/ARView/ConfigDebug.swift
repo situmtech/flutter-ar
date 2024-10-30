@@ -70,7 +70,7 @@ class ConfigDebug {
         debugButton?.layer.borderColor = UIColor.white.cgColor // Establecer el color del borde
         debugButton?.layer.borderWidth = 2.0
         debugButton?.addTarget(self, action: #selector(handleDebugButtonTap), for: .touchUpInside)
-
+        
         if let debugButton = debugButton {
             view.addSubview(debugButton)
         }
@@ -256,7 +256,8 @@ class ConfigDebug {
             "qualityDecrease: ": qualityDecrease,
             "thresholdDecrease": thresholdDecrease, 
             "cameraDeph": Double(cameraDeph),
-            "arrowDistance": Double(arrowDistance)
+            "arrowDistance": Double(arrowDistance),
+            "HiddenPanelInfo": infoPanel?.isHidden == true ? 1.0 : 0.0 
         ]
 
         
@@ -301,6 +302,7 @@ class ConfigDebug {
     }
 
     @objc func configSwitchChanged(_ sender: UISwitch) {
+        //print("configDebug?.debugButton?.isEnabled:    ", configStackView?.isHidden)
         configStackView?.isHidden = !sender.isOn
         mainStackView?.spacing = sender.isOn ? expandedSpacing : collapsedSpacing
     }

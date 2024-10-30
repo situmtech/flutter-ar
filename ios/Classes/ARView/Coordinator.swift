@@ -17,11 +17,11 @@ class Coordinator: NSObject, ARSessionDelegate {
     
 
     var didUpdatePath = false
+    var isDebugEnabled = false
     
     var targetX = 0.0
     var targetZ = 0.0
     var targetFloorIdentifier = 0
-    
     var arrowDistance = 5.0
     
     var pointsList: [[String: Any]] = []
@@ -217,7 +217,11 @@ class Coordinator: NSObject, ARSessionDelegate {
             let arrowPosition = cameraPosition - forwardVector
             
             self.calculateAndSetTargetPoint()
-            self.showPointTarget()
+        
+            if !self.isDebugEnabled{
+                self.showPointTarget()
+            }
+            
             
             if self.targetX != 0 && self.targetZ != 0 {
                 if let yawPoint = calculateAngleToTarget(){
@@ -317,7 +321,6 @@ class Coordinator: NSObject, ARSessionDelegate {
             speed: 0,
             timestamp: Date()
         )
-        print("NEW LOCATION:   ", newLocation.altitude)
         locationManager.initialLocation = newLocation
     }
     
@@ -342,8 +345,7 @@ class Coordinator: NSObject, ARSessionDelegate {
             print("Error: No se encontró la clave 'pois' en el mapa de POIs")
             return
         }
-        
-        print("pois list!:  ", poisList)
+       
         print("floor id:   ", initialLocation.altitude)
         // Añadir los nuevos POIs
         for (index, poi) in poisList.enumerated() {
