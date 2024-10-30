@@ -69,7 +69,7 @@ class ConfigDebug {
         debugButton?.backgroundColor = .systemBlue
         debugButton?.setTitleColor(.white, for: .normal)
         debugButton?.layer.cornerRadius = 10
-        debugButton?.frame = CGRect(x: 20, y: 20, width: 50, height: 50) // Asegúrate de que el tamaño sea suficiente para ver el ícono
+        debugButton?.frame = CGRect(x: 320, y: 30, width: 40, height: 40) // Asegúrate de que el tamaño sea suficiente para ver el ícono
         debugButton?.addTarget(self, action: #selector(handleDebugButtonTap), for: .touchUpInside)
 
         if let debugButton = debugButton {
