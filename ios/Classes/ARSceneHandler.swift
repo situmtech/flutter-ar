@@ -304,7 +304,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     }
     
     func navigationManager(_ navigationManager: SITNavigationInterface, didUpdate progress: SITNavigationProgress, on route: SITRoute) {
-        print("Situm> Progress updated on route: \(route.toDictionary()["points"]), progress: \(progress)")
+        //print("Situm> Progress updated on route: \(route.toDictionary()["points"]), progress: \(progress)")
         if let coordinator = self.coordinator {
             coordinator.handlePointUpdate(route.toDictionary()["points"])
         } else {
@@ -356,6 +356,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
             }
 
             sitArData.dt = Float(currentTimestamp - lastTimestamp)
+            print("delta dt:   ", sitArData.dt)
             sitArData.x = Float(worldPosition.x)
             sitArData.y = Float(worldPosition.y)
             sitArData.z = -1.0*Float(worldPosition.z)
@@ -378,7 +379,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
             sitArData.zEuler = Float(eulerAngles.z) // Yaw
 
             // Llama a setArData sin la etiqueta
-           // sitExternalSensorManager?.setArData(sitArData) // Aquí se pasa sitArData directamente
+            sitExternalSensorManager?.setArData(sitArData) // Aquí se pasa sitArData directamente
         }
         
         lastTimestamp = currentTimestamp
