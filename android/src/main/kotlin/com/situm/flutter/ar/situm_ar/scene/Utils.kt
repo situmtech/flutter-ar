@@ -1,6 +1,8 @@
 package com.situm.flutter.ar.situm_ar.scene
 
+import android.util.Log
 import io.github.sceneview.collision.Vector3
+import kotlin.system.measureTimeMillis
 
 data class RelativePosition(
     val relativeX: Double,
@@ -66,3 +68,9 @@ fun calculate2DDistance(start: Vector3, end: Vector3): Float {
     ).toFloat()
 }
 
+inline fun logExecutionTime(tag: String = "ExecutionTime", block: () -> Unit) {
+    val time = measureTimeMillis {
+        block()
+    }
+    Log.e(tag, "Tiempo de ejecución: $time ms")
+}
