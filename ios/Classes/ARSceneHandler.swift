@@ -64,8 +64,8 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         /*context.coordinator.arrowAnchor = arrowAnchor*/
         
         //Setup animated model
-        let fixedAnchorModel = setupDynamicModel()
-        arSceneView.scene.anchors.append(fixedAnchorModel)
+        //let fixedAnchorModel = setupDynamicModel()
+        //arSceneView.scene.anchors.append(fixedAnchorModel)
      
         
         // Instancia el Coordinator
