@@ -1,5 +1,5 @@
 import Foundation
-
+import UIKit
 
 class ConfigDebug {
     
@@ -39,12 +39,10 @@ class ConfigDebug {
     var hasToReset = false
     var tapCount = 0 // Contador de toques para infoDebug
 
-
-    
     init(arQuality: ARQuality?, hasToRefresh: Bool) {
-            self.arQuality = arQuality
-            self.hasToRefresh = hasToRefresh
-        }
+        self.arQuality = arQuality
+        self.hasToRefresh = hasToRefresh
+    }
 
     @objc func handleDebugButtonTap() {
         tapCount += 1
@@ -56,7 +54,6 @@ class ConfigDebug {
             tapCount = 0 // Reiniciar el contador después de mostrar/ocultar
         }
     }
-
     
     // Función para crear el botón de Toggle Info
     func setupUpdateDebugInfo(view: UIView) {
@@ -87,13 +84,24 @@ class ConfigDebug {
         updateButton?.layer.borderColor = UIColor.white.cgColor
         updateButton?.layer.borderWidth = 2.0
 
-        
         if let resetButton = updateButton {
             view.addSubview(resetButton)
         }
+
+        // Agregar un tap gesture para ocultar el teclado
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        view.addGestureRecognizer(tapGesture)
     }
 
-        // Crear el panel de información y configuración
+    // Función para ocultar el teclado
+    @objc func dismissKeyboard() {
+        configTextField1?.resignFirstResponder()
+        configTextField2?.resignFirstResponder()
+        configTextField3?.resignFirstResponder()
+        configTextField4?.resignFirstResponder()
+    }
+
+    // Crear el panel de información y configuración
     func setupInfoPanel(view: UIView) {
         infoPanel = UIView()
         infoPanel?.translatesAutoresizingMaskIntoConstraints = false
@@ -232,8 +240,6 @@ class ConfigDebug {
         return stackView
     }
 
-           
-      
     private func createTextField(placeholder: String, value: String) -> UITextField {
         let textField = UITextField()
         textField.placeholder = placeholder
@@ -245,24 +251,21 @@ class ConfigDebug {
         return textField
     }
     
-    func setParametersUpdated(){
+    func setParametersUpdated() {
         arQuality?.setQualityDecrease(qualityDecrease: Float(qualityDecrease))
         arQuality?.setThresholdDecrease(thresholdDecrease: Float(thresholdDecrease))
     }
     
-    func getConfigParameters() -> [String: Double]{
-        
-        let configParameters: [String: Double]  = [
+    func getConfigParameters() -> [String: Double] {
+        let configParameters: [String: Double] = [
             "qualityDecrease: ": qualityDecrease,
-            "thresholdDecrease": thresholdDecrease, 
+            "thresholdDecrease": thresholdDecrease,
             "cameraDeph": Double(cameraDeph),
             "arrowDistance": Double(arrowDistance),
-            "HiddenPanelInfo": infoPanel?.isHidden == true ? 1.0 : 0.0 
+            "HiddenPanelInfo": infoPanel?.isHidden == true ? 1.0 : 0.0
         ]
 
-        
         return configParameters
-        
     }
     
     @objc func configTextFieldDidChange(_ textField: UITextField) {
@@ -292,7 +295,6 @@ class ConfigDebug {
             
         } else if textField == configTextField4 {
             print("Arrow distance: \(textField.text ?? "")")
-            // Convertir el texto a Double o el tipo adecuado
             if let text = textField.text, let value = Int(text) {
                 arrowDistance = value
             } else {
@@ -302,38 +304,37 @@ class ConfigDebug {
     }
 
     @objc func configSwitchChanged(_ sender: UISwitch) {
-        //print("configDebug?.debugButton?.isEnabled:    ", configStackView?.isHidden)
         configStackView?.isHidden = !sender.isOn
         mainStackView?.spacing = sender.isOn ? expandedSpacing : collapsedSpacing
     }
 
-
-     // Función que se llama cuando se cambia el valor del switch de configuración
+    // Función que se llama cuando se cambia el valor del switch de configuración
     @objc func toggleInfoDebug() {
-            guard let panel = infoPanel else { return }
-            panel.isHidden.toggle()
-            isInfoVisible.toggle()
-        }
+        guard let panel = infoPanel else { return }
+        panel.isHidden.toggle()
+        isInfoVisible.toggle()
+    }
     
-    @objc func resetARWorld(){
+    @objc func resetARWorld() {
         hasToReset = true
     }
     
-    func disableHasToReset(){
+    func disableHasToReset() {
         self.hasToReset = false
     }
 
-        // Función para iniciar el refresco de la información en tiempo real
-        func startRefreshingInfo() {
-            refreshTimer?.invalidate()
-            refreshTimer = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(updateAll), userInfo: nil, repeats: true)
-        }
+    // Función para iniciar el refresco de la información en tiempo real
+    func startRefreshingInfo() {
+        refreshTimer?.invalidate()
+        refreshTimer = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(updateAll), userInfo: nil, repeats: true)
+    }
 
-        @objc func updateAll() {
-            setParametersUpdated()
-            updateInfoPanel()
-        }
-        // Función que actualiza la información mostrada en el panel
+    @objc func updateAll() {
+        setParametersUpdated()
+        updateInfoPanel()
+    }
+
+    // Función que actualiza la información mostrada en el panel
     @objc func updateInfoPanel() {
         guard let arQuality = arQuality else {
             print("Error: arQuality es nil")
@@ -344,8 +345,9 @@ class ConfigDebug {
         let infoDebug = arQuality.getInfoParameters()
         
         if let globalQuality = infoDebug["globalQuality"] as? Double {
-            let roundedQuality = (globalQuality * 100).rounded() / 100
-            
+            print("Global quality!!!!!!!!!!!!!:   ", globalQuality)
+            let roundedQuality = String(format: "%.15f", globalQuality)
+
             // Actualizar las etiquetas con los nuevos valores, desenvolviendo opcionales
             infoLabel1?.text = "HasToRefresh: \(hasToRefresh)"
             infoLabel2?.text = "GlobalQuality: \(roundedQuality)"
@@ -373,12 +375,10 @@ class ConfigDebug {
         }
     }
 
-
-        // Detener el refresco cuando no sea necesario
-        func stopRefreshingInfo() {
-            refreshTimer?.invalidate()
-            refreshTimer = nil
-        }
-    
-    
+    // Detener el refresco cuando no sea necesario
+    func stopRefreshingInfo() {
+        refreshTimer?.invalidate()
+        refreshTimer = nil
+    }
 }
+

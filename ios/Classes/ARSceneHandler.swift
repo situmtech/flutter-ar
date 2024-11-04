@@ -245,7 +245,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
                                          worldRotation.angle)
             arQuality?.updateARLocation(worldPosition: position, worldRotation: rotation)
             
-            self.setSitArData()
+            //self.setSitArData()
         } else {
             print("Error: no se pudieron obtener los valores de la cámara")
         }
