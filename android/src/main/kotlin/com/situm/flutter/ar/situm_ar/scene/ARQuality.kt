@@ -64,7 +64,9 @@ class ARQuality {
 
 
     fun hasToResetWorld():Boolean{
-        updateConfidence()
+        logExecutionTime(" >> Update Confidence ") {
+            updateConfidence()
+        }
         return checkIfHasToRefreshAndUpdateThreshold(quality,arConf, situmConf)
     }
     fun updateConfidence() {

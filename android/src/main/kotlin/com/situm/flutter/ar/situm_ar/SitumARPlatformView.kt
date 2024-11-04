@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.widget.FrameLayout
 import androidx.lifecycle.Lifecycle
+import com.google.ar.core.AugmentedImageDatabase
 import com.google.ar.core.Config
 import com.situm.flutter.ar.situm_ar.scene.ARSceneHandler
 import io.flutter.plugin.common.BinaryMessenger
@@ -65,15 +66,30 @@ class SitumARPlatformView(
         lifecycle.addObserver(arController)
         sceneView = CustomARSceneView(context)
         sceneView.sessionConfiguration = { session, config ->
-            config.depthMode =
-                if (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
-                    Config.DepthMode.AUTOMATIC
-                } else {
-                    Config.DepthMode.DISABLED
-                }
+            config.depthMode = Config.DepthMode.DISABLED
             config.instantPlacementMode = Config.InstantPlacementMode.DISABLED
             config.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
+            config.augmentedFaceMode = Config.AugmentedFaceMode.DISABLED
+            Log.e(TAG,">>>>>><config.augmentedImageDatabase ${config.augmentedImageDatabase.numImages} ")
+            config.cloudAnchorMode = Config.CloudAnchorMode.DISABLED
+            config.geospatialMode = Config.GeospatialMode.DISABLED
+            config.imageStabilizationMode = Config.ImageStabilizationMode.OFF
+            config.planeFindingMode = Config.PlaneFindingMode.DISABLED
+            config.updateMode = Config.UpdateMode.LATEST_CAMERA_IMAGE
+
+
+            //config.augmentedImageDatabase = AugmentedImageDatabase(session).
         }
+//        sceneView.sessionConfiguration = { session, config ->
+//            config.depthMode =
+//                if (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
+//                    Config.DepthMode.AUTOMATIC
+//                } else {
+//                    Config.DepthMode.DISABLED
+//                }
+//            config.instantPlacementMode = Config.InstantPlacementMode.DISABLED
+//            config.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
+//        }
         // This call will make the AR visible:
         sceneView.lifecycle = lifecycle
         rootView.addView(sceneView)

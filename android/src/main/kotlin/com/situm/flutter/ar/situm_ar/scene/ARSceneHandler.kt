@@ -178,6 +178,7 @@ class ARSceneHandler(
         this.sceneView = sceneView
         Log.d(TAG, ">>>Setup ARSceneView 1 ")
         sceneView.apply {
+
             Log.d(TAG, ">>>Setup ARSceneView")
             planeRenderer.isEnabled = false
 

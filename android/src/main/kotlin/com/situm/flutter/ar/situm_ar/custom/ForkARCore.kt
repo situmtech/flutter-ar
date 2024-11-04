@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
@@ -178,6 +179,7 @@ class ForkARCore(
         session?.let {
             synchronized(it) {
                 if (session == null) return@synchronized
+                Log.e("Situm> AR>", "[!] ARCORE Destroy. Close")
                 it.close()
                 session = null
             }
