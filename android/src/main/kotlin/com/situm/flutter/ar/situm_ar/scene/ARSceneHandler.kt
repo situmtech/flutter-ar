@@ -570,22 +570,22 @@ class ARSceneHandler(
         targetArrow = targetARPosition
         arrowNode?.lookAt(targetARPosition, smooth = true)
         // debug
-        if (!::currentTargetNodeGeometry.isInitialized || currentTargetNodeGeometry == null) {
-            val sphereGeometry =
-                Sphere.Builder().radius(0.15f).build(sceneView.engine)
-            val material = MaterialLoader(sceneView.engine, context).createColorInstance(
-                Color(
-                    0f,
-                    1f,
-                    0f,
-                    0.8f
-                )
-            )
-            targetNode = GeometryNode(sceneView.engine, sphereGeometry, material)
-            sceneView.addChildNode(targetNode!!)
-        } else {
-            targetNode!!.worldPosition = targetARPosition
-        }
+//        if (!::currentTargetNodeGeometry.isInitialized || currentTargetNodeGeometry == null) {
+//            val sphereGeometry =
+//                Sphere.Builder().radius(0.15f).build(sceneView.engine)
+//            val material = MaterialLoader(sceneView.engine, context).createColorInstance(
+//                Color(
+//                    0f,
+//                    1f,
+//                    0f,
+//                    0.8f
+//                )
+//            )
+//            targetNode = GeometryNode(sceneView.engine, sphereGeometry, material)
+//            sceneView.addChildNode(targetNode!!)
+//        } else {
+//            targetNode!!.worldPosition = targetARPosition
+//        }
 
     }
 
@@ -759,11 +759,13 @@ class ARSceneHandler(
         clearRouteNodes()
         pois = emptyList()
         poisTexturesMap.clear()
-
+        sceneView.clearChildNodes()
         diskGeometry?.let { diskGeometry = null }
 
 
     }
+
+
 
     fun clearAllNodes(node: Node) {
         node.childNodes.forEach { clearAllNodes(it) }  // Limpia recursivamente

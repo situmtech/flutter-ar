@@ -625,34 +625,6 @@ open class ForkSceneView @JvmOverloads constructor(
                 }
             }
             super.destroy()
-
-            // new fom sceneview destroy
-//            lifecycle = null
-//            try {
-//                Choreographer.getInstance().removeFrameCallback(frameCallback)
-//            }catch (e:Exception){
-//
-//            }
-//
-
-//                runCatching { uiHelper.detach() }
-//
-//                defaultMainLight?.destroy()
-//
-////        runCatching { ResourceManager.getInstance().destroyAllResources() }
-//
-//                defaultRenderer?.let { engine.safeDestroyRenderer(it) }
-//                defaultView?.let { engine.safeDestroyView(it) }
-//                defaultScene?.let { engine.safeDestroyScene(it) }
-//                defaultEnvironmentLoader?.destroy()
-//                defaultMaterialLoader?.let { engine.safeDestroyMaterialLoader(it) }
-//                defaultModelLoader?.let { engine.safeDestroyModelLoader(it) }
-//
-//                defaultEngine?.let { it.safeDestroy() }
-//                defaultEglContext?.let { OpenGL.destroyEglContext(it) }
-//                isDestroyed = true
-
-
         }
 
     }

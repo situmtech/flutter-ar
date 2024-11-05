@@ -66,6 +66,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
       Duration(milliseconds: animationMillis + 100);
 
   Timer? _timer;
+  bool showDebugUI = false;
   String debugInfo = "Initializing...";
 
   @override
@@ -87,7 +88,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
     }
 
     ARController()._onARWidgetState(this);
-    _startUpdatingText();
+    //_startUpdatingText();
   }
 
   void _onARViewCreated(BuildContext context, ARController? controller) async {
@@ -125,11 +126,21 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
             // Add the AR Widget at the bottom of the stack. It will start
             // loading even when it is not visible.
             arView,
-            ArScreenBackButton(onPressed: () {
-              arController.onArGone();
-            }),
+            ArScreenBackButton(
+              onPressed: () {
+                arController.onArGone();
+              },
+              onLongPress: () {
+                showDebugUI = !showDebugUI;
+                if (showDebugUI) {
+                  _startUpdatingText();
+                } else {
+                  _timer?.cancel();
+                }
+              },
+            ),
 
-            if (Platform.isAndroid) ...[
+            if (Platform.isAndroid && showDebugUI) ...[
               _createButtonsDebugAR(() {
                 arController.worldRedraw();
               }, () {
@@ -137,24 +148,24 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
               }, () {
                 arController.showRouteOnAR();
               }),
-            ],
-            if (loadingArMessage) const ARLoadingWidget(),
-            ////////////////////
-            Positioned(
-              top: 20, // Ajusta la posición en la pantalla
-              left: 20,
-              child: Container(
-                padding: EdgeInsets.all(8.0),
-                color: Colors.black.withOpacity(0.5), // Fondo semi-transparente
-                child: Text(
-                  debugInfo,
-                  style: TextStyle(
-                    color: Colors.white, // Color del texto
-                    fontSize: 16.0, // Tamaño del texto
+              Positioned(
+                top: 20, // Ajusta la posición en la pantalla
+                left: 50,
+                child: Container(
+                  padding: EdgeInsets.all(8.0),
+                  color:
+                      Colors.black.withOpacity(0.5), // Fondo semi-transparente
+                  child: Text(
+                    debugInfo,
+                    style: TextStyle(
+                      color: Colors.white, // Color del texto
+                      fontSize: 16.0, // Tamaño del texto
+                    ),
                   ),
                 ),
               ),
-            ),
+            ],
+            if (loadingArMessage) const ARLoadingWidget(),
           ],
         ),
         // ============== MapView ==============================================

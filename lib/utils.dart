@@ -2,8 +2,13 @@ part of 'ar.dart';
 
 class ArScreenBackButton extends StatelessWidget {
   final VoidCallback onPressed;
+  final VoidCallback? onLongPress;
 
-  const ArScreenBackButton({super.key, required this.onPressed});
+  const ArScreenBackButton({
+    super.key,
+    required this.onPressed,
+    this.onLongPress,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -23,6 +28,7 @@ class ArScreenBackButton extends StatelessWidget {
         ),
         child: InkWell(
           onTap: onPressed,
+          onLongPress: onLongPress,
           child: const Center(
             child: Icon(
               Icons.arrow_back,
