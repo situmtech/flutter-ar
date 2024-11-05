@@ -27,6 +27,11 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     var lastTimestamp = 0
     var sitExternalSensorManager: SITExternalSensorManager?
     
+    var locationsBuffer: [String?] = Array(repeating: nil, count: 10)
+    var currentIndex = 0 // Índice para controlar la posición de inserción
+    var hasToResetChangeFloor = false
+    
+    
     func setupSceneView(arSceneView: CustomARSceneView) {
 
         arSceneView.cameraMode = .ar
@@ -183,6 +188,10 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
             hasToRefresh = false
         }
         
+        if hasToResetChangeFloor{
+            hasToRefresh = true
+        }
+        
         if hasToRefresh {
             let numRefresh = 1
             startRefreshing(numRefresh)
@@ -232,6 +241,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         
         updateRefreshing()
         arQuality?.updateSitumLocation(location: location)
+        
 
         // Desempaquetar los valores opcionales de coordenadas de cámara
         if let worldPosition = coordinator?.arView?.cameraTransform.translation,
@@ -280,6 +290,8 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
             print("Situm> Location received!! and send to AR: \(location)")
             coordinator.handleLocationUpdate(location: location)
             updateArQuality(location: location)
+            resfreshByChangeFloor(location: location, currentIndex: &currentIndex, hasToResetChangeFloor: &hasToResetChangeFloor, locationBuffer: &locationsBuffer)
+
         } else {
             print("Coordinator is nil")
         }

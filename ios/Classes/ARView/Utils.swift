@@ -241,7 +241,7 @@ func createTextEntity(text: String, poiPosition: SIMD3<Float>, arView: ARView) -
     
     // Escalar el texto y colocarlo directamente encima del POI en posición fija
     textEntity.scale = SIMD3<Float>(0.15, 0.15, 0.15)
-    textEntity.position = SIMD3<Float>(poiPosition.x, poiPosition.y + 1.0, poiPosition.z) // Posición fija en Y para colocarlo encima del POI
+    textEntity.position = SIMD3<Float>(poiPosition.x, poiPosition.y + 0.8, poiPosition.z) // Posición fija en Y para colocarlo encima del POI
 
     // Ajustar la posición del texto para centrarlo horizontalmente
     let bound = textEntity.visualBounds(relativeTo: nil)
@@ -249,14 +249,14 @@ func createTextEntity(text: String, poiPosition: SIMD3<Float>, arView: ARView) -
     textEntity.position.x -= textWidth / 2.0
 
     // Calcular el punto medio y añadir el componente personalizado
-    let midpoint = SIMD3<Float>(textEntity.position.x + textWidth / 2.0, textEntity.position.y, textEntity.position.z)
-    textEntity.components[MidpointComponent.self] = MidpointComponent(midpoint: midpoint)
+  /*  let midpoint = SIMD3<Float>(textEntity.position.x + textWidth / 2.0, textEntity.position.y, textEntity.position.z)
+    textEntity.components[MidpointComponent.self] = MidpointComponent(midpoint: midpoint)*/
     
     return textEntity
 }
 
 
-@available(iOS 15.0, *)
+/*@available(iOS 15.0, *)
 func updateTextOrientation(arView: ARView) {
     if let fixedPOIAnchor = arView.scene.anchors.first(where: { $0.name == "fixedPOIAnchor" }) as? AnchorEntity {
         for child in fixedPOIAnchor.children {
@@ -277,30 +277,75 @@ func updateTextOrientation(arView: ARView) {
         }
     }
 }
+*/
 
 
-
-func rotateIconPoi(arView: ARView){
-    
+func rotateIconPoiAndText(arView: ARView) {
     if let fixedPOIAnchor = arView.scene.anchors.first(where: { $0.name == "fixedPOIAnchor" }) as? AnchorEntity {
+        // Definir una rotación incremental en el eje Y (continua)
+        let rotationAngle: Float = .pi / 360 // Un pequeño ángulo en cada actualización (1 grado)
+        let rotationIncrement = simd_quatf(angle: rotationAngle, axis: SIMD3<Float>(0, 1, 0))
+        
         for child in fixedPOIAnchor.children {
+            // Rotar la entidad del POI
             if let poiEntity = child as? ModelEntity, poiEntity.name.starts(with: "poi_") {
-               
+                poiEntity.orientation = simd_mul(poiEntity.orientation, rotationIncrement)
+            }
+            
+            // Rotar la entidad de texto
+            if let textEntity = child as? ModelEntity, textEntity.name.starts(with: "text_") {
+                textEntity.orientation = simd_mul(textEntity.orientation, rotationIncrement)
+            }
+        }
+    }
+}
 
-                var currentRotation = poiEntity.orientation
-                                    
-                // Definir una rotación incremental en el eje Y (continua)
-                let rotationAngle: Float = .pi / 360 // Un pequeño ángulo en cada actualización (1 grado)
-                let rotationIncrement = simd_quatf(angle: rotationAngle, axis: SIMD3<Float>(0, 1, 0))
-                
-                // Aplicar la rotación incremental a la entidad
-                currentRotation = simd_mul(currentRotation, rotationIncrement)
-                poiEntity.orientation = currentRotation
+
+func areLastThreeValuesDistinct(locationBuffer: [String?], currentIndex: Int) -> Bool {
+    // Asegurarse de que el buffer tenga al menos 3 valores para comparar
+    guard locationBuffer.count >= 3 else {
+        return false
+    }
+
+    // Obtiene los últimos tres valores guardados en el buffer de forma circular
+    let lastIndex1 = (currentIndex - 1 + locationBuffer.count) % locationBuffer.count
+    let lastIndex2 = (currentIndex - 2 + locationBuffer.count) % locationBuffer.count
+    let lastIndex3 = (currentIndex - 3 + locationBuffer.count) % locationBuffer.count
+    
+    guard let lastValue1 = locationBuffer[lastIndex1],
+          let lastValue2 = locationBuffer[lastIndex2],
+          let lastValue3 = locationBuffer[lastIndex3] else {
+        // Retorna false si alguno de los tres últimos valores es nil
+        return false
+    }
+    
+    // Crea un conjunto con los tres últimos valores
+    let lastThreeValues: Set<String> = [lastValue1, lastValue2, lastValue3]
+
+    // Recorre el resto del buffer y verifica si alguno coincide con los últimos tres valores
+    for i in 0..<locationBuffer.count {
+        if i != lastIndex1 && i != lastIndex2 && i != lastIndex3 {
+            if let location = locationBuffer[i], lastThreeValues.contains(location) {
+                return false
             }
         }
     }
     
+    return true
 }
+
+func resfreshByChangeFloor(location: SITLocation, currentIndex: inout Int, hasToResetChangeFloor: inout Bool, locationBuffer: inout [String?]) {
+       hasToResetChangeFloor = false
+       locationBuffer[currentIndex] = location.position.floorIdentifier
+       currentIndex = (currentIndex + 1) % locationBuffer.count // Actualizar el índice de manera circular
+       
+       if areLastThreeValuesDistinct(locationBuffer: locationBuffer, currentIndex: currentIndex) {
+           print("Los últimos tres valores son distintos del resto de la lista.")
+           hasToResetChangeFloor = true
+       } else {
+           print("Los últimos tres valores no son distintos del resto de la lista.")
+       }
+   }
 
 
 extension simd_float4x4 {

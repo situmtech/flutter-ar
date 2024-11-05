@@ -50,8 +50,8 @@ class Coordinator: NSObject, ARSessionDelegate {
         }
         
         updateArrowPositionAndDirection()
-        updateTextOrientation(arView: arView)
-        rotateIconPoi(arView: arView)
+        //updateTextOrientation(arView: arView)
+        rotateIconPoiAndText(arView: arView)
         arSceneHandler?.handleFrameUpdate(frame: frame) // Reenviar al ARSceneHandler
         
     }

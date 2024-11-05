@@ -59,14 +59,14 @@ class ConfigDebug {
     func setupUpdateDebugInfo(view: UIView) {
         debugButton = UIButton(type: .system)
         debugButton?.setImage(UIImage(systemName: "gear"), for: .normal) // Cambia a un ícono del sistema
-        debugButton?.tintColor = .white
-        debugButton?.backgroundColor = .systemGray
+        debugButton?.tintColor = .clear
+        debugButton?.backgroundColor = .clear
         debugButton?.setTitleColor(.white, for: .normal)
         debugButton?.layer.cornerRadius = 10
         debugButton?.frame = CGRect(x: 320, y: 30, width: 40, height: 40) // Asegúrate de que el tamaño sea suficiente para ver el ícono
         debugButton?.layer.borderColor = UIColor.white.cgColor // Establecer el color del borde
-        debugButton?.layer.borderWidth = 2.0
         debugButton?.addTarget(self, action: #selector(handleDebugButtonTap), for: .touchUpInside)
+        
         
         if let debugButton = debugButton {
             view.addSubview(debugButton)
@@ -345,7 +345,6 @@ class ConfigDebug {
         let infoDebug = arQuality.getInfoParameters()
         
         if let globalQuality = infoDebug["globalQuality"] as? Double {
-            print("Global quality!!!!!!!!!!!!!:   ", globalQuality)
             let roundedQuality = String(format: "%.15f", globalQuality)
 
             // Actualizar las etiquetas con los nuevos valores, desenvolviendo opcionales
