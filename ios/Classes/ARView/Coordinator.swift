@@ -14,9 +14,7 @@ class Coordinator: NSObject, ARSessionDelegate {
 
     var arView: ARView?
     var yawLabel: UILabel?
-    
 
-    var didUpdatePath = false
     var isDebugEnabled = false
     
     var targetX = 0.0
@@ -43,17 +41,34 @@ class Coordinator: NSObject, ARSessionDelegate {
         // Obtener el yaw respecto al norte
         if let yaw = getCameraYawRespectToNorth() {
             let yawDegrees = yaw * (180.0 / .pi)
-            // Actualizar el valor del label en la interfaz de usuario
-            /* DispatchQueue.main.async {
-             self.yawLabel?.text = String(format: "Yaw: %.2f°", yawDegrees)
-             }*/
         }
         
         updateArrowPositionAndDirection()
-        //updateTextOrientation(arView: arView)
+        showPointDebug()
         rotateIconPoiAndText(arView: arView)
         arSceneHandler?.handleFrameUpdate(frame: frame) // Reenviar al ARSceneHandler
         
+    }
+    
+    func showPointDebug(){
+        if !self.isDebugEnabled{
+            self.showPointTarget()
+        }else{
+            
+            
+            guard let arView = arView else { return }
+            
+            // Buscar el ancla y crear si no existe
+            let fixedPOIAnchor = arView.scene.anchors.first(where: { $0.name == "fixedPOIAnchor" }) as? AnchorEntity ?? {
+                let newAnchor = AnchorEntity(world: SIMD3<Float>(0, 0, 0))
+                newAnchor.name = "fixedPOIAnchor"
+                arView.scene.addAnchor(newAnchor)
+                return newAnchor
+            }()
+            
+            fixedPOIAnchor.children.filter { $0.name.starts(with: "point_") }
+                .forEach { $0.removeFromParent() }
+        }
     }
     
     func arePointsDifferent(_ oldPoints: [[String: Any]], _ newPoints: [[String: Any]]) -> Bool {
@@ -93,7 +108,7 @@ class Coordinator: NSObject, ARSessionDelegate {
             print("Invalid data format in userInfo")
         }
     }
-    
+
     
     func handleLocationUpdate(location: SITLocation) {
         

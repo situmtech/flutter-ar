@@ -317,7 +317,6 @@ func resfreshByChangeFloor(location: SITLocation, currentIndex: inout Int, hasTo
        }
    }
 
-
 extension simd_float4x4 {
     func eulerAngles() -> (x: Float, y: Float, z: Float) {
         let sy = sqrt(self.columns.0.x * self.columns.0.x + self.columns.1.x * self.columns.1.x)
