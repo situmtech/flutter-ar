@@ -6,7 +6,7 @@ import SitumSDK
  * Plugin controller.
  */
 @available(iOS 15.0, *)
-class ARController: NSObject {
+class ARController: NSObject, ARSceneHandlerDelegate {
     
     private let arView: SitumARPlatformView
     private let arSceneHandler: ARSceneHandler
@@ -23,6 +23,9 @@ class ARController: NSObject {
         self.arSceneHandler = arSceneHandler
         self.arMethodCallSender = arMethodCallSender
         super.init()
+        
+        self.arSceneHandler.delegate = self
+
     }
     
     // Cargar AR
@@ -41,7 +44,7 @@ class ARController: NSObject {
         // Subscribe to positioning/navigation callbacks:
         sitLocationManager.addDelegate(arSceneHandler)
         sitNavigationManager.addDelegate(arSceneHandler)
-        
+     
         // Start loading building & POIs, delegate them to arSceneHandler.
         sitCommManager.fetchBuildingInfo(buildingIdentifier, withOptions: nil, success: { (data) in
             self.arSceneHandler.onBuildingInfoReceived(data?["results"] as? SITBuildingInfo, withError: nil)
@@ -52,6 +55,11 @@ class ARController: NSObject {
         isLoaded = true
         isLoading = false
         return
+    }
+    
+    func didReachDestination() {
+        print("Situm> ARController> Destination reached, executing action.")
+        self.arMethodCallSender.sendArGoneRequired()
     }
     
     // Descargar AR

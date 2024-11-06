@@ -337,8 +337,8 @@ class Coordinator: NSObject, ARSessionDelegate {
         }()
                
         // Eliminar todos los POIs y textos anteriores
-        fixedPOIAnchor.children.filter { $0.name.starts(with: "poi_") || $0.name.starts(with: "text_") }
-            .forEach { $0.removeFromParent() }
+        fixedPOIAnchor.children.filter { $0.name.starts(with: "poiContainer_") }
+                .forEach { $0.removeFromParent() }
         
         // Obtener lista de POIs
         guard let poisList = self.poisStored["pois"] as? [[String: Any]] else {
@@ -374,17 +374,27 @@ class Coordinator: NSObject, ARSessionDelegate {
                             print("Error: No se pudo crear el disco para el POI")
                             return
                         }
-                        poiEntity.position = transformedPosition
+                    
+                        let containerEntity = Entity()
+                        containerEntity.position = transformedPosition
+                        containerEntity.name = "poiContainer_\(index)"
+                    
+                        // Configurar el POI
+                        poiEntity.position = SIMD3<Float>(0, 0, 0) // Centrado en el contenedor
                         poiEntity.name = "poi_\(index)"
-                        
-                        let textEntity = createTextEntity(text: name, poiPosition: transformedPosition, arView: arView)
+                       
+                        // Configurar el texto
+                        let textEntity = createTextEntity(text: name, poiPosition: SIMD3<Float>(0, 0.3, 0), arView: arView) // Coloca el texto encima del POI
                         textEntity.name = "text_\(index)"
-                        
-                        // Añadir ambos al ancla     
-                        fixedPOIAnchor.addChild(poiEntity)
-                        fixedPOIAnchor.addChild(textEntity)
+                       
+                        // Añadir POI y texto al contenedor
+                        containerEntity.addChild(poiEntity)
+                        containerEntity.addChild(textEntity)
+                       
+                        // Añadir el contenedor al ancla principal
+                        fixedPOIAnchor.addChild(containerEntity)
+                       
                         addPointLightToScene(at: transformedPosition, arView: arView)
-
                   
                     }
                 

@@ -240,44 +240,18 @@ func createTextEntity(text: String, poiPosition: SIMD3<Float>, arView: ARView) -
     let textEntity = ModelEntity(mesh: mesh, materials: [material])
     
     // Escalar el texto y colocarlo directamente encima del POI en posición fija
-    textEntity.scale = SIMD3<Float>(0.15, 0.15, 0.15)
-    textEntity.position = SIMD3<Float>(poiPosition.x, poiPosition.y + 0.8, poiPosition.z) // Posición fija en Y para colocarlo encima del POI
+    textEntity.scale = SIMD3<Float>(0.25, 0.25, 0.25)
+    textEntity.position = SIMD3<Float>(poiPosition.x, poiPosition.y + 0.75, poiPosition.z) // Posición fija en Y para colocarlo encima del POI
 
     // Ajustar la posición del texto para centrarlo horizontalmente
     let bound = textEntity.visualBounds(relativeTo: nil)
     let textWidth = bound.extents.x
     textEntity.position.x -= textWidth / 2.0
 
-    // Calcular el punto medio y añadir el componente personalizado
-  /*  let midpoint = SIMD3<Float>(textEntity.position.x + textWidth / 2.0, textEntity.position.y, textEntity.position.z)
-    textEntity.components[MidpointComponent.self] = MidpointComponent(midpoint: midpoint)*/
     
     return textEntity
 }
 
-
-/*@available(iOS 15.0, *)
-func updateTextOrientation(arView: ARView) {
-    if let fixedPOIAnchor = arView.scene.anchors.first(where: { $0.name == "fixedPOIAnchor" }) as? AnchorEntity {
-        for child in fixedPOIAnchor.children {
-            if let textEntity = child as? ModelEntity, textEntity.name.starts(with: "text_") {
-                let cameraPosition = arView.cameraTransform.translation
-                
-                // Accede al punto medio desde el componente personalizado
-                if let midpointComponent = textEntity.components[MidpointComponent.self] as? MidpointComponent {
-                    textEntity.look(at: cameraPosition, from: midpointComponent.midpoint, relativeTo: nil)
-                    
-                    // Mantener el texto orientado correctamente con una rotación adicional en el eje Y
-                    textEntity.orientation = simd_mul(
-                        textEntity.orientation,
-                        simd_quatf(angle: .pi, axis: SIMD3<Float>(0, 1, 0))
-                    )
-                }
-            }
-        }
-    }
-}
-*/
 
 
 func rotateIconPoiAndText(arView: ARView) {
@@ -287,18 +261,14 @@ func rotateIconPoiAndText(arView: ARView) {
         let rotationIncrement = simd_quatf(angle: rotationAngle, axis: SIMD3<Float>(0, 1, 0))
         
         for child in fixedPOIAnchor.children {
-            // Rotar la entidad del POI
-            if let poiEntity = child as? ModelEntity, poiEntity.name.starts(with: "poi_") {
-                poiEntity.orientation = simd_mul(poiEntity.orientation, rotationIncrement)
-            }
-            
-            // Rotar la entidad de texto
-            if let textEntity = child as? ModelEntity, textEntity.name.starts(with: "text_") {
-                textEntity.orientation = simd_mul(textEntity.orientation, rotationIncrement)
+            // Rotar la entidad contenedora
+            if child.name.starts(with: "poiContainer_") {
+                child.orientation = simd_mul(child.orientation, rotationIncrement)
             }
         }
     }
 }
+
 
 
 func areLastThreeValuesDistinct(locationBuffer: [String?], currentIndex: Int) -> Bool {

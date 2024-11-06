@@ -6,11 +6,19 @@ import SitumSDK
 /**
  ARSceneJuandler. Manage AR world.
  */
+
+protocol ARSceneHandlerDelegate: AnyObject {
+    func didReachDestination()
+}
+
+
 @available(iOS 15.0, *)
 class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavigationDelegate {  
 
+    weak var delegate: ARSceneHandlerDelegate?
 
-    var coordinator: Coordinator?   
+    
+    var coordinator: Coordinator?
     
     var arQuality: ARQuality?
     var configDebug: ConfigDebug?
@@ -167,14 +175,14 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     }
 
     
-    func infoDebug(){
+   /* func infoDebug(){
         if let coordinator = self.coordinator {
             if let viewController = coordinator.arView?.window?.rootViewController {
                 showAlert(message: "hasToRefresh: \(hasToRefresh)", on: viewController)
             }
         }
         
-    }
+    }*/
     
     //Update AR
     
@@ -326,7 +334,10 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     }
     
     func navigationManager(_ navigationManager: SITNavigationInterface, destinationReachedOn route: SITRoute) {
-        print("Situm> Destination reached on route: \(route)")
+        print("Situm> Destination reached on route: \(route)") 
+        delegate?.didReachDestination()
+
+        
     }
     
     func navigationManager(_ navigationManager: SITNavigationInterface, userOutsideRoute route: SITRoute) {
@@ -339,7 +350,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     
     
     
-    func showAlert(message: String, on viewController: UIViewController) {
+    /*func showAlert(message: String, on viewController: UIViewController) {
             let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
             viewController.present(alert, animated: true, completion: nil)
 
@@ -350,7 +361,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
             DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
                 alert.dismiss(animated: true, completion: nil)
             }
-        }
+        }*/
     
     func setSitArData() {
         guard let worldPosition = coordinator?.arView?.cameraTransform.translation else {
