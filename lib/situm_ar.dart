@@ -169,47 +169,47 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
           ],
         ),
         // ============== MapView ==============================================
-        Align(
-          alignment: Alignment.bottomCenter,
-          child: LayoutBuilder(
-            // Let us know about the container's height.
-            builder: (BuildContext context, BoxConstraints constraints) {
-              double visibleMapHeight = isArVisible
-                  // If the AR is visible, make the MapView height depend on the
-                  // state collapsed/expanded:
-                  ? (isMapCollapsed
-                      ? 0
-                      : constraints.maxHeight * (1 - widget.arHeightRatio))
-                  // If the AR is not visible, make the MapView full height:
-                  : constraints.maxHeight;
-              return AbsorbPointer(
-                absorbing: isArVisible,
-                child: AnimatedContainer(
-                  // NOTE: visibleMapHeight must be a property of AnimatedContainer
-                  // as it will not animate changes on a child.
-                  duration: animationDuration,
-                  curve: Curves.decelerate,
-                  height: visibleMapHeight,
-                  child: SingleChildScrollView(
-                    // Add ScrollView to center the map: TODO fix MapView resizing on iOS.
-                    controller: scrollController,
-                    physics: const NeverScrollableScrollPhysics(),
-                    child: Container(
-                      // This opaque Container prevents the AR widget from being
-                      // visible while the map is not loaded.
-                      color: Colors.grey[200],
-                      child: SizedBox(
-                        // Set the map height equals to the container.
-                        height: constraints.maxHeight,
-                        child: widget.mapView!,
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
+        // Align(
+        //   alignment: Alignment.bottomCenter,
+        //   child: LayoutBuilder(
+        //     // Let us know about the container's height.
+        //     builder: (BuildContext context, BoxConstraints constraints) {
+        //       double visibleMapHeight = isArVisible
+        //           // If the AR is visible, make the MapView height depend on the
+        //           // state collapsed/expanded:
+        //           ? (isMapCollapsed
+        //               ? 0
+        //               : constraints.maxHeight * (1 - widget.arHeightRatio))
+        //           // If the AR is not visible, make the MapView full height:
+        //           : constraints.maxHeight;
+        //       return AbsorbPointer(
+        //         absorbing: isArVisible,
+        //         child: AnimatedContainer(
+        //           // NOTE: visibleMapHeight must be a property of AnimatedContainer
+        //           // as it will not animate changes on a child.
+        //           duration: animationDuration,
+        //           curve: Curves.decelerate,
+        //           height: visibleMapHeight,
+        //           child: SingleChildScrollView(
+        //             // Add ScrollView to center the map: TODO fix MapView resizing on iOS.
+        //             controller: scrollController,
+        //             physics: const NeverScrollableScrollPhysics(),
+        //             child: Container(
+        //               // This opaque Container prevents the AR widget from being
+        //               // visible while the map is not loaded.
+        //               color: Colors.grey[200],
+        //               child: SizedBox(
+        //                 // Set the map height equals to the container.
+        //                 height: constraints.maxHeight,
+        //                 child: widget.mapView!,
+        //               ),
+        //             ),
+        //           ),
+        //         ),
+        //       );
+        //     },
+        //   ),
+        // ),
         // ============== Expand/collapse AR ===================================
         Align(
           alignment: Alignment.bottomCenter,

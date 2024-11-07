@@ -1,6 +1,7 @@
 package com.situm.flutter.ar.situm_ar.scene
 
 //import com.google.android.filament.Material
+import kotlin.random.Random
 
 import android.app.Activity
 import android.content.Context
@@ -67,6 +68,7 @@ class ARSceneHandler(
         const val TAG = "Situm> AR>"
     }
 
+    private var hasToCalculateRoute: Boolean = false
     private var hasToShowDebugRoute: Boolean = false
     private val dashboardDomain: String = "https://dashboard.situm.com"
 
@@ -106,6 +108,8 @@ class ARSceneHandler(
     private lateinit var sceneView: CustomARSceneView
     private lateinit var viewAttachmentManager: ViewAttachmentManager
 
+    private lateinit var situmDebug: SitumDebug
+
     var diskModel: ModelNode? = null
 
 
@@ -128,20 +132,21 @@ class ARSceneHandler(
     }
 
     fun loadPoiImages() {
-        for (poi in pois) {
-            CoroutineScope(Dispatchers.Main).launch {
-                Log.d(
-                    TAG,
-                    "> Situm: To download texture from : ${dashboardDomain + poi.category.unselectedIconUrl.value.toString()}"
-                )
-                if (!poisTexturesMap.containsKey(poi.category.identifier)) {
-                    val texture = loadTextureFromUrlAsync(
-                        context, dashboardDomain + poi.category.unselectedIconUrl.value.toString()
+        CoroutineScope(Dispatchers.Main).launch {
+            for (poi in pois) {
+
+                    Log.d(
+                        TAG,
+                        "> Situm: To download texture from : ${dashboardDomain + poi.category.unselectedIconUrl.value.toString()}"
                     )
-                    if (texture != null) {
-                        poisTexturesMap[poi.category.identifier] = texture
+                    if (!poisTexturesMap.containsKey(poi.category.identifier)) {
+                        val texture = loadTextureFromUrlAsync(
+                            context, dashboardDomain + poi.category.unselectedIconUrl.value.toString()
+                        )
+                        if (texture != null) {
+                            poisTexturesMap[poi.category.identifier] = texture
+                        }
                     }
-                }
             }
         }
     }
@@ -149,6 +154,13 @@ class ARSceneHandler(
 
     fun setCurrentLocation(location: Location) {
         Log.d(TAG, "Situm location $location")
+        if(hasToCalculateRoute){
+            situmDebug.calculateRoute(location,"496681")
+            hasToCalculateRoute = false
+
+        }
+
+
 //        if (::currentPosition.isInitialized && this.poisTextNodes.isEmpty()){
 //            Log.w(TAG,">> LOAD POIS")
 //            loadPois()
@@ -157,7 +169,7 @@ class ARSceneHandler(
 //        }
         // if floor change, redraw
         if (::currentPosition.isInitialized && this.currentPosition.floorIdentifier != location.floorIdentifier) {
-            worldRedraw()
+            //worldRedraw()
         }
         this.currentPosition = location
     }
@@ -270,6 +282,11 @@ class ARSceneHandler(
                 }
             }
         }
+
+
+        // debug
+        situmDebug = SitumDebug(context)
+        situmDebug.initSitum()
     }
 
 
@@ -369,6 +386,45 @@ class ARSceneHandler(
 //            }
         }
     }
+
+    // Función para generar n POIs en posiciones aleatorias cercanas a la cámara
+    private suspend fun generateRandomPois(n: Int) {
+        if (poisAR.isEmpty()){
+            return
+        }
+        // Obtener la posición de la cámara
+        val cameraPosition = sceneView.cameraNode.worldPosition
+
+
+        val arcorePositions = mutableListOf<Vector3>()
+
+        // Generar n POIs
+        for (i in 0 until n) {
+            // Crear una posición aleatoria alrededor de la cámara
+            val randomPosition = Vector3(
+                cameraPosition.x + Random.nextFloat()*20-10,  // Ajusta el rango para X
+                cameraPosition.y,  // Ajusta el rango para Y (altura)
+                cameraPosition.z + Random.nextFloat()*20-10   // Ajusta el rango para Z
+            )
+            arcorePositions.add(randomPosition)
+
+        }
+
+
+        for(position in arcorePositions){
+            val poi = poisAR.values.random()
+            drawDiskWithImage(poi,Position(position.x,position.y,position.z),poi.poi.category)
+            withContext(Dispatchers.Main) {
+                poisAR.get(poi.poi.identifier)?.let {
+                    loadTextViewInAR(
+                        it,
+                        Position(position.x,position.y + 0.5f,position.z), poisAR.get(poi.poi.identifier)!!.poi.name
+                    )
+                }
+            }
+        }
+    }
+
 
     private fun loadTextViewInAR(poiAR: PoiAR, position: Position, textString: String) {
 
@@ -878,7 +934,7 @@ class ARSceneHandler(
                 val timestampRedraw = System.currentTimeMillis()
                 if (timestampRedraw - lastTimestampRedraw > 5000) {
                     Toast.makeText(context, "Refresh!", Toast.LENGTH_SHORT).show()
-                    worldRedraw()
+                    //worldRedraw()
                     lastTimestampRedraw = timestampRedraw
                 }
 
@@ -898,6 +954,10 @@ class ARSceneHandler(
 
     // callable from dart
     fun worldRedraw() {
+        CoroutineScope(Dispatchers.IO).launch {
+            generateRandomPois(5)
+        }
+        return
         if (isRedrawing) {
             return
         }

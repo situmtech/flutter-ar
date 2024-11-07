@@ -624,7 +624,7 @@ open class ForkSceneView @JvmOverloads constructor(
                     Log.e("Situm> AR>", "[!] Destroy error captured: $e  ${it.name}")
                 }
             }
-            super.destroy()
+            //super.destroy()
         }
 
     }
