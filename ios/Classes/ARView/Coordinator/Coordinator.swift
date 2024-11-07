@@ -160,7 +160,7 @@ class Coordinator: NSObject, ARSessionDelegate {
         let targetPosition = cameraPosition - forwardVector
         
         // Suavizado de posición
-        let smoothingFactor: Float = 0.5 // Ajusta este valor para controlar el nivel de suavidad
+        let smoothingFactor: Float = 0.35 // Ajusta este valor para controlar el nivel de suavidad
         arrowAnchor.position = arrowAnchor.position + (targetPosition - arrowAnchor.position) * smoothingFactor
 
         calculateAndSetTargetPoint()
