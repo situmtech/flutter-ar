@@ -1,5 +1,24 @@
 import Foundation
 import RealityKit
+/*import GLTFSceneKit
+
+func loadGLBModel() {
+    guard let url = Bundle.main.url(forResource: "yourModel", withExtension: "glb") else {
+        print("Error: No se pudo encontrar el archivo GLB.")
+        return
+    }
+
+    let sceneSource = GLTFSceneSource(url: url)
+    let modelEntity = sceneSource.entities.first
+    
+    if let modelEntity = modelEntity {
+        // Aquí puedes configurar la entidad del modelo y agregarla a tu escena
+        print("Modelo cargado exitosamente: \(modelEntity)")
+    } else {
+        print("Error al cargar el modelo GLB.")
+    }
+}
+*/
 
 //Create Situm Arrow
 func createArrowAnchor() -> AnchorEntity {

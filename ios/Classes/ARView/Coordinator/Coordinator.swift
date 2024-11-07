@@ -147,49 +147,38 @@ class Coordinator: NSObject, ARSessionDelegate {
     
     
     func updateArrowPositionAndDirection() {
-            guard let arView = arView, let arrowAnchor = arrowAnchor else { return }
-            
-            // Obtener la posición de la cámara
-            let cameraTransform = arView.cameraTransform
-            let cameraPosition = cameraTransform.translation
-            
-            // Calcular una posición fija en frente de la cámara
-            let distanceInFrontOfCamera: Float = 1.0 // Define la distancia fija frente a la cámara
-            let forwardDirection = cameraTransform.matrix.columns.2 // Vector hacia adelante de la cámara
-            
-            // Calcular la nueva posición de la flecha
-            let forwardVector = SIMD3<Float>(forwardDirection.x, forwardDirection.y, forwardDirection.z) * distanceInFrontOfCamera
-            let arrowPosition = cameraPosition - forwardVector
-            
-            self.calculateAndSetTargetPoint()
+        guard let arView = arView, let arrowAnchor = arrowAnchor else { return }
+
+        // Obtener la posición de la cámara
+        let cameraTransform = arView.cameraTransform
+        let cameraPosition = cameraTransform.translation
+
+        // Calcular una posición fija en frente de la cámara
+        let distanceInFrontOfCamera: Float = 1.0
+        let forwardDirection = cameraTransform.matrix.columns.2
+        let forwardVector = SIMD3<Float>(forwardDirection.x, forwardDirection.y, forwardDirection.z) * distanceInFrontOfCamera
+        let targetPosition = cameraPosition - forwardVector
         
-            if !self.isDebugEnabled{
-                self.showPointTarget()
-            }
-            
-            
-            if self.targetX != 0 && self.targetZ != 0 {
-                if let yawPoint = calculateAngleToTarget(){
-                    
-                    if let arrowEntity = arrowAnchor.children.first {
-                        
-                        if yawPoint != 0.0 {
-                            // Primero aplicar la rotación de pi/2 alrededor del eje X (ajuste de orientación)
-                            let rotationX = simd_quatf(angle: .pi / 2, axis: SIMD3<Float>(1, 0, 0))
-                            // Luego aplicar la rotación alrededor del eje Y basada en yawPoint
-                            let rotationY = simd_quatf(angle: yawPoint, axis: SIMD3<Float>(0, -1, 0))
-                            // Multiplicar los cuaterniones, primero rotación en X y luego en Y
-                            let combinedRotation = rotationY * rotationX
-                            arrowEntity.orientation = combinedRotation
-                        }
-                    }
-                    
-                }
-            }
-            
-            // Actualizar la posición del ancla de la flecha
-        arrowAnchor.position = SIMD3<Float>(arrowPosition.x, arrowPosition.y - 0.1  , arrowPosition.z)
+        // Suavizado de posición
+        let smoothingFactor: Float = 0.5 // Ajusta este valor para controlar el nivel de suavidad
+        arrowAnchor.position = arrowAnchor.position + (targetPosition - arrowAnchor.position) * smoothingFactor
+
+        calculateAndSetTargetPoint()
+
+        if !isDebugEnabled {
+            showPointTarget()
         }
+
+        if targetX != 0 && targetZ != 0, let yawPoint = calculateAngleToTarget(), let arrowEntity = arrowAnchor.children.first, yawPoint != 0.0 {
+            let rotationX = simd_quatf(angle: .pi / 2, axis: SIMD3<Float>(1, 0, 0))
+            let rotationY = simd_quatf(angle: yawPoint, axis: SIMD3<Float>(0, -1, 0))
+            let targetRotation = rotationY * rotationX
+            
+            // Suavizado de rotación
+            arrowEntity.orientation = simd_slerp(arrowEntity.orientation, targetRotation, smoothingFactor)
+        }
+    }
+
     
     
     func setupFixedAnchor() {
