@@ -111,6 +111,13 @@ class Coordinator: NSObject, ARSessionDelegate {
         self.arrowDistance = arrowDistance
     }
      
+    func initArrowToRoute(_ points: Any?){
+        if let staticRoute = points as? [[String: Any]] {
+            handlePointUpdate(staticRoute)
+            updatePointsList()
+        }
+
+    }
     
     func calculateAndSetTargetPoint() {
         guard let arView = arView else { return }

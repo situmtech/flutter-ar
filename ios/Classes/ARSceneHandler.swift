@@ -39,6 +39,8 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     var currentIndex = 0 // Índice para controlar la posición de inserción
     var hasToResetChangeFloor = false
     
+    var staticRoute: [[String: Any]] = []
+    
     
     func setupSceneView(arSceneView: CustomARSceneView) {
 
@@ -71,9 +73,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
             self.adjustVisibilityBasedOnDistance(arSceneView: arSceneView, mainAnchor: mainAnchor, nearDistance: 0.1, farDistance: Float(cameraDeph))
         }
         
-        //Arrow
-        let arrowAnchor = createArrowAnchor()
-        arSceneView.scene.anchors.append(arrowAnchor)
+
         /*context.coordinator.arrowAnchor = arrowAnchor*/
         
         //Setup animated model
@@ -84,8 +84,14 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         // Instancia el Coordinator
         self.coordinator = makeCoordinator()
         self.coordinator?.arView = arSceneView // Asigna la vista AR
+        
+        //Arrow
+        self.coordinator?.initArrowToRoute(staticRoute) 
+        let arrowAnchor = createArrowAnchor()
+        arSceneView.scene.anchors.append(arrowAnchor)
         self.coordinator?.arrowAnchor = arrowAnchor // Asigna el ancla de la flecha
         arSceneView.session.delegate = self.coordinator
+        
         
                 
         guard let configDebug = configDebug else {
@@ -173,16 +179,6 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
        
 
     }
-
-    
-   /* func infoDebug(){
-        if let coordinator = self.coordinator {
-            if let viewController = coordinator.arView?.window?.rootViewController {
-                showAlert(message: "hasToRefresh: \(hasToRefresh)", on: viewController)
-            }
-        }
-        
-    }*/
     
     //Update AR
     
@@ -262,8 +258,8 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
                                          worldRotation.axis.z,
                                          worldRotation.angle)
             arQuality?.updateARLocation(worldPosition: position, worldRotation: rotation)
-            
             //self.setSitArData()
+            
         } else {
             print("Error: no se pudieron obtener los valores de la cámara")
         }
@@ -316,7 +312,8 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     // MARK: NavigationManager delegate.
     
     func navigationManager(_ navigationManager: SITNavigationInterface, didStartOn route: SITRoute) {
-        print("Situm> Navigation started on route: \(route)")
+        print("Situm> Navigation started on route: \(route.toDictionary()["points"])")
+        staticRoute = route.toDictionary()["points"] as? [[String: Any]] ?? []
     }
     
     func navigationManager(_ navigationManager: SITNavigationInterface, didFailWithError error: Error) {
@@ -348,20 +345,6 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         print("Situm> Navigation cancelled on route: \(route)")
     }
     
-    
-    
-    /*func showAlert(message: String, on viewController: UIViewController) {
-            let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
-            viewController.present(alert, animated: true, completion: nil)
-
-            // Duración de la alerta (en segundos)
-            let duration: Double = 2.0
-
-            // Cerrar la alerta después de `duration` segundos
-            DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
-                alert.dismiss(animated: true, completion: nil)
-            }
-        }*/
     
     func setSitArData() {
         guard let worldPosition = coordinator?.arView?.cameraTransform.translation else {

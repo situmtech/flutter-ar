@@ -2,7 +2,7 @@ import SwiftUI
 import RealityKit
 import ARKit
 import Flutter
-
+import SitumSDK
 
 /**
  Situm Platform View implementation for AR.
@@ -28,6 +28,9 @@ class SitumARPlatformView: NSObject, FlutterPlatformView {
         let flutterMethodChannel = FlutterMethodChannel(name: "SitumARView", binaryMessenger: messenger)
         let arMethodCallSender = ARMethodCallSender(methodChannel: flutterMethodChannel)
         let sceneHandler = ARSceneHandler()
+        
+        SITNavigationManager.shared().addDelegate(sceneHandler)
+        
         let arController = ARController(arView: self, arSceneHandler: sceneHandler, arMethodCallSender: arMethodCallSender)
         let arMethodCallHandler = ARMethodCallHandler(arController: arController)
         
