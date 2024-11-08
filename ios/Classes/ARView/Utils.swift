@@ -222,21 +222,6 @@ func addLightToScene(arView: ARView) {
 }
 
 
-/*
-@available(iOS 15.0, *)
-func createDiskEntityWithImageFromURL(radius: Float, thickness: Float, url: URL, completion: @escaping (ModelEntity?) -> Void) {
-    ImageCacheManager.shared.loadImage(from: url) { image in
-        guard let image = image else {
-            completion(nil)
-            return
-        }
-        
-        let diskEntity = createDiskEntityWithImage(radius: radius, image: image)
-        completion(diskEntity)
-    }
-}*/
-
-
 @available(iOS 15.0, *)
 func createTextEntity(text: String, poiPosition: SIMD3<Float>, arView: ARView) -> ModelEntity {
     let mesh = MeshResource.generateText(
@@ -252,7 +237,7 @@ func createTextEntity(text: String, poiPosition: SIMD3<Float>, arView: ARView) -
     let textEntity = ModelEntity(mesh: mesh, materials: [material])
     
     // Escalar el texto y colocarlo directamente encima del POI en posición fija
-    textEntity.scale = SIMD3<Float>(0.25, 0.25, 0.25)
+    textEntity.scale = SIMD3<Float>(0.35, 0.35, 0.35)
     textEntity.position = SIMD3<Float>(poiPosition.x, poiPosition.y + 0.75, poiPosition.z) // Posición fija en Y para colocarlo encima del POI
 
     // Ajustar la posición del texto para centrarlo horizontalmente

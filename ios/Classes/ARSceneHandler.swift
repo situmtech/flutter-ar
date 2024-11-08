@@ -272,7 +272,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     
     func onBuildingInfoReceived(_ buildingInfo: SITBuildingInfo?, withError error: Error?) {
        // print("Situm> Got \(buildingInfo?.indoorPois.count ?? 0) POIs: \(String(describing: buildingInfo?.indoorPois))")
-        
+        print("building info!!!!!!!!:   ", buildingInfo)
         if let coordinator = self.coordinator, let indoorPois = buildingInfo?.indoorPois {
             // Parsea los POIs
             let poisMapArray = parsePois(pois: indoorPois)
