@@ -37,7 +37,6 @@ func createArrowAnchor() -> AnchorEntity {
     return anchor
 }
 
-
 func setupDynamicModel() -> AnchorEntity{
     let fixedAnchorModel = AnchorEntity(world: SIMD3<Float>(0.0, 0.0, 0.0))
     do {

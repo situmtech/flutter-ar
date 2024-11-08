@@ -4,6 +4,7 @@ import RealityKit
 import CoreLocation
 import MetalKit
 import UIKit
+import CoreGraphics
 import SitumSDK
 
 class ImageCacheManager {
@@ -131,58 +132,69 @@ func createSphereEntity(radius: Float, color: UIColor, transparency: Float) -> M
     return sphereEntity
 }
 
-@available(iOS 15.0, *)
-func createDiskEntityWithImage(radius: Float, image: UIImage) -> ModelEntity {
-    let thickCircularEntity = ModelEntity()
-    let thickness = Float(0.1)
-    let segments = 10
 
-    guard let cgImage = image.cgImage else {
-        print("Error: No se pudo convertir UIImage a CGImage.")
-        return ModelEntity()
+@available(iOS 15.0, *)
+func createTexturedDisk(with image: UIImage, diameter: Float) -> ModelEntity? {
+    // Crear el disco en RealityKit con el diámetro especificado
+    let diskMesh = MeshResource.generatePlane(width: diameter, depth: diameter)
+    let diskEntity = ModelEntity(mesh: diskMesh)
+    
+    // Crear la textura desde la imagen circular
+    guard let cgImage = image.cgImage,
+          let texture = try? TextureResource.generate(from: cgImage, options: .init(semantic: .color)) else {
+        print("Error: No se pudo generar la textura desde la imagen.")
+        return nil
     }
     
-    let flippedImage = image.withHorizontallyFlippedOrientation()
-    guard let flippedCGImage = flippedImage.cgImage else {
-        print("Error: No se pudo convertir UIImage flípeada a CGImage.")
-        return ModelEntity()
-    }
+    // Crear un material para aplicar la textura en el disco
+    var texturedMaterial = UnlitMaterial()
+     texturedMaterial.baseColor = .texture(texture)
+     texturedMaterial.opacityThreshold = 0.5
 
-    guard let originalTexture = try? TextureResource.generate(from: cgImage, options: .init(semantic: .color)),
-          let flippedTexture = try? TextureResource.generate(from: flippedCGImage, options: .init(semantic: .color)) else {
-        print("Error: No se pudo generar la textura desde las imágenes.")
-        return ModelEntity()
-    }
-
-    // Usar UnlitMaterial para respetar la transparencia del canal alfa
-    var originalMaterial = UnlitMaterial()
-    originalMaterial.baseColor = .texture(originalTexture)
-    originalMaterial.opacityThreshold = 0.5  // Preserva la transparencia del PNG
-
-    var flippedMaterial = UnlitMaterial()
-    flippedMaterial.baseColor = .texture(flippedTexture)
-    flippedMaterial.opacityThreshold = 0.5  // Preserva la transparencia del PNG
-
-    let segmentSpacing = thickness / Float(segments - 1)
-
-    for i in 0..<segments {
-        let planeMesh = MeshResource.generatePlane(width: 2 * radius, depth: 2 * radius)
-        let frontPlaneEntity = ModelEntity(mesh: planeMesh, materials: [originalMaterial])
-        let backPlaneEntity = ModelEntity(mesh: planeMesh, materials: [flippedMaterial])
-        
-        frontPlaneEntity.transform.rotation = simd_quatf(angle: .pi / 2, axis: SIMD3<Float>(1, 0, 0))
-        backPlaneEntity.transform.rotation = simd_quatf(angle: .pi / 2, axis: SIMD3<Float>(1, 0, 0)) * simd_quatf(angle: .pi, axis: SIMD3<Float>(0, 0, 1))
-
-        let offset = Float(i) * segmentSpacing - (thickness / 2)
-        frontPlaneEntity.position = SIMD3(0, 0, offset)
-        backPlaneEntity.position = SIMD3(0, 0, offset)
-        
-        thickCircularEntity.addChild(frontPlaneEntity)
-        thickCircularEntity.addChild(backPlaneEntity)
-    }
-
-    return thickCircularEntity
+    
+    // Asignar el material texturizado al disco
+    diskEntity.model?.materials = [texturedMaterial]
+    
+    return diskEntity
 }
+
+// Ejemplo de uso
+@available(iOS 15.0, *)
+func loadCylinderWithTexturedEnds(url: URL, completion: @escaping (ModelEntity?) -> Void) {
+    // Cargar el cilindro desde el modelo USDZ
+    guard let cylinderEntity = try? ModelEntity.loadModel(named: "cylinder.usdz") else {
+        print("Error al cargar el modelo USDZ")
+        completion(nil)
+        return
+    }
+
+    // Cargar la imagen y crear los discos con la textura circular
+    ImageCacheManager.shared.loadImage(from: url) { image in
+        guard let image = image else {
+            completion(nil)
+            return
+        }
+
+        // Crear el disco para la cara frontal y posicionarlo en la parte superior del cilindro
+        if let frontDisk = createTexturedDisk(with: image, diameter: 2.0) { // Ajusta el diámetro según sea necesario
+            frontDisk.transform.rotation = simd_quatf(angle: .pi / 2, axis: [1, 0, 0])
+            frontDisk.position = SIMD3<Float>(0, 0, 0.21) // Ajusta la posición para alinearlo en la parte superior
+            cylinderEntity.addChild(frontDisk)
+        }
+
+        // Crear el disco para la cara posterior y posicionarlo en la parte inferior del cilindro
+        if let backDisk = createTexturedDisk(with: image, diameter: 2.0) {
+            // Rotar 180 grados para orientarlo hacia el lado opuesto
+            backDisk.transform.rotation = simd_quatf(angle: .pi / 2, axis: [1, 0, 0]) * simd_quatf(angle: .pi, axis: [0, 0, 1])
+            backDisk.position = SIMD3<Float>(0, 0, -0.21) // Ajusta la posición para alinearlo en la parte inferior
+            cylinderEntity.addChild(backDisk)
+        }
+
+        completion(cylinderEntity)
+    }
+}
+
+
 
 
 @available(iOS 15.0, *)
@@ -210,7 +222,7 @@ func addLightToScene(arView: ARView) {
 }
 
 
-
+/*
 @available(iOS 15.0, *)
 func createDiskEntityWithImageFromURL(radius: Float, thickness: Float, url: URL, completion: @escaping (ModelEntity?) -> Void) {
     ImageCacheManager.shared.loadImage(from: url) { image in
@@ -222,7 +234,7 @@ func createDiskEntityWithImageFromURL(radius: Float, thickness: Float, url: URL,
         let diskEntity = createDiskEntityWithImage(radius: radius, image: image)
         completion(diskEntity)
     }
-}
+}*/
 
 
 @available(iOS 15.0, *)

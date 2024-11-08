@@ -51,11 +51,17 @@ extension Coordinator {
                     continue
                 }
                 
-                createDiskEntityWithImageFromURL(radius: 0.8, thickness: 0.2, url: iconUrl) { poiEntity in
+               /* createDiskEntityWithImageFromURL(radius: 0.8, thickness: 0.2, url: iconUrl) { poiEntity in
                         guard let poiEntity = poiEntity else {
                             print("Error: No se pudo crear el disco para el POI")
                             return
-                        }
+                        }*/
+                
+                loadCylinderWithTexturedEnds(url: iconUrl) { poiEntity in
+                     guard let poiEntity = poiEntity else {
+                         print("Error: No se pudo crear el disco para el POI")
+                         return
+                     }
                     
                         let containerEntity = Entity()
                         containerEntity.position = transformedPosition
