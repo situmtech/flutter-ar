@@ -43,7 +43,9 @@ class ARController: NSObject, ARSceneHandlerDelegate {
         
         // Subscribe to positioning/navigation callbacks:
         sitLocationManager.addDelegate(arSceneHandler)
+        sitLocationManager.geofenceDelegate = arSceneHandler
         sitNavigationManager.addDelegate(arSceneHandler)
+
      
         // Start loading building & POIs, delegate them to arSceneHandler.
         sitCommManager.fetchBuildingInfo(buildingIdentifier, withOptions: nil, success: { (data) in

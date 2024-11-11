@@ -1,25 +1,6 @@
 import Foundation
 import RealityKit
-/*import GLTFSceneKit
-
-func loadGLBModel() {
-    guard let url = Bundle.main.url(forResource: "yourModel", withExtension: "glb") else {
-        print("Error: No se pudo encontrar el archivo GLB.")
-        return
-    }
-
-    let sceneSource = GLTFSceneSource(url: url)
-    let modelEntity = sceneSource.entities.first
-    
-    if let modelEntity = modelEntity {
-        // Aquí puedes configurar la entidad del modelo y agregarla a tu escena
-        print("Modelo cargado exitosamente: \(modelEntity)")
-    } else {
-        print("Error al cargar el modelo GLB.")
-    }
-}
-*/
-
+import SitumSDK
 //Create Situm Arrow
 func createArrowAnchor() -> AnchorEntity {
     let anchor = AnchorEntity()
@@ -36,6 +17,54 @@ func createArrowAnchor() -> AnchorEntity {
 
     return anchor
 }
+
+func loadDynamicsModels(geofences: [SITGeofence], arView: ARView, mainAnchor: AnchorEntity){
+    
+    for geofence in geofences {
+        if let customFields = geofence.customFields as? [String: Any] {
+            for (key, value) in customFields {
+                if(key == "ar_metadata"){
+                    NSLog("\(key): \(value)")
+                    let model = String(describing: value)                   
+                    loadDynamicModel(model: model, arView: arView, mainAnchor: mainAnchor)
+                    
+                }
+            }
+        } else {
+            NSLog("ARSceneHandler - customFields no es del tipo esperado o está vacío")
+        }
+    }
+    
+}
+
+
+func loadDynamicModel(model: String, arView: ARView, mainAnchor: AnchorEntity){
+    
+    print("Model to load:   ", model)
+    
+    do {
+        let cameraPosition = arView.cameraTransform.translation
+        let modelEntity = try ModelEntity.load(named: model)
+        modelEntity.scale = SIMD3<Float>(0.015, 0.015, 0.015)
+        modelEntity.position = SIMD3<Float>(cameraPosition.x, cameraPosition.y - 1.5, cameraPosition.z - 5.0)
+        modelEntity.name = "dynamic_" + model
+
+        if let animation = modelEntity.availableAnimations.first(where: { $0.name == "global scene animation" }) {
+            modelEntity.playAnimation(animation.repeat(), transitionDuration: 0.5, startsPaused: false)
+        }
+           
+        mainAnchor.addChild(modelEntity)
+        arView.scene.anchors.append(mainAnchor)
+        
+  
+
+        
+    } catch {
+        print("Error al cargar el modelo animado: \(error.localizedDescription)")
+    }    
+
+}
+
 
 func setupDynamicModel() -> AnchorEntity{
     let fixedAnchorModel = AnchorEntity(world: SIMD3<Float>(0.0, 0.0, 0.0))

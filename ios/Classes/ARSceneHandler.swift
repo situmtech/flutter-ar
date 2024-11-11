@@ -13,10 +13,9 @@ protocol ARSceneHandlerDelegate: AnyObject {
 
 
 @available(iOS 15.0, *)
-class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavigationDelegate {  
+class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavigationDelegate, SITGeofencesDelegate {
 
     weak var delegate: ARSceneHandlerDelegate?
-
     
     var coordinator: Coordinator?
     
@@ -25,8 +24,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     var refreshingTimer = 5
     var timestampLastRefresh = 0
     var hasToRefresh = true
-    var currentAlert: UIAlertController?
-    
+       
     var mainAnchor: AnchorEntity? // Declara mainAnchor como propiedad de la clase
     var updateTimer: Timer?
     var cameraDeph = 25.0
@@ -73,13 +71,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
             self.adjustVisibilityBasedOnDistance(arSceneView: arSceneView, mainAnchor: mainAnchor, nearDistance: 0.1, farDistance: Float(cameraDeph))
         }
         
-
-        /*context.coordinator.arrowAnchor = arrowAnchor*/
-        
-        //Setup animated model
-        //let fixedAnchorModel = setupDynamicModel()
-        //arSceneView.scene.anchors.append(fixedAnchorModel)
-     
+    
         
         // Instancia el Coordinator
         self.coordinator = makeCoordinator()
@@ -91,15 +83,13 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         arSceneView.scene.anchors.append(arrowAnchor)
         self.coordinator?.arrowAnchor = arrowAnchor // Asigna el ancla de la flecha
         arSceneView.session.delegate = self.coordinator
-        
-        
                 
+        
         guard let configDebug = configDebug else {
             print("Error: configDebug es nil")
             return
         }
-        
-        
+                
         setupAndUpdateConfigDebug(arSceneView: arSceneView)
         
         
@@ -272,7 +262,6 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     
     func onBuildingInfoReceived(_ buildingInfo: SITBuildingInfo?, withError error: Error?) {
        // print("Situm> Got \(buildingInfo?.indoorPois.count ?? 0) POIs: \(String(describing: buildingInfo?.indoorPois))")
-        print("building info!!!!!!!!:   ", buildingInfo)
         if let coordinator = self.coordinator, let indoorPois = buildingInfo?.indoorPois {
             // Parsea los POIs
             let poisMapArray = parsePois(pois: indoorPois)
@@ -389,6 +378,32 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         }
         
         lastTimestamp = currentTimestamp
+    }
+
+    
+    func didEnteredGeofences(_ geofences: [SITGeofence]!) {
+        NSLog("ARSceneHandler - Entered geofences: \(geofences)")
+        if let arView = self.coordinator?.arView, let mainAnchor = mainAnchor {
+            loadDynamicsModels(geofences: geofences, arView: arView, mainAnchor: mainAnchor)
+        }
+    }
+
+
+    func didExitedGeofences(_ geofences: [SITGeofence]!) {
+        NSLog("ARSceneHandler - Exit from geofences: \(geofences)")
+        
+        if let arView = self.coordinator?.arView, let mainAnchor = mainAnchor {
+            // Recorrer solo los hijos de `mainAnchor` para encontrar y eliminar modelos dinámicos
+            for entity in mainAnchor.children {
+                if let modelEntity = entity as? ModelEntity, modelEntity.name.hasPrefix("dynamic") {
+                    modelEntity.removeFromParent()
+                    print("Removed model with name: \(modelEntity.name)")
+                }
+            }
+            print("All models with prefix 'dynamic' under mainAnchor have been removed")
+        } else {
+            print("ARSceneHandler - arView o mainAnchor es nil")
+        }
     }
 
 

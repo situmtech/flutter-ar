@@ -158,7 +158,7 @@ func createTexturedDisk(with image: UIImage, diameter: Float) -> ModelEntity? {
     return diskEntity
 }
 
-// Ejemplo de uso
+
 @available(iOS 15.0, *)
 func loadCylinderWithTexturedEnds(url: URL, completion: @escaping (ModelEntity?) -> Void) {
     // Cargar el cilindro desde el modelo USDZ
@@ -178,7 +178,7 @@ func loadCylinderWithTexturedEnds(url: URL, completion: @escaping (ModelEntity?)
         // Crear el disco para la cara frontal y posicionarlo en la parte superior del cilindro
         if let frontDisk = createTexturedDisk(with: image, diameter: 2.0) { // Ajusta el diámetro según sea necesario
             frontDisk.transform.rotation = simd_quatf(angle: .pi / 2, axis: [1, 0, 0])
-            frontDisk.position = SIMD3<Float>(0, 0, 0.21) // Ajusta la posición para alinearlo en la parte superior
+            frontDisk.position = SIMD3<Float>(0, 0, 0.2) // Ajusta la posición para alinearlo en la parte superior
             cylinderEntity.addChild(frontDisk)
         }
 
@@ -186,7 +186,7 @@ func loadCylinderWithTexturedEnds(url: URL, completion: @escaping (ModelEntity?)
         if let backDisk = createTexturedDisk(with: image, diameter: 2.0) {
             // Rotar 180 grados para orientarlo hacia el lado opuesto
             backDisk.transform.rotation = simd_quatf(angle: .pi / 2, axis: [1, 0, 0]) * simd_quatf(angle: .pi, axis: [0, 0, 1])
-            backDisk.position = SIMD3<Float>(0, 0, -0.21) // Ajusta la posición para alinearlo en la parte inferior
+            backDisk.position = SIMD3<Float>(0, 0, -0.2) // Ajusta la posición para alinearlo en la parte inferior
             cylinderEntity.addChild(backDisk)
         }
 
@@ -265,8 +265,6 @@ func rotateIconPoiAndText(arView: ARView) {
         }
     }
 }
-
-
 
 func areLastThreeValuesDistinct(locationBuffer: [String?], currentIndex: Int) -> Bool {
     // Asegurarse de que el buffer tenga al menos 3 valores para comparar
