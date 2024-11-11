@@ -348,7 +348,7 @@ class ConfigDebug {
             let roundedQuality = String(format: "%.15f", globalQuality)
 
             // Actualizar las etiquetas con los nuevos valores, desenvolviendo opcionales
-            infoLabel1?.text = "HasToRefresh: \(hasToRefresh)"
+            infoLabel1?.text = "HasToRefresh: \(arQuality.hasToResetWorld())"
             infoLabel2?.text = "GlobalQuality: \(roundedQuality)"
             
             // Asegúrate de desenvolver correctamente las variables opcionales
@@ -372,6 +372,7 @@ class ConfigDebug {
         } else {
             infoLabel2?.text = "GlobalQuality: N/A"
         }
+        
     }
 
     // Detener el refresco cuando no sea necesario
