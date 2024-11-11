@@ -1,7 +1,6 @@
 package com.situm.flutter.ar.situm_ar.scene
 
 //import com.google.android.filament.Material
-import kotlin.random.Random
 
 import android.app.Activity
 import android.content.Context
@@ -15,7 +14,6 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.google.android.filament.Texture
 import com.google.ar.core.Anchor
-import com.google.ar.core.Plane
 import com.google.ar.sceneform.rendering.ViewAttachmentManager
 import com.google.ar.sceneform.rendering.ViewRenderable
 import com.situm.flutter.ar.situm_ar.CustomARSceneView
@@ -36,7 +34,6 @@ import es.situm.sdk.model.location.CartesianCoordinate
 import es.situm.sdk.model.location.Location
 import es.situm.sdk.model.navigation.NavigationProgress
 import es.situm.sdk.navigation.NavigationListener
-import io.github.sceneview.ar.arcore.getUpdatedPlanes
 import io.github.sceneview.ar.node.AnchorNode
 import io.github.sceneview.collision.Vector3
 import io.github.sceneview.geometries.Cylinder
@@ -57,6 +54,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.URL
 import java.nio.ByteBuffer
+import kotlin.random.Random
 
 const val DIRECTION_ARROW_TARGET_DISTANCE = 6f
 
@@ -68,7 +66,7 @@ class ARSceneHandler(
         const val TAG = "Situm> AR>"
     }
 
-    private var hasToCalculateRoute: Boolean = false
+    private var hasToCalculateRoute = 10
     private var hasToShowDebugRoute: Boolean = false
     private val dashboardDomain: String = "https://dashboard.situm.com"
 
@@ -135,18 +133,18 @@ class ARSceneHandler(
         CoroutineScope(Dispatchers.Main).launch {
             for (poi in pois) {
 
-                    Log.d(
-                        TAG,
-                        "> Situm: To download texture from : ${dashboardDomain + poi.category.unselectedIconUrl.value.toString()}"
+                Log.d(
+                    TAG,
+                    "> Situm: To download texture from : ${dashboardDomain + poi.category.unselectedIconUrl.value.toString()}"
+                )
+                if (!poisTexturesMap.containsKey(poi.category.identifier)) {
+                    val texture = loadTextureFromUrlAsync(
+                        context, dashboardDomain + poi.category.unselectedIconUrl.value.toString()
                     )
-                    if (!poisTexturesMap.containsKey(poi.category.identifier)) {
-                        val texture = loadTextureFromUrlAsync(
-                            context, dashboardDomain + poi.category.unselectedIconUrl.value.toString()
-                        )
-                        if (texture != null) {
-                            poisTexturesMap[poi.category.identifier] = texture
-                        }
+                    if (texture != null) {
+                        poisTexturesMap[poi.category.identifier] = texture
                     }
+                }
             }
         }
     }
@@ -154,10 +152,12 @@ class ARSceneHandler(
 
     fun setCurrentLocation(location: Location) {
         Log.d(TAG, "Situm location $location")
-        if(hasToCalculateRoute){
-            situmDebug.calculateRoute(location,"496681")
-            hasToCalculateRoute = false
-
+        if (hasToCalculateRoute > 0) {
+            hasToCalculateRoute = hasToCalculateRoute - 1
+        } else if (hasToCalculateRoute == 0) {
+            //situmDebug.calculateRoute(location,"496681")
+            situmDebug.calculateRoute(location, "492904")    // rotonda restollal
+            hasToCalculateRoute = hasToCalculateRoute - 1
         }
 
 
@@ -169,7 +169,7 @@ class ARSceneHandler(
 //        }
         // if floor change, redraw
         if (::currentPosition.isInitialized && this.currentPosition.floorIdentifier != location.floorIdentifier) {
-            //worldRedraw()
+            worldRedraw()
         }
         this.currentPosition = location
     }
@@ -235,49 +235,49 @@ class ARSceneHandler(
                 sceneView.onFrame = {
 
 //                    logExecutionTime(" >> on frame ") {
-                        arrowNode?.let { node ->
-                            val distanceFromCamera = -0.5f
-                            val forwardVector = Vector3(0.0f, 0.0f, 1.0f)
-                            val cameraDirection =
-                                io.github.sceneview.collision.Quaternion.rotateVector(
-                                    io.github.sceneview.collision.Quaternion(
-                                        sceneView.cameraNode.quaternion.x,
-                                        sceneView.cameraNode.quaternion.y,
-                                        sceneView.cameraNode.quaternion.z,
-                                        sceneView.cameraNode.quaternion.w
-                                    ), forwardVector
-                                )
-                            val cameraLowerPosition = Vector3(
-                                sceneView.cameraNode.position.x,
-                                sceneView.cameraNode.position.y,
-                                sceneView.cameraNode.position.z
+                    arrowNode?.let { node ->
+                        val distanceFromCamera = -0.5f
+                        val forwardVector = Vector3(0.0f, 0.0f, 1.0f)
+                        val cameraDirection =
+                            io.github.sceneview.collision.Quaternion.rotateVector(
+                                io.github.sceneview.collision.Quaternion(
+                                    sceneView.cameraNode.quaternion.x,
+                                    sceneView.cameraNode.quaternion.y,
+                                    sceneView.cameraNode.quaternion.z,
+                                    sceneView.cameraNode.quaternion.w
+                                ), forwardVector
                             )
-                            val objectPosition = addVectors(
-                                cameraLowerPosition,
-                                multiplyVectorScalar(cameraDirection, distanceFromCamera)
+                        val cameraLowerPosition = Vector3(
+                            sceneView.cameraNode.position.x,
+                            sceneView.cameraNode.position.y,
+                            sceneView.cameraNode.position.z
+                        )
+                        val objectPosition = addVectors(
+                            cameraLowerPosition,
+                            multiplyVectorScalar(cameraDirection, distanceFromCamera)
+                        )
+                        node.transform(
+                            position = Position(
+                                x = objectPosition.x, y = objectPosition.y, z = objectPosition.z
                             )
-                            node.transform(
-                                position = Position(
-                                    x = objectPosition.x, y = objectPosition.y, z = objectPosition.z
-                                )
+                        )
+                        if (targetArrow != null) {
+                            node.lookAt(
+                                targetWorldPosition = targetArrow!!,
+                                smooth = true,
+                                smoothSpeed = 1.0f
                             )
-                            if (targetArrow != null) {
-                                node.lookAt(
-                                    targetWorldPosition = targetArrow!!,
-                                    smooth = true,
-                                    smoothSpeed = 1.0f
-                                )
-                            }
                         }
+                    }
 
-                        for (poi in poisAR.values) {     // force to look at camera. Maybe node and view node should be children form same node
-                            poi.node?.lookAt(sceneView.cameraNode)
-                            poi.node?.scale = Float3(-1f, 1f, 1f)
-                            poi.viewNode?.lookAt(sceneView.cameraNode)
-                            poi.viewNode?.scale = Float3(-1f, 1f, 1f)
-                        }
+                    for (poi in poisAR.values) {     // force to look at camera. Maybe node and view node should be children form same node
+                        poi.node?.lookAt(sceneView.cameraNode)
+                        poi.node?.scale = Float3(-1f, 1f, 1f)
+                        //poi.viewNode?.lookAt(sceneView.cameraNode)
+                        //poi.viewNode?.scale = Float3(-1f, 1f, 1f)
+                    }
 
-                        updateVisualOdometry()
+                    updateVisualOdometry()
                     //}
                 }
             }
@@ -358,6 +358,10 @@ class ARSceneHandler(
 
             val arcorePosition = arcorePositions[i]
             val position = Position(arcorePosition.x, arcorePosition.y, arcorePosition.z)
+            poisAR.get(pois[i].identifier)?.let {
+                addBaseNode(it, position)
+            }
+
             logExecutionTime(" >> load textview  ") {
                 withContext(Dispatchers.Main) {
                     poisAR.get(pois[i].identifier)?.let {
@@ -378,18 +382,29 @@ class ARSceneHandler(
                     )
                 }
             }
-            //drawDiskWithImage(positionDisk, poi.category)
-//            if (poi.infoHtml.isNotEmpty()) {
-//                loadWebViewInAR(
-//                    Position(arcorePosition.x, arcorePosition.y - 1, arcorePosition.z), poi.infoHtml
-//                )
-//            }
         }
+    }
+
+    private fun addBaseNode(poiAR: PoiAR, position: Position) {
+        if (poiAR.node != null) {
+            poiAR.node?.worldPosition = position
+            poiAR.node?.lookAt(sceneView.cameraNode)
+            poiAR.node?.isVisible = true
+            return
+        } else {
+            var node = Node(sceneView.engine)
+            node.worldPosition = position
+            node.lookAt(sceneView.cameraNode)
+            poiAR.node = node
+
+            sceneView.addChildNode(node)
+        }
+
     }
 
     // Función para generar n POIs en posiciones aleatorias cercanas a la cámara
     private suspend fun generateRandomPois(n: Int) {
-        if (poisAR.isEmpty()){
+        if (poisAR.isEmpty()) {
             return
         }
         // Obtener la posición de la cámara
@@ -402,23 +417,25 @@ class ARSceneHandler(
         for (i in 0 until n) {
             // Crear una posición aleatoria alrededor de la cámara
             val randomPosition = Vector3(
-                cameraPosition.x + Random.nextFloat()*20-10,  // Ajusta el rango para X
+                cameraPosition.x + Random.nextFloat() * 20 - 10,  // Ajusta el rango para X
                 cameraPosition.y,  // Ajusta el rango para Y (altura)
-                cameraPosition.z + Random.nextFloat()*20-10   // Ajusta el rango para Z
+                cameraPosition.z + Random.nextFloat() * 20 - 10   // Ajusta el rango para Z
             )
             arcorePositions.add(randomPosition)
 
         }
 
 
-        for(position in arcorePositions){
+        for (position in arcorePositions) {
             val poi = poisAR.values.random()
-            drawDiskWithImage(poi,Position(position.x,position.y,position.z),poi.poi.category)
+            addBaseNode(poi, Position(position.x, position.y, position.z))
+            drawDiskWithImage(poi, Position(position.x, position.y, position.z), poi.poi.category)
             withContext(Dispatchers.Main) {
                 poisAR.get(poi.poi.identifier)?.let {
                     loadTextViewInAR(
                         it,
-                        Position(position.x,position.y + 0.5f,position.z), poisAR.get(poi.poi.identifier)!!.poi.name
+                        Position(position.x, position.y + 0.5f, position.z),
+                        poisAR.get(poi.poi.identifier)!!.poi.name
                     )
                 }
             }
@@ -429,9 +446,6 @@ class ARSceneHandler(
     private fun loadTextViewInAR(poiAR: PoiAR, position: Position, textString: String) {
 
         if (poiAR.viewNode != null) {
-            poiAR.viewNode!!.position = position
-            poiAR.viewNode!!.lookAt(sceneView.cameraNode)
-            poiAR.viewNode!!.scale = Float3(-1f, 1f, 1f)
             poiAR.viewNode!!.isVisible = true
             return
         }
@@ -445,13 +459,13 @@ class ARSceneHandler(
                 var viewNode =
                     ViewNode(sceneView.engine, sceneView.modelLoader, viewAttachmentManager)
                 viewNode.setRenderable(viewRenderable)
-
-                viewNode.position = position
-                viewNode.lookAt(sceneView.cameraNode)
-                viewNode.scale = Float3(-1f, 1f, 1f) // Inv. Needed to show text correctly
-                //poisTextNodes.add(viewNode)
                 poiAR.viewNode = viewNode
-                sceneView.addChildNode(viewNode)
+
+                if (poiAR.node != null) {
+                    poiAR.node!!.addChildNode(viewNode)
+                }
+
+
             }.exceptionally { throwable ->
                 throwable.printStackTrace()
                 null
@@ -507,7 +521,7 @@ class ARSceneHandler(
             ) { point -> point.cartesianCoordinate }
 
             routePointsAR = interpolatePositions(arCorePositionsForPoints, 1.0f)
-            if(hasToShowDebugRoute) {
+            if (hasToShowDebugRoute) {
                 addSpheresToScene(routePointsAR)
             }
         }
@@ -692,34 +706,26 @@ class ARSceneHandler(
 
     fun drawDiskWithImage(poiAR: PoiAR, arPosition: Position, poiCategory: PoiCategory) {
 
-        if (poiAR.node != null) {
-            poiAR.node?.worldPosition = arPosition
-            poiAR.node?.lookAt(sceneView.cameraNode)
+        if (poiAR.node != null && poiAR.geometryNode != null) {
+//            poiAR.node?.worldPosition = arPosition
+//            poiAR.node?.lookAt(sceneView.cameraNode)
             poiAR.node?.isVisible = true
             return
         }
 
         val texture = poisTexturesMap[poiCategory.identifier]
-        if (texture != null && diskGeometry!=null) {
+        if (texture != null && diskGeometry != null) {
             Log.w(TAG, ">>>>>>>>>>> Disc geometry: ${diskGeometry!!.indices.size}")
             val materialInstance =
                 MaterialLoader(sceneView.engine, context).createTextureInstance(texture, true)
-            //val materialInstance = MaterialLoader(sceneView.engine,context).createImageInstance(texture) // lighter option
-            //val diskGeometry2 =Cylinder.Builder().radius(0.5f).height(0.01f).build(sceneView.engine)
-
             val diskNode = GeometryNode(sceneView.engine, diskGeometry!!, materialInstance)
 
             diskNode.rotation = Rotation(-90f, 0f, 0f)
-            var node = Node(sceneView.engine)
-            node.addChildNode(diskNode)
-            node.worldPosition = arPosition
-            node.lookAt(sceneView.cameraNode)
-
-            poiAR.geometryNode = diskNode
-            poiAR.node = node
-
-            sceneView.addChildNode(node)
-            Log.d(TAG, ">> Disk added to scene with texture.")
+            diskNode.position = Position(0f, -0.5f, 0f)
+            if (poiAR.node != null) {
+                poiAR.node!!.addChildNode(diskNode)
+                poiAR.geometryNode = diskNode
+            }
         } else {
             Log.e(TAG, ">> Failed to load texture.")
         }
@@ -741,11 +747,11 @@ class ARSceneHandler(
     }
 
     private suspend fun loadPois() {
-        Log.d(TAG,">> Load pois 1")
+        Log.d(TAG, ">> Load pois 1")
         if (::currentPosition.isInitialized && this.currentPosition != null && ::pois.isInitialized && pois.isNotEmpty()) {
-            Log.d(TAG,">> Load pois 2")
+            Log.d(TAG, ">> Load pois 2")
             var nearPois = poiUtils.filterPoisByDistanceAndFloor(pois, currentPosition, 50)
-            Log.d(TAG,">> Load pois 3")
+            Log.d(TAG, ">> Load pois 3")
             var arcorePositions = generateARCorePositions(
                 nearPois, currentPosition
             ) { poi -> poi.position.cartesianCoordinate }
@@ -822,7 +828,6 @@ class ARSceneHandler(
     }
 
 
-
     fun clearAllNodes(node: Node) {
         node.childNodes.forEach { clearAllNodes(it) }  // Limpia recursivamente
         node.parent?.removeChildNode(node)           // Elimina el nodo del padre
@@ -833,45 +838,15 @@ class ARSceneHandler(
     private fun makePoiNodesInvisible() {
         for (poi in poisAR.values) {
             poi.node?.isVisible = false
-            poi.viewNode?.isVisible = false
         }
     }
-    private fun clearPoiNodes() {
 
+    private fun clearPoiNodes() {
         for (poi in poisAR.values) {
             poi.node?.let { sceneView.removeChildNode(it) }
-            poi.geometryNode?.let { sceneView.removeChildNode(it) }
             poi.clear()
         }
         poisAR.clear()
-//        for (poiNode in poisTextNodes) {
-//            clearAllNodes(poiNode)
-//            //poiNode.parent = null
-//        }
-
-//        sceneView.removeChildNodes(poisTextNodes)
-//        poisTextNodes.clear()
-//
-//        for (poiNode in poisDiskNodes) {
-//            clearAllNodes(poiNode)
-//            //poiNode.parent = null
-//        }
-//        sceneView.removeChildNodes(poisDiskNodes)
-//        poisDiskNodes.clear()
-//
-//        for (poiNode in poiModelNode) {
-//            clearAllNodes(poiNode)
-//            poiNode.parent = null
-//        }
-//        sceneView.removeChildNodes(poiModelNode)
-//        poiModelNode.clear()
-//
-//        for (poiNode in poisNodes) {
-//            clearAllNodes(poiNode)
-//            poiNode.parent = null
-//        }
-//        sceneView.removeChildNodes(poisNodes)
-//        poisNodes.clear()
     }
 
     private fun clearRouteNodes() {
@@ -894,7 +869,7 @@ class ARSceneHandler(
     }
 
     override fun onProgress(navigationProgress: NavigationProgress?) {
-        Log.d(TAG, ">> Situm navigation progress: ${navigationProgress.toString()}")
+        Log.w(TAG, ">> Situm navigation progress: ${navigationProgress.toString()}")
 
         navigationProgress?.segments?.get(0)?.let { setCurrentSegment(it) }
         if (hasToUpdateArrowTarget()) {
@@ -934,7 +909,7 @@ class ARSceneHandler(
                 val timestampRedraw = System.currentTimeMillis()
                 if (timestampRedraw - lastTimestampRedraw > 5000) {
                     Toast.makeText(context, "Refresh!", Toast.LENGTH_SHORT).show()
-                    //worldRedraw()
+                    worldRedraw()
                     lastTimestampRedraw = timestampRedraw
                 }
 
@@ -954,10 +929,10 @@ class ARSceneHandler(
 
     // callable from dart
     fun worldRedraw() {
-        CoroutineScope(Dispatchers.IO).launch {
-            generateRandomPois(5)
-        }
-        return
+//        CoroutineScope(Dispatchers.IO).launch {
+//            generateRandomPois(5)
+//        }
+//        return
         if (isRedrawing) {
             return
         }
@@ -1013,9 +988,9 @@ class ARSceneHandler(
 
     fun switchShowRouteOnAR() {
         hasToShowDebugRoute = !hasToShowDebugRoute
-        if (!hasToShowDebugRoute){
+        if (!hasToShowDebugRoute) {
             makeRouteInvisible()
         }
-        Log.d(TAG,">> hasToShowRoute: $hasToShowDebugRoute")
+        Log.d(TAG, ">> hasToShowRoute: $hasToShowDebugRoute")
     }
 }
