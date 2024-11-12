@@ -18,7 +18,7 @@ func createArrowAnchor() -> AnchorEntity {
     return anchor
 }
 
-func loadDynamicsModels(geofences: [SITGeofence], arView: ARView, mainAnchor: AnchorEntity){
+func loadDynamicsModels(geofences: [SITGeofence], arView: ARView, mainAnchor: AnchorEntity,  dynamicModels: inout [ModelEntity]){
     
     for geofence in geofences {
         if let customFields = geofence.customFields as? [String: Any] {
@@ -26,7 +26,7 @@ func loadDynamicsModels(geofences: [SITGeofence], arView: ARView, mainAnchor: An
                 if(key == "ar_metadata"){
                     NSLog("\(key): \(value)")
                     let model = String(describing: value)                   
-                    loadDynamicModel(model: model, arView: arView, mainAnchor: mainAnchor)
+                    loadDynamicModel(model: model, arView: arView, mainAnchor: mainAnchor, dynamicModels: &dynamicModels)
                     
                 }
             }
@@ -38,7 +38,7 @@ func loadDynamicsModels(geofences: [SITGeofence], arView: ARView, mainAnchor: An
 }
 
 
-func loadDynamicModel(model: String, arView: ARView, mainAnchor: AnchorEntity){
+func loadDynamicModel(model: String, arView: ARView, mainAnchor: AnchorEntity, dynamicModels: inout [ModelEntity]){
     
     print("Model to load:   ", model)
     
@@ -54,9 +54,12 @@ func loadDynamicModel(model: String, arView: ARView, mainAnchor: AnchorEntity){
         }
            
         mainAnchor.addChild(modelEntity)
-        arView.scene.anchors.append(mainAnchor)
-        
-  
+        if let modelEntity = try ModelEntity.load(named: model) as? ModelEntity {
+            dynamicModels.append(modelEntity)
+        } else {
+            print("Failed to cast modelEntity to ModelEntity")
+        }
+
 
         
     } catch {

@@ -38,6 +38,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     var hasToResetChangeFloor = false
     
     var staticRoute: [[String: Any]] = []
+    var dynamicModels: [ModelEntity] = []
     
     
     func setupSceneView(arSceneView: CustomARSceneView) {
@@ -384,7 +385,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     func didEnteredGeofences(_ geofences: [SITGeofence]!) {
         NSLog("ARSceneHandler - Entered geofences: \(geofences)")
         if let arView = self.coordinator?.arView, let mainAnchor = mainAnchor {
-            loadDynamicsModels(geofences: geofences, arView: arView, mainAnchor: mainAnchor)
+            loadDynamicsModels(geofences: geofences, arView: arView, mainAnchor: mainAnchor, dynamicModels: &dynamicModels)
         }
     }
 
@@ -393,18 +394,29 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         NSLog("ARSceneHandler - Exit from geofences: \(geofences)")
         
         if let arView = self.coordinator?.arView, let mainAnchor = mainAnchor {
-            // Recorrer solo los hijos de `mainAnchor` para encontrar y eliminar modelos dinámicos
-            for entity in mainAnchor.children {
-                if let modelEntity = entity as? ModelEntity, modelEntity.name.hasPrefix("dynamic") {
-                    modelEntity.removeFromParent()
-                    print("Removed model with name: \(modelEntity.name)")
+            // Elimina todos los modelos de `dynamicModels`
+            for modelEntity in dynamicModels {
+                modelEntity.removeFromParent()
+                print("Removed model with name: \(modelEntity.name)")
+            }
+            
+            // Limpiar el array después de eliminar todos los modelos
+            dynamicModels.removeAll()
+            
+            // Recorre los hijos de `mainAnchor` y elimina los modelos restantes con el prefijo "dynamic_"
+            for child in mainAnchor.children {
+                if child.name.hasPrefix("dynamic_") {
+                    child.removeFromParent()
+                    print("Removed model from mainAnchor with name: \(child.name)")
                 }
             }
-            print("All models with prefix 'dynamic' under mainAnchor have been removed")
+
+            print("All dynamic models have been removed from mainAnchor")
         } else {
             print("ARSceneHandler - arView o mainAnchor es nil")
         }
     }
+
 
 
 }
