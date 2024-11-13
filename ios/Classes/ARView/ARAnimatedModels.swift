@@ -40,13 +40,13 @@ func loadDynamicsModels(geofences: [SITGeofence], arView: ARView, mainAnchor: An
 
 func loadDynamicModel(model: String, arView: ARView, mainAnchor: AnchorEntity, dynamicModels: inout [ModelEntity]){
     
-    print("Model to load:   ", model)
+    print("Model to load!:   ", model)
     
     do {
         let cameraPosition = arView.cameraTransform.translation
         let modelEntity = try ModelEntity.load(named: model)
         modelEntity.scale = SIMD3<Float>(0.015, 0.015, 0.015)
-        modelEntity.position = SIMD3<Float>(cameraPosition.x, cameraPosition.y - 1.5, cameraPosition.z - 5.0)
+        modelEntity.position = SIMD3<Float>(cameraPosition.x - Float.random(in: -3.0...3.0), cameraPosition.y - 1.5, cameraPosition.z - Float.random(in: 5.0...15.0))
         modelEntity.name = "dynamic_" + model
 
         if let animation = modelEntity.availableAnimations.first(where: { $0.name == "global scene animation" }) {
