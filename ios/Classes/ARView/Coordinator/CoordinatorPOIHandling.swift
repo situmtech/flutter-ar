@@ -163,7 +163,6 @@ extension Coordinator {
     func setTargetCoordinates(x: Float, z: Float) {
         self.targetX = Double(x)
         self.targetZ = Double(z)
-        
-        print("x_target: \(self.targetX), z_target: \(self.targetZ)")
+       
     }
 }

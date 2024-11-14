@@ -209,7 +209,6 @@ class ARQuality {
             resetThreshold()
             return true
         }
-print("CONSTANT_QUALITY_DECREASE_RATE:   ", CONSTANT_QUALITY_DECREASE_RATE)
         if currentRefreshThreshold.value > 0.20 && currentTimestamp - currentRefreshThreshold.timestamp > 1000 {
             currentRefreshThreshold.value -= CONSTANT_QUALITY_DECREASE_RATE
         }
