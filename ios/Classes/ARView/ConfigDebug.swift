@@ -27,7 +27,7 @@ class ConfigDebug {
     var qualityDecrease = 0.005
     var thresholdDecrease = 0.03
     var cameraDeph = 20
-    var arrowDistance = 5
+    var arrowDistance = 20
     
     var configStackView: UIStackView?
     var infoStackView: UIStackView?

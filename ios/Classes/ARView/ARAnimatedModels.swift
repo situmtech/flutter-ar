@@ -23,7 +23,7 @@ func loadDynamicsModels(geofences: [SITGeofence], arView: ARView, mainAnchor: An
     for geofence in geofences {
         if let customFields = geofence.customFields as? [String: Any] {
             for (key, value) in customFields {
-                if(key == "ar_metadata"){
+                if(key == "ar_metadata_ios"){
                     NSLog("\(key): \(value)")
                     let model = String(describing: value)                   
                     loadDynamicModel(model: model, arView: arView, mainAnchor: mainAnchor, dynamicModels: &dynamicModels)
