@@ -54,6 +54,7 @@ class ARWidget extends StatefulWidget {
 class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
   late String apiDomain;
   ARController arController = ARController();
+  bool isMapVisible = true;
   bool isArVisible = false;
   bool isMapCollapsed = false;
   bool loadingArMessage = false;
@@ -129,6 +130,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
             ArScreenBackButton(
               onPressed: () {
                 arController.onArGone();
+                isMapVisible = true;
               },
               onLongPress: () {
                 showDebugUI = !showDebugUI;
@@ -169,47 +171,48 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
           ],
         ),
         // ============== MapView ==============================================
-        // Align(
-        //   alignment: Alignment.bottomCenter,
-        //   child: LayoutBuilder(
-        //     // Let us know about the container's height.
-        //     builder: (BuildContext context, BoxConstraints constraints) {
-        //       double visibleMapHeight = isArVisible
-        //           // If the AR is visible, make the MapView height depend on the
-        //           // state collapsed/expanded:
-        //           ? (isMapCollapsed
-        //               ? 0
-        //               : constraints.maxHeight * (1 - widget.arHeightRatio))
-        //           // If the AR is not visible, make the MapView full height:
-        //           : constraints.maxHeight;
-        //       return AbsorbPointer(
-        //         absorbing: isArVisible,
-        //         child: AnimatedContainer(
-        //           // NOTE: visibleMapHeight must be a property of AnimatedContainer
-        //           // as it will not animate changes on a child.
-        //           duration: animationDuration,
-        //           curve: Curves.decelerate,
-        //           height: visibleMapHeight,
-        //           child: SingleChildScrollView(
-        //             // Add ScrollView to center the map: TODO fix MapView resizing on iOS.
-        //             controller: scrollController,
-        //             physics: const NeverScrollableScrollPhysics(),
-        //             child: Container(
-        //               // This opaque Container prevents the AR widget from being
-        //               // visible while the map is not loaded.
-        //               color: Colors.grey[200],
-        //               child: SizedBox(
-        //                 // Set the map height equals to the container.
-        //                 height: constraints.maxHeight,
-        //                 child: widget.mapView!,
-        //               ),
-        //             ),
-        //           ),
-        //         ),
-        //       );
-        //     },
-        //   ),
-        // ),
+        if (isMapVisible)
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: LayoutBuilder(
+              // Let us know about the container's height.
+              builder: (BuildContext context, BoxConstraints constraints) {
+                double visibleMapHeight = isArVisible
+                    // If the AR is visible, make the MapView height depend on the
+                    // state collapsed/expanded:
+                    ? (isMapCollapsed
+                        ? 0
+                        : constraints.maxHeight * (1 - widget.arHeightRatio))
+                    // If the AR is not visible, make the MapView full height:
+                    : constraints.maxHeight;
+                return AbsorbPointer(
+                  absorbing: isArVisible,
+                  child: AnimatedContainer(
+                    // NOTE: visibleMapHeight must be a property of AnimatedContainer
+                    // as it will not animate changes on a child.
+                    duration: animationDuration,
+                    curve: Curves.decelerate,
+                    height: visibleMapHeight,
+                    child: SingleChildScrollView(
+                      // Add ScrollView to center the map: TODO fix MapView resizing on iOS.
+                      controller: scrollController,
+                      physics: const NeverScrollableScrollPhysics(),
+                      child: Container(
+                        // This opaque Container prevents the AR widget from being
+                        // visible while the map is not loaded.
+                        color: Colors.grey[200],
+                        child: SizedBox(
+                          // Set the map height equals to the container.
+                          height: constraints.maxHeight,
+                          child: widget.mapView!,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
         // ============== Expand/collapse AR ===================================
         Align(
           alignment: Alignment.bottomCenter,
@@ -223,6 +226,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
                 onPressed: () {
                   setState(() {
                     isMapCollapsed = !isMapCollapsed;
+                    isMapVisible = !isMapCollapsed;
                   });
                 },
                 backgroundColor: Colors.white,
@@ -238,6 +242,11 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
           _createDebugModeSwitchButton(() {
             setState(() {
               isArVisible = !isArVisible;
+              if (isArVisible) {
+                isMapVisible = false;
+              } else {
+                isMapVisible = true;
+              }
             });
             isArVisible
                 ? arController.onArRequested()
@@ -263,6 +272,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
       case AppLifecycleState.detached:
       case AppLifecycleState.resumed:
         debugPrint("Situm> AR> LIFECYCLE> App is $state");
+        isMapVisible = true;
         break;
       case AppLifecycleState.inactive:
         debugPrint("Situm> AR> LIFECYCLE> INACTIVE");
