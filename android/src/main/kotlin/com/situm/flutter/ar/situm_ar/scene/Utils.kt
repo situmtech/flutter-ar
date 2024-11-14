@@ -2,6 +2,8 @@ package com.situm.flutter.ar.situm_ar.scene
 
 import android.util.Log
 import io.github.sceneview.collision.Vector3
+import io.github.sceneview.math.Position
+import kotlin.random.Random
 import kotlin.system.measureTimeMillis
 
 data class RelativePosition(
@@ -73,4 +75,17 @@ inline fun logExecutionTime(tag: String = "ExecutionTime", block: () -> Unit) {
         block()
     }
     Log.e(tag, "Tiempo de ejecución: $time ms")
+}
+
+fun getRandomPositionNearPosition(cameraPosition: Position, maxDistance: Float, heightOffset: Float): Position {
+    // Genera desplazamientos aleatorios en los ejes X, Y y Z
+    val randomOffsetX = Random.nextFloat() * maxDistance * 2 - maxDistance
+    val randomOffsetZ = Random.nextFloat() * maxDistance * 2 - maxDistance
+
+    // Suma los desplazamientos aleatorios a la posición de la cámara
+    return Position(
+        cameraPosition.x + randomOffsetX,
+        cameraPosition.y +heightOffset,
+        cameraPosition.z + randomOffsetZ
+    )
 }

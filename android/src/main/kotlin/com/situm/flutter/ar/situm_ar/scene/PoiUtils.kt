@@ -16,8 +16,8 @@ data class PoiAR(
     var node: Node? = null
 ) {
     fun clear() {
-//        viewNode?.clearChildNodes()
-//        viewNode?.destroy()
+        viewNode?.clearChildNodes()
+        viewNode = null
 
 //        geometryNode?.destroy()
         geometryNode?.clearChildNodes()

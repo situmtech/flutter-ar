@@ -59,6 +59,7 @@ class ARController(
 
         // Situm location and navigation listeners
         SitumSdk.locationManager().addLocationListener(arSceneHandler)
+        SitumSdk.locationManager().setGeofenceListener(arSceneHandler)
         SitumSdk.navigationManager().addNavigationListener(arSceneHandler)
 
 
