@@ -108,7 +108,7 @@ class ConfigDebug {
     func setupInfoPanel(view: UIView) {
         infoPanel = UIView()
         infoPanel?.translatesAutoresizingMaskIntoConstraints = false
-        infoPanel?.backgroundColor = .clear
+        infoPanel?.backgroundColor = UIColor.black.withAlphaComponent(0.5)
         infoPanel?.layer.cornerRadius = 10
         infoPanel?.layer.borderWidth = 2
         infoPanel?.layer.borderColor = UIColor.lightGray.cgColor
@@ -136,7 +136,7 @@ class ConfigDebug {
         let configView = UIView()
         let configLabel = UILabel()
         configLabel.text = "Activar Configuración:"
-        configLabel.textColor = .black
+        configLabel.textColor = .white
 
         let configSwitch = UISwitch()
         configSwitch.isOn = false
