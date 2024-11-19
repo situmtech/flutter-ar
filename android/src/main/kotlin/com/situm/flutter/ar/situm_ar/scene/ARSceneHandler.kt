@@ -36,7 +36,6 @@ import es.situm.sdk.model.location.CartesianCoordinate
 import es.situm.sdk.model.location.Location
 import es.situm.sdk.model.navigation.NavigationProgress
 import es.situm.sdk.navigation.NavigationListener
-import io.github.sceneview.ar.node.AnchorNode
 import io.github.sceneview.collision.Vector3
 import io.github.sceneview.geometries.Cylinder
 import io.github.sceneview.geometries.Geometry
@@ -72,14 +71,12 @@ class ARSceneHandler(
         const val TAG = "Situm> AR>"
     }
 
-    private var onDebug: Boolean = true
-    private var callback: ARControllerCallback? = null
+    private var sendArGoneCallback: ARControllerCallback? = null
 
-    private var hasToCalculateRoute = 10
+    private var onDebug: Boolean = true
     private var hasToShowDebugRoute: Boolean = false
     private val dashboardDomain: String = "https://dashboard.situm.com"
 
-    private lateinit var targetArrowSitumCoordinates: Point
     private val context: Context = activity
 
     private var isRedrawing: Boolean = false        // not allow to redraw if is already redrawing
@@ -90,7 +87,6 @@ class ARSceneHandler(
     private var arrowNode: ModelNode? = null
     private var targetArrow: Position? = null
 
-    private var anchorNode: AnchorNode? = null
     private var diskGeometry: Geometry? = null
 
 
@@ -115,7 +111,7 @@ class ARSceneHandler(
     private lateinit var viewAttachmentManager: ViewAttachmentManager
 
     fun setCallback(callback: ARControllerCallback) {
-        this.callback = callback
+        this.sendArGoneCallback = callback
     }
 
     fun setRoute(route: Route) {
@@ -589,15 +585,12 @@ class ARSceneHandler(
     fun drawDiskWithImage(poiAR: PoiAR, arPosition: Position, poiCategory: PoiCategory) {
 
         if (poiAR.node != null && poiAR.geometryNode != null) {
-//            poiAR.node?.worldPosition = arPosition
-//            poiAR.node?.lookAt(sceneView.cameraNode)
             poiAR.node?.isVisible = true
             return
         }
 
         val texture = poisTexturesMap[poiCategory.identifier]
         if (texture != null && diskGeometry != null) {
-            Log.w(TAG, ">>>>>>>>>>> Disc geometry: ${diskGeometry!!.indices.size}")
             val materialInstance =
                 MaterialLoader(sceneView.engine, context).createTextureInstance(
                     texture,
@@ -619,27 +612,9 @@ class ARSceneHandler(
         }
     }
 
-
-    // receives a position in situm coordinates, converts it to ar coordinates and points arrow towards it.
-    private fun pointArrowToSitumPosition(fromPoint: Point?) {
-        val arCorePosition = fromPoint?.let {
-            generateARCorePositions(
-                listOf(it),  // Pasar una lista con un único punto
-                currentPosition
-            ) { point -> point.cartesianCoordinate }
-        }
-        var targetArrow = arCorePosition?.get(0)?.let { Position(it.x, it.y, it.z) }
-        if (targetArrow != null) {
-            pointArrowToPosition(targetArrow)
-        }
-    }
-
     private suspend fun loadPois() {
-        Log.d(TAG, ">> Load pois 1")
         if (::currentPosition.isInitialized && this.currentPosition != null && ::pois.isInitialized && pois.isNotEmpty()) {
-            Log.d(TAG, ">> Load pois 2")
             var nearPois = poiUtils.filterPoisByDistanceAndFloor(pois, currentPosition, 50)
-            Log.d(TAG, ">> Load pois 3")
             var arcorePositions = generateARCorePositions(
                 nearPois, currentPosition
             ) { poi -> poi.position.cartesianCoordinate }
@@ -679,8 +654,6 @@ class ARSceneHandler(
 
     fun unload() {
         viewAttachmentManager.onPause()
-        anchorNode?.let { sceneView.removeChildNode(it) }
-        anchorNode = null
         arrowNode?.let { sceneView.removeChildNode(it) }
         arrowNode = null
         clearPoiNodes()
@@ -772,11 +745,11 @@ class ARSceneHandler(
     override fun onDestinationReached(route: Route?) {
         Log.w(TAG, ">> Situm navigation on destination reached")
         makeRouteInvisible()
-        callback?.sendARGone()
+        sendArGoneCallback?.sendARGone()
         super.onDestinationReached(route)
     }
-    // Location Listener
 
+    // Location Listener
     override fun onLocationChanged(location: Location) {
         logExecutionTime(" >> on location changed  ") {
             this.setCurrentLocation(location)
@@ -789,7 +762,9 @@ class ARSceneHandler(
                 Log.e(TAG, ">> Situm : has to reset!")
                 val timestampRedraw = System.currentTimeMillis()
                 if (timestampRedraw - lastTimestampRedraw > 5000) {
-                    Toast.makeText(context, "Refresh!", Toast.LENGTH_SHORT).show()
+                    if (onDebug) {
+                        Toast.makeText(context, "Refresh!", Toast.LENGTH_SHORT).show()
+                    }
                     worldRedraw()
                     lastTimestampRedraw = timestampRedraw
                 }
