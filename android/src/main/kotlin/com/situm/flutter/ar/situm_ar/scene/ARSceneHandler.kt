@@ -60,7 +60,12 @@ import kotlin.random.Random
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 
-const val DIRECTION_ARROW_TARGET_DISTANCE = 6f
+const val DIRECTION_ARROW_TARGET_DISTANCE = 15f
+const val RENDER_DISTANCE_FAR = 15f
+
+interface ARControllerCallback {
+    fun sendARGone()
+}
 
 class ARSceneHandler(
     private val activity: Activity,
@@ -69,6 +74,7 @@ class ARSceneHandler(
     companion object {
         const val TAG = "Situm> AR>"
     }
+    private var callback: ARControllerCallback? = null
 
     private var hasToCalculateRoute = 10
     private var hasToShowDebugRoute: Boolean = false
@@ -115,6 +121,9 @@ class ARSceneHandler(
 
     var diskModel: ModelNode? = null
 
+    fun setCallback(callback: ARControllerCallback) {
+        this.callback = callback
+    }
 
     fun setRoute(route: Route) {
         this.route = route
@@ -230,7 +239,8 @@ class ARSceneHandler(
 //                        }
 //                }
             }
-
+            sceneView.cameraNode.far = RENDER_DISTANCE_FAR
+            Log.d(TAG,">>>>>>>><sceneView.cameraNode.far ${sceneView.cameraNode.far}  ");
 
         }
 
@@ -448,7 +458,7 @@ class ARSceneHandler(
     }
 
 
-    private fun loadTextViewInAR(poiAR: PoiAR, textString: String) {
+    private fun loadTextViewInAR_(poiAR: PoiAR, textString: String) {
 
         if (poiAR.viewNode != null) {
             poiAR.viewNode!!.isVisible = true
@@ -471,6 +481,30 @@ class ARSceneHandler(
                 }
 
 
+            }.exceptionally { throwable ->
+                throwable.printStackTrace()
+                null
+            }
+    }
+    private fun loadTextViewInAR(poiAR: PoiAR, textString: String) {
+        if (poiAR.viewNode != null) {
+            poiAR.viewNode!!.isVisible = true
+            return
+        }
+
+        val textView = TextView(context).apply {
+            text = textString
+            setTextAppearance(R.style.CustomTextWithShadow) // Aplica el estilo
+            setPadding(10, 10, 10, 10) // Ajuste opcional
+        }
+
+        ViewRenderable.builder().setView(context, textView).build(sceneView.engine)
+            .thenAccept { viewRenderable ->
+                val viewNode = ViewNode(sceneView.engine, sceneView.modelLoader, viewAttachmentManager)
+                viewNode.setRenderable(viewRenderable)
+                poiAR.viewNode = viewNode
+
+                poiAR.node?.addChildNode(viewNode)
             }.exceptionally { throwable ->
                 throwable.printStackTrace()
                 null
@@ -722,7 +756,7 @@ class ARSceneHandler(
         if (texture != null && diskGeometry != null) {
             Log.w(TAG, ">>>>>>>>>>> Disc geometry: ${diskGeometry!!.indices.size}")
             val materialInstance =
-                MaterialLoader(sceneView.engine, context).createTextureInstance(texture, true)
+                MaterialLoader(sceneView.engine, context).createTextureInstance(texture, true,0.1f,0.8f,0.02f)
             val diskNode = GeometryNode(sceneView.engine, diskGeometry!!, materialInstance)
 
             diskNode.rotation = Rotation(-90f, 0f, 0f)
@@ -802,7 +836,8 @@ class ARSceneHandler(
     private suspend fun buildAndAddArrowNode() {
         Log.d(TAG, "buildAndAddArrowNode 1")
         val arrowModel =
-            sceneView.modelLoader.loadModelInstance(activity.getResourceUri(R.raw.arrow_rotated_center))
+            sceneView.modelLoader.loadModelInstance(activity.getResourceUri(R.raw.arrow_situm_rotated))
+            //sceneView.modelLoader.loadModelInstance(activity.getResourceUri(R.raw.arrow_rotated_center))
         val arrowPosition = Position(x = 0.0f, y = -1.0f, z = -6.0f)
         arrowModel?.let { modelInstance ->
             arrowNode = ModelNode(
@@ -909,6 +944,7 @@ class ARSceneHandler(
     override fun onDestinationReached(route: Route?) {
         Log.w(TAG, ">> Situm navigation on destination reached")
         makeRouteInvisible()
+        callback?.sendARGone()
         super.onDestinationReached(route)
     }
     // Location Listener
