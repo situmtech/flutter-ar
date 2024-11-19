@@ -19,24 +19,18 @@ data class PoiAR(
         viewNode?.clearChildNodes()
         viewNode = null
 
-//        geometryNode?.destroy()
         geometryNode?.clearChildNodes()
         geometryNode?.parent = null
         geometryNode = null
 
-
         node?.clearChildNodes()
         node?.parent = null
-//        node?.destroy()
         node = null
-
-
     }
 }
 
 
-class PoiUtils{
-
+class PoiUtils {
 
     fun filterPoisByDistanceAndFloor(
         pois: List<Poi>,
@@ -44,15 +38,11 @@ class PoiUtils{
         maxDistance: Int
     ): List<Poi> {
         return pois.filter { poi ->
-            // Verificar si el Poi está en el mismo piso
             val sameFloor = poi.buildingIdentifier == location.buildingIdentifier &&
                     poi.position.floorIdentifier == location.floorIdentifier
 
             if (sameFloor) {
-                // Calcular la distancia entre la ubicación y el Poi
                 val distance = calculateDistance(location, poi.position)
-
-                // Verificar si la distancia es menor que la distancia máxima
                 return@filter distance < maxDistance
             }
 
@@ -74,12 +64,13 @@ class PoiUtils{
         val relativeX = poi.position.cartesianCoordinate.x - currentLocation.cartesianCoordinate.x
         val relativeY = poi.position.cartesianCoordinate.y - currentLocation.cartesianCoordinate.y
 
-        // TODO: Calculate bearing
-
         return RelativePosition(relativeX = relativeX, relativeY = relativeY)
     }
 
-    fun calculateRelativePositions(currentLocation: Location, nearPois: List<Poi>): List<RelativePosition> {
+    fun calculateRelativePositions(
+        currentLocation: Location,
+        nearPois: List<Poi>
+    ): List<RelativePosition> {
         return nearPois.map { poi ->
             calculateRelativePosition(currentLocation, poi)
         }
@@ -102,7 +93,6 @@ class PoiUtils{
         // Si no se encuentra el POI con ese ID, devolver null
         return null
     }
-
 
 
 }

@@ -1,21 +1,17 @@
 package com.situm.flutter.ar.situm_ar.scene
 
-import dev.romainguy.kotlin.math.pow
 import es.situm.sdk.model.location.Location
 import io.github.sceneview.math.Position
 import io.github.sceneview.math.Rotation
-import kotlin.math.PI
 import kotlin.math.atan2
-import kotlin.math.cos
-import kotlin.math.sin
-import kotlin.math.sqrt
 
 
 const val BUFFER_SIZE = 15
 
 const val DEFAULT_REFRESH_THRESHOLD = 0.2
 const val CONSTANT_QUALITY_DECREASE_RATE = 0.005        // Every iteration always decreases this
-const val QUALITY_THRESHOLD_DECREASE_RATE = 0.03        // when low quality, threshold decreases faster
+const val QUALITY_THRESHOLD_DECREASE_RATE =
+    0.03        // when low quality, threshold decreases faster
 
 data class RefreshThreshold(var value: Double, var timestamp: Long) {
     override fun toString(): String {
@@ -26,15 +22,15 @@ data class RefreshThreshold(var value: Double, var timestamp: Long) {
 
 class ARQuality {
 
-    private var currentRefreshThreshold: RefreshThreshold = RefreshThreshold(0.2,0)
-    private var dynamicRefreshThreshold: RefreshThreshold = RefreshThreshold(0.2,0)
+    private var currentRefreshThreshold: RefreshThreshold = RefreshThreshold(0.2, 0)
+    private var dynamicRefreshThreshold: RefreshThreshold = RefreshThreshold(0.2, 0)
 
     private var quality: Double = 0.0
 
     private var odometriesDistanceConf: Double = 0.0
     private var situmConf: Double = 0.0
-    private var arConf: Double= 0.0
-    private var arDisplacementConf: Double= 0.0
+    private var arConf: Double = 0.0
+    private var arDisplacementConf: Double = 0.0
     private var situmDisplacementConf: Double = 0.0
 
     private var arLocationBuffer: MutableList<LocationCoordinates> = mutableListOf()
@@ -42,42 +38,56 @@ class ARQuality {
 
 
     fun updateARLocation(worldPosition: Position, worldRotation: Rotation) {
-        arLocationBuffer.add(LocationCoordinates(worldPosition.x.toDouble(),
-            worldPosition.z.toDouble(), worldRotation.y.toDouble(), System.currentTimeMillis()))  //TODO: Check rotation
-        if (arLocationBuffer.size> BUFFER_SIZE){
+        arLocationBuffer.add(
+            LocationCoordinates(
+                worldPosition.x.toDouble(),
+                worldPosition.z.toDouble(), worldRotation.y.toDouble(), System.currentTimeMillis()
+            )
+        )  //TODO: Check rotation
+        if (arLocationBuffer.size > BUFFER_SIZE) {
             arLocationBuffer.removeAt(0)
         }
     }
 
-    fun updateSitumLocation(location: Location){
-        if (situmLocationBuffer.isNotEmpty() && situmLocationBuffer.last().floorIdentifier != location.floorIdentifier){
+    fun updateSitumLocation(location: Location) {
+        if (situmLocationBuffer.isNotEmpty() && situmLocationBuffer.last().floorIdentifier != location.floorIdentifier) {
             situmLocationBuffer.clear()
             arLocationBuffer.clear()
             resetThreshold()
         }
-        situmLocationBuffer.add(LocationCoordinates(location.cartesianCoordinate.x, location.cartesianCoordinate.y,location.cartesianBearing.degrees(),System.currentTimeMillis(),location.floorIdentifier,
-            location.accuracy.toLong(), location.hasBearing() ))
-        if (situmLocationBuffer.size> BUFFER_SIZE){
+        situmLocationBuffer.add(
+            LocationCoordinates(
+                location.cartesianCoordinate.x,
+                location.cartesianCoordinate.y,
+                location.cartesianBearing.degrees(),
+                System.currentTimeMillis(),
+                location.floorIdentifier,
+                location.accuracy.toLong(),
+                location.hasBearing()
+            )
+        )
+        if (situmLocationBuffer.size > BUFFER_SIZE) {
             situmLocationBuffer.removeAt(0)
         }
     }
 
 
-    fun hasToResetWorld():Boolean{
+    fun hasToResetWorld(): Boolean {
         logExecutionTime(" >> Update Confidence ") {
             updateConfidence()
         }
-        return checkIfHasToRefreshAndUpdateThreshold(quality,arConf, situmConf)
+        return checkIfHasToRefreshAndUpdateThreshold(quality, arConf, situmConf)
     }
+
     fun updateConfidence() {
-        if (situmLocationBuffer.isEmpty() || arLocationBuffer.isEmpty()){
+        if (situmLocationBuffer.isEmpty() || arLocationBuffer.isEmpty()) {
             arConf = 0.0
             situmConf = 0.0
             quality = 0.0
             return
         }
-        val  totalDisplacementSitum = computeTotalDisplacement(situmLocationBuffer)
-        val  totalDisplacementAR = computeTotalDisplacement(arLocationBuffer)
+        val totalDisplacementSitum = computeTotalDisplacement(situmLocationBuffer)
+        val totalDisplacementAR = computeTotalDisplacement(arLocationBuffer)
 
         val odometriesDistance = estimateOdometriesMatch(arLocationBuffer, situmLocationBuffer)
 
@@ -87,11 +97,15 @@ class ARQuality {
         situmConf = estimateSitumConf()
         odometriesDistanceConf = odometriesDifferenceConf(odometriesDistance)
 
-        quality = situmDisplacementConf * arDisplacementConf * arConf * situmConf * odometriesDistanceConf
+        quality =
+            situmDisplacementConf * arDisplacementConf * arConf * situmConf * odometriesDistanceConf
     }
 
 
-    private fun estimateOdometriesMatch(arLocationBuffer: MutableList<LocationCoordinates>, situmLocationBuffer: MutableList<LocationCoordinates>): Double {
+    private fun estimateOdometriesMatch(
+        arLocationBuffer: MutableList<LocationCoordinates>,
+        situmLocationBuffer: MutableList<LocationCoordinates>
+    ): Double {
         var transformedARTrajectory = transformTrajectory(arLocationBuffer)
         var transformedSitumTrajectory = transformTrajectory(situmLocationBuffer)
         val distance = transformedARTrajectory.last().distanceTo(transformedSitumTrajectory.last())
@@ -144,7 +158,10 @@ class ARQuality {
 
         // Ckeck last 10 positions
         var confidence = maxConfidence
-        for (i in arLocationBuffer.size - 1 downTo maxOf(arLocationBuffer.size - requiredPositions, 0)) {
+        for (i in arLocationBuffer.size - 1 downTo maxOf(
+            arLocationBuffer.size - requiredPositions,
+            0
+        )) {
             // Si no hay AR, se congela, recibimos el último valor nuevamente.      // TODO: Chek if this continues to be true with the new library
             if ((arLocationBuffer[i].x == 0.0 && arLocationBuffer[i].y == 0.0) ||
                 i < 1 ||
@@ -166,7 +183,10 @@ class ARQuality {
         var numOkPositions = 0
         var confidence = maxConfidence
 
-        for (i in situmLocationBuffer.size - 1 downTo maxOf(situmLocationBuffer.size - requiredPositions, 0)) {
+        for (i in situmLocationBuffer.size - 1 downTo maxOf(
+            situmLocationBuffer.size - requiredPositions,
+            0
+        )) {
             if ((situmLocationBuffer[i].accuracy > 5 && !situmLocationBuffer[i].hasBearing) || i < 0) {
                 break
             } else {
@@ -186,6 +206,7 @@ class ARQuality {
             distance / minDistanceThreshold
         }
     }
+
     fun odometriesDifferenceConf(difference: Double): Double {
         val diffThreshold = 10.0
         return if (difference > diffThreshold) {
@@ -195,7 +216,11 @@ class ARQuality {
         }
     }
 
-    fun checkIfHasToRefreshAndUpdateThreshold(conf: Double, arConf: Double, situmConf: Double): Boolean {
+    fun checkIfHasToRefreshAndUpdateThreshold(
+        conf: Double,
+        arConf: Double,
+        situmConf: Double
+    ): Boolean {
         val currentTimestamp = System.currentTimeMillis()
 
         // Si la confianza de AR o Situm es menor que 0.8, reiniciar el umbral y devolver true
@@ -206,8 +231,10 @@ class ARQuality {
 
         // Reducir siempre el umbral si es necesario
         if (currentRefreshThreshold.value > 0.20 &&
-            currentTimestamp - currentRefreshThreshold.timestamp > 1000) {
-            currentRefreshThreshold.value = currentRefreshThreshold.value - CONSTANT_QUALITY_DECREASE_RATE
+            currentTimestamp - currentRefreshThreshold.timestamp > 1000
+        ) {
+            currentRefreshThreshold.value =
+                currentRefreshThreshold.value - CONSTANT_QUALITY_DECREASE_RATE
         }
 
         // Si la confianza es mayor que el umbral actual + 0.2, actualizar el umbral y devolver true
@@ -220,8 +247,10 @@ class ARQuality {
         // Si la confianza es menor que el umbral actual y ha pasado más de 1 segundo, disminuir el umbral
         else if (conf < currentRefreshThreshold.value &&
             currentTimestamp - currentRefreshThreshold.timestamp > 1000 &&
-            currentRefreshThreshold.value > 0.20) {
-            currentRefreshThreshold.value = currentRefreshThreshold.value - QUALITY_THRESHOLD_DECREASE_RATE
+            currentRefreshThreshold.value > 0.20
+        ) {
+            currentRefreshThreshold.value =
+                currentRefreshThreshold.value - QUALITY_THRESHOLD_DECREASE_RATE
             currentRefreshThreshold.timestamp = currentTimestamp
             dynamicRefreshThreshold = currentRefreshThreshold
             return false
@@ -245,7 +274,7 @@ class ARQuality {
     }
 
     fun getCurrentStatusLog(): String {
-        return  "quality: %.2f \n".format(quality) +
+        return "quality: %.2f \n".format(quality) +
                 "dynamicRefreshThreshold: %.2f\n".format(dynamicRefreshThreshold.value) +
                 "odometriesDistanceConf: %.2f \n".format(odometriesDistanceConf) +
                 "situmConf: %.2f \n".format(situmConf) +
@@ -253,7 +282,6 @@ class ARQuality {
                 "arconf: %.2f \n".format(arConf) +
                 "arDisplacementConf: %.2f \n".format(arDisplacementConf)
     }
-
 
 
 }

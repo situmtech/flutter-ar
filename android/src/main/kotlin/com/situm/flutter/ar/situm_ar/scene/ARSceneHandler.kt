@@ -6,16 +6,16 @@ import android.app.Activity
 import android.content.Context
 import android.graphics.BitmapFactory
 import android.util.Log
-import android.webkit.WebView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.google.android.filament.Texture
-import com.google.ar.core.Anchor
 import com.google.ar.sceneform.rendering.ViewAttachmentManager
 import com.google.ar.sceneform.rendering.ViewRenderable
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import com.situm.flutter.ar.situm_ar.CustomARSceneView
 import com.situm.flutter.ar.situm_ar.R
 import dev.romainguy.kotlin.math.Float3
@@ -56,9 +56,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.URL
 import java.nio.ByteBuffer
-import kotlin.random.Random
-import com.google.gson.JsonObject
-import com.google.gson.JsonParser
 
 const val DIRECTION_ARROW_TARGET_DISTANCE = 15f
 const val RENDER_DISTANCE_FAR = 15f
@@ -74,6 +71,8 @@ class ARSceneHandler(
     companion object {
         const val TAG = "Situm> AR>"
     }
+
+    private var onDebug: Boolean = true
     private var callback: ARControllerCallback? = null
 
     private var hasToCalculateRoute = 10
@@ -90,7 +89,6 @@ class ARSceneHandler(
 
     private var arrowNode: ModelNode? = null
     private var targetArrow: Position? = null
-    private var targetNode: GeometryNode? = null
 
     private var anchorNode: AnchorNode? = null
     private var diskGeometry: Geometry? = null
@@ -107,7 +105,6 @@ class ARSceneHandler(
 
     private val routeNodes: MutableList<Node> = mutableListOf()     // only for debug
 
-    private lateinit var currentTargetNodeGeometry: GeometryNode
     private lateinit var currentProjectedNodeGeometry: GeometryNode
 
     private lateinit var buildingInfo: BuildingInfo
@@ -116,10 +113,6 @@ class ARSceneHandler(
 
     private lateinit var sceneView: CustomARSceneView
     private lateinit var viewAttachmentManager: ViewAttachmentManager
-
-    //private lateinit var situmDebug: SitumDebug
-
-    var diskModel: ModelNode? = null
 
     fun setCallback(callback: ARControllerCallback) {
         this.callback = callback
@@ -165,25 +158,6 @@ class ARSceneHandler(
 
 
     fun setCurrentLocation(location: Location) {
-        Log.d(TAG, "Situm location $location")
-        //TODO: remove . DEBUG
-//        if (hasToCalculateRoute > 0) {
-//            hasToCalculateRoute = hasToCalculateRoute - 1
-//        } else if (hasToCalculateRoute == 0) {
-//            //situmDebug.calculateRoute(location,"496681")
-////            situmDebug.calculateRoute(location, "492904")    // rotonda restollal
-//            situmDebug.calculateRoute(location, "492878")    // poi Bar
-//
-//            hasToCalculateRoute = hasToCalculateRoute - 1
-//        }
-
-
-//        if (::currentPosition.isInitialized && this.poisTextNodes.isEmpty()){
-//            Log.w(TAG,">> LOAD POIS")
-//            loadPois()
-//        }else{
-//            Log.w(TAG,">> NOT LOAD POIS: ${this.poisTextNodes.size}")
-//        }
         // if floor change, redraw
         if (::currentPosition.isInitialized && this.currentPosition.floorIdentifier != location.floorIdentifier) {
             worldRedraw()
@@ -224,24 +198,9 @@ class ARSceneHandler(
                 Log.i(TAG, ">>>onTrackingFailureChanged: $reason")
             }
             onSessionUpdated = { _, frame ->
-//                if (diskModel == null) {
-//                    (activity as? LifecycleOwner)?.lifecycleScope?.launch {
-//                        diskModel = buildModelNode(R.raw.disc, 0.5f)
-//                    }
-//                }
-//                if (anchorNode == null) {
-//                    frame.getUpdatedPlanes()
-//                        .firstOrNull { it.type == Plane.Type.HORIZONTAL_UPWARD_FACING }
-//                        ?.let { plane ->
-//                            addAnchorNode(plane.createAnchor(plane.centerPose))
-//
-//                            //loadTextViewInAR(plane.centerPose.position, "Dance")
-//                        }
-//                }
             }
-            sceneView.cameraNode.far = RENDER_DISTANCE_FAR
-            Log.d(TAG,">>>>>>>><sceneView.cameraNode.far ${sceneView.cameraNode.far}  ");
 
+            sceneView.cameraNode.far = RENDER_DISTANCE_FAR
         }
 
         (activity as? LifecycleOwner)?.lifecycleScope?.launch {
@@ -251,8 +210,6 @@ class ARSceneHandler(
                 // Actualiza el nodo en cada frame
                 buildAndAddArrowNode()
                 sceneView.onFrame = {
-
-//                    logExecutionTime(" >> on frame ") {
                     arrowNode?.let { node ->
                         val distanceFromCamera = -0.5f
                         val forwardVector = Vector3(0.0f, 0.0f, 1.0f)
@@ -292,17 +249,10 @@ class ARSceneHandler(
                         poi.node?.lookAt(sceneView.cameraNode)
                         poi.node?.scale = Float3(-1f, 1f, 1f)
                     }
-
                     updateVisualOdometry()
-                    //}
                 }
             }
         }
-
-
-        // debug
-//        situmDebug = SitumDebug(context)
-//        situmDebug.initSitum()
     }
 
 
@@ -325,7 +275,6 @@ class ARSceneHandler(
         val situmBearingMinusRotation = io.github.sceneview.collision.Quaternion.axisAngle(
             Vector3(0f, -1f, 0f), situmBearing.toFloat()
         )
-
 
         for (item in items) {
             val coordinate = getCoordinate(item)
@@ -418,74 +367,6 @@ class ARSceneHandler(
 
     }
 
-    // Función para generar n POIs en posiciones aleatorias cercanas a la cámara
-    private suspend fun generateRandomPois(n: Int) {
-        if (poisAR.isEmpty()) {
-            return
-        }
-        // Obtener la posición de la cámara
-        val cameraPosition = sceneView.cameraNode.worldPosition
-
-
-        val arcorePositions = mutableListOf<Vector3>()
-
-        // Generar n POIs
-        for (i in 0 until n) {
-            // Crear una posición aleatoria alrededor de la cámara
-            val randomPosition = Vector3(
-                cameraPosition.x + Random.nextFloat() * 20 - 10,  // Ajusta el rango para X
-                cameraPosition.y,  // Ajusta el rango para Y (altura)
-                cameraPosition.z + Random.nextFloat() * 20 - 10   // Ajusta el rango para Z
-            )
-            arcorePositions.add(randomPosition)
-
-        }
-
-
-        for (position in arcorePositions) {
-            val poi = poisAR.values.random()
-            addBaseNode(poi, Position(position.x, position.y, position.z))
-            drawDiskWithImage(poi, Position(position.x, position.y, position.z), poi.poi.category)
-            withContext(Dispatchers.Main) {
-                poisAR.get(poi.poi.identifier)?.let {
-                    loadTextViewInAR(
-                        it,
-                        poisAR.get(poi.poi.identifier)!!.poi.name
-                    )
-                }
-            }
-        }
-    }
-
-
-    private fun loadTextViewInAR_(poiAR: PoiAR, textString: String) {
-
-        if (poiAR.viewNode != null) {
-            poiAR.viewNode!!.isVisible = true
-            return
-        }
-        val textView = TextView(context).apply {
-            text = textString
-            textSize = 50f
-            setTextColor(android.graphics.Color.WHITE)
-        }
-        ViewRenderable.builder().setView(context, textView).build(sceneView.engine)
-            .thenAccept { viewRenderable ->
-                var viewNode =
-                    ViewNode(sceneView.engine, sceneView.modelLoader, viewAttachmentManager)
-                viewNode.setRenderable(viewRenderable)
-                poiAR.viewNode = viewNode
-
-                if (poiAR.node != null) {
-                    poiAR.node!!.addChildNode(viewNode)
-                }
-
-
-            }.exceptionally { throwable ->
-                throwable.printStackTrace()
-                null
-            }
-    }
     private fun loadTextViewInAR(poiAR: PoiAR, textString: String) {
         if (poiAR.viewNode != null) {
             poiAR.viewNode!!.isVisible = true
@@ -500,7 +381,8 @@ class ARSceneHandler(
 
         ViewRenderable.builder().setView(context, textView).build(sceneView.engine)
             .thenAccept { viewRenderable ->
-                val viewNode = ViewNode(sceneView.engine, sceneView.modelLoader, viewAttachmentManager)
+                val viewNode =
+                    ViewNode(sceneView.engine, sceneView.modelLoader, viewAttachmentManager)
                 viewNode.setRenderable(viewRenderable)
                 poiAR.viewNode = viewNode
 
@@ -511,49 +393,10 @@ class ARSceneHandler(
             }
     }
 
-
-    private fun loadWebViewInAR(position: Position, htmlContent: String) {
-
-        val webView = WebView(context).apply {
-            settings.javaScriptEnabled = true
-            settings.domStorageEnabled = true
-            settings.loadWithOverviewMode = true
-            settings.useWideViewPort = true
-            settings.mediaPlaybackRequiresUserGesture = false
-
-
-            loadDataWithBaseURL(null, htmlContent, "text/html", "utf-8", null)
-//            setOnTouchListener { v, event ->
-//                v.performClick()
-//                false
-//            }
-        }
-
-        ViewRenderable.builder().setView(context, webView).build(sceneView.engine)
-            .thenAccept { viewRenderable ->
-                val viewNode =
-                    ViewNode(sceneView.engine, sceneView.modelLoader, viewAttachmentManager)
-
-                viewNode.setRenderable(viewRenderable)
-
-                viewNode.position = position
-                viewNode.lookAt(sceneView.cameraNode)
-                viewNode.scale = Float3(-1f, 1f, 1f)
-                //poisTextNodes.add(viewNode)
-
-                sceneView.addChildNode(viewNode)
-            }.exceptionally { throwable ->
-                throwable.printStackTrace()
-                null
-            }
-    }
-
     private fun updateRouteNodes() {
-        Log.d(TAG, ">> updateRouteNodes 1  ")
         if (!this::currentSegment.isInitialized || !this::currentPosition.isInitialized) {
             return
         }
-        Log.d(TAG, ">> updateRouteNodes 2 ")
         currentSegment.points.let { nonNullRoute ->
             val arCorePositionsForPoints = generateARCorePositions(
                 nonNullRoute, currentPosition
@@ -756,7 +599,13 @@ class ARSceneHandler(
         if (texture != null && diskGeometry != null) {
             Log.w(TAG, ">>>>>>>>>>> Disc geometry: ${diskGeometry!!.indices.size}")
             val materialInstance =
-                MaterialLoader(sceneView.engine, context).createTextureInstance(texture, true,0.1f,0.8f,0.02f)
+                MaterialLoader(sceneView.engine, context).createTextureInstance(
+                    texture,
+                    true,
+                    0.1f,
+                    0.8f,
+                    0.02f
+                )
             val diskNode = GeometryNode(sceneView.engine, diskGeometry!!, materialInstance)
 
             diskNode.rotation = Rotation(-90f, 0f, 0f)
@@ -800,34 +649,12 @@ class ARSceneHandler(
         }
     }
 
-
-    private fun multiplyVectorScalar(vector: Vector3, scalar: Float): Vector3 {
-        return Vector3(vector.x * scalar, vector.y * scalar, vector.z * scalar)
-    }
-
-
-    private fun addVectors(vector1: Vector3, vector2: Vector3): Vector3 {
-        return Vector3(vector1.x + vector2.x, vector1.y + vector2.y, vector1.z + vector2.z)
-    }
-
-    private fun addAnchorNode(anchor: Anchor) {
-        sceneView.addChildNode(AnchorNode(sceneView.engine, anchor).apply {
-            isEditable = true
-            (activity as? LifecycleOwner)?.lifecycleScope?.launch {
-                buildModelNode(R.raw.sphere_low, 0.5f, -0.5f)?.let { addChildNode(it) }
-            }
-            anchorNode = this
-        })
-    }
-
-
-    private suspend fun buildModelNode(resId: Int, scale: Float, height: Float): ModelNode? {
+    private suspend fun buildModelNode(resId: Int, scale: Float): ModelNode? {
         return sceneView.modelLoader.loadModelInstance(activity.getResourceUri(resId))
             ?.let { modelInstance ->
                 ModelNode(
                     modelInstance = modelInstance,
                     scaleToUnits = scale,
-                    //centerOrigin = Position(y = height)
                 ).apply {}
 
             }
@@ -837,7 +664,7 @@ class ARSceneHandler(
         Log.d(TAG, "buildAndAddArrowNode 1")
         val arrowModel =
             sceneView.modelLoader.loadModelInstance(activity.getResourceUri(R.raw.arrow_situm_rotated))
-            //sceneView.modelLoader.loadModelInstance(activity.getResourceUri(R.raw.arrow_rotated_center))
+        //sceneView.modelLoader.loadModelInstance(activity.getResourceUri(R.raw.arrow_rotated_center))
         val arrowPosition = Position(x = 0.0f, y = -1.0f, z = -6.0f)
         arrowModel?.let { modelInstance ->
             arrowNode = ModelNode(
@@ -901,20 +728,21 @@ class ARSceneHandler(
         routeNodes.clear()
     }
 
-    private fun clearModels(){
-        for (fenceModel in fenceModels){
+    private fun clearModels() {
+        for (fenceModel in fenceModels) {
 
             fenceModel.value.removeFromScene(sceneView)
         }
         fenceModels.clear()
     }
+
     private fun clearRoute() {
         route = Route()
     }
 
     // Navigation listener
     override fun onStart(route: Route) {        // TODO: Esto no se va a llamar
-        Log.w(TAG,">>>>> on start navigation listener")
+        Log.w(TAG, ">>>>> on start navigation listener")
         setRoute(route)
         updateRouteNodes()
         updateArrowTarget()
@@ -982,10 +810,6 @@ class ARSceneHandler(
 
     // callable from dart
     fun worldRedraw() {
-//        CoroutineScope(Dispatchers.IO).launch {
-//            generateRandomPois(5)
-//        }
-//        return
         if (isRedrawing) {
             return
         }
@@ -1049,63 +873,74 @@ class ARSceneHandler(
 
 
     override fun onEnteredGeofences(geofences: MutableList<Geofence>?) {
-        Log.d(TAG, ">>>>>>>>>>>>>>>>>>>> Geofences ${geofences?.size}")
+        if (onDebug) {
+            Toast.makeText(context, "Enter Geofence!", Toast.LENGTH_SHORT).show()
+        }
         geofences?.forEach { geofence ->
-            Log.d(TAG,">>>>>>>>>>> geofence. ${geofence.name}")
             geofence.customFields?.forEach { cf ->
                 if (cf.key == "ar_metadata_android") {
-                    Log.d(TAG,">>>>>>>>>>> cf metadata. ${cf.value}")
                     try {
-                        // Intentar parsear el valor como JSON
                         val json = JsonParser.parseString(cf.value.toString()) as JsonObject
-                        Log.d(TAG,">>>>>>> GEOFENCE JSON PARSE")
-                        // Obtener los campos del JSON
-                        val modelName = json.get("name")?.asString ?: throw IllegalArgumentException("No 'name' field in JSON")
-                        val scale = json.get("scale")?.asFloat ?: 1f // Default scale to 1 if not provided
-                        val height = json.get("height")?.asFloat ?: 0f // Default height to 0 if not provided
+                        val modelName = json.get("name")?.asString
+                            ?: throw IllegalArgumentException("No 'name' field in JSON")
+                        val scale = json.get("scale")?.asFloat ?: 1f
+                        val height = json.get("height")?.asFloat ?: 0f
 
-                        Log.d(TAG,">>>>>>> GEOFENCE JSON_ $modelName  $scale $height")
-                        // Verificar si el nombre de modelo termina con ".glb"
+                        Log.d(TAG, ">>>>>>> GEOFENCE JSON_ $modelName  $scale $height")
+
                         if (modelName.endsWith(".glb")) {
                             val modelNameWithoutExtension = modelName.removeSuffix(".glb")
                             val existingModel = fenceModels[modelNameWithoutExtension]
 
                             if (existingModel != null) {
-                                // Si el modelo ya existe, se actualiza su posición y escala
-                                existingModel.modelNode.worldPosition = getRandomPositionNearPosition(sceneView.cameraNode.worldPosition, 2f, height)
+                                existingModel.modelNode.worldPosition =
+                                    getRandomPositionNearPosition(
+                                        sceneView.cameraNode.worldPosition,
+                                        2f,
+                                        height
+                                    )
                                 existingModel.modelNode.isVisible = true
-                                Log.d(TAG,">>>>>>> Existing model $modelNameWithoutExtension set to ${existingModel.modelNode.worldPosition}")
-                                //sceneView.addChildNode(existingModel.modelNode)
                             } else {
                                 val modelResId = activity?.resources?.getIdentifier(
                                     modelNameWithoutExtension, "raw", activity?.packageName
                                 )
 
-                                Log.d(TAG, ">>>>>>>>>>>>>>>>>>>> $modelNameWithoutExtension $modelResId")
+                                Log.d(
+                                    TAG,
+                                    ">>>>>>>>>>>>>>>>>>>> $modelNameWithoutExtension $modelResId"
+                                )
 
                                 if (modelResId != null && modelResId != 0) {
                                     (activity as? LifecycleOwner)?.lifecycleScope?.launch {
-                                        Log.d(TAG, ">>>>>>>>>>>>>>>>>>>> Building model $modelResId")
-                                        val modelNode = buildModelNode(modelResId, scale, height)
-                                        Log.d(TAG, ">>>>>>>>>>>>>>>>>>>> Building model $modelResId   -> trexmodel ${R.raw.trex} / eren model ${R.raw.eren_hiphop_dance} / sad person ${R.raw.sad_person} ${R.raw.phoenix_bird} ${R.raw.hummingbird} ${R.raw.saturn}")
-                                        Log.d(TAG, ">>>>>>>>>>>>>>>>>>>> model node $modelResId -> $modelNode")
-                                        modelNode?.let {
-                                            val situmARModel = SitumARModel(geofence.name, modelName, it)
-                                            fenceModels[modelNameWithoutExtension] = situmARModel
-                                            modelNode.worldPosition = getRandomPositionNearPosition(sceneView.cameraNode.worldPosition, 2f, height)
+                                        val modelNode = buildModelNode(modelResId, scale)
+                                        Log.d(
+                                            TAG,
+                                            ">>>>>>>>>>>>>>>>>>>> Building model $modelResId   -> trexmodel ${R.raw.trex} / eren model ${R.raw.eren_hiphop_dance} / sad person ${R.raw.sad_person} ${R.raw.phoenix_bird} ${R.raw.hummingbird} ${R.raw.saturn}"
+                                        )
 
+                                        modelNode?.let {
+                                            val situmARModel =
+                                                SitumARModel(geofence.name, modelName, it)
+                                            fenceModels[modelNameWithoutExtension] = situmARModel
+                                            modelNode.worldPosition = getRandomPositionNearPosition(
+                                                sceneView.cameraNode.worldPosition,
+                                                2f,
+                                                height
+                                            )
                                             sceneView.addChildNode(it)
-                                            Log.d(TAG, ">>>>>>>>>> Added model node to sceneview at position ${modelNode.worldPosition}")
+
                                         }
                                     }
                                 } else {
-                                    Log.e("GeofenceHandler", "Modelo no encontrado en R.raw: $modelNameWithoutExtension")
+                                    Log.e(
+                                        "GeofenceHandler",
+                                        "Modelo no encontrado en R.raw: $modelNameWithoutExtension"
+                                    )
                                 }
                             }
                         }
                     } catch (e: Exception) {
-                        // Si no se puede parsear el JSON o el formato es incorrecto, simplemente no hacer nada
-                        Log.e(TAG, ">>>>>>>>>>>>>>>>> Error parsing JSON or invalid format: ${e.message}")
+                        Log.e(TAG, "> Error parsing JSON or invalid format: ${e.message}")
                     }
                 }
             }
@@ -1114,20 +949,17 @@ class ARSceneHandler(
 
 
     override fun onExitedGeofences(geofences: MutableList<Geofence>?) {
-        Log.d(TAG,">>>>>>>>>>>>>>>>>>>>>>> EXIT GEOFENCE")
-        Toast.makeText(context, "Exit Geofence!", Toast.LENGTH_SHORT).show()
+        if (onDebug) {
+            Toast.makeText(context, "Exit Geofence!", Toast.LENGTH_SHORT).show()
+        }
         geofences?.forEach { geofence ->
             geofence.customFields?.forEach { cf ->
                 if (cf.key == "ar_metadata_android") {
                     try {
-                        // Intentar parsear el valor como JSON
                         val json = JsonParser.parseString(cf.value.toString()) as JsonObject
-                        Log.d(TAG, ">>>>>>> GEOFENCE JSON PARSE")
-                        // Obtener los campos del JSON
                         val modelName = json.get("name")?.asString
                             ?: throw IllegalArgumentException("No 'name' field in JSON")
                         if (modelName.endsWith(".glb")) {
-                            Log.d(TAG, ">>>>>>>>>>>>>>>>>>>>>>> REMOVE MODEL $modelName")
                             val modelNameWithoutExtension = modelName.removeSuffix(".glb")
                             fenceModels[modelNameWithoutExtension]?.let { model ->
                                 //model.removeFromScene(sceneView)
@@ -1136,68 +968,13 @@ class ARSceneHandler(
                             }
                         }
                     } catch (e: Exception) {
-                        // Si no se puede parsear el JSON o el formato es incorrecto, simplemente no hacer nada
                         Log.e(
                             TAG,
-                            ">>>>>>>>>>>>>>>>> Error parsing JSON or invalid format: ${e.message}"
+                            "> Error parsing JSON or invalid format: ${e.message}"
                         )
                     }
                 }
             }
         }
     }
-
-//    override fun onEnteredGeofences(geofences: MutableList<Geofence>?) {
-//        Log.d(TAG,">>>>>>>>>>>>>>>>>>>> Geofence")
-//        for (geofence in geofences!!){
-//            for (cf in geofence.customFields){
-//                if(cf.key.equals("ar_metadata")){
-//                    Log.d(TAG,">>>>>>>>>>>>>>>>>>>> AR METADATA")
-//                    // check if valid extension
-//                    if(cf.value.toString().endsWith(".glb")) {
-//                        val modelName = cf.value.toString().removeSuffix(".glb")
-//                        // check if already on map
-//                        if(fenceModels.get(modelName)!=null){
-//                            fenceModels.get(modelName)!!.modelNode.worldPosition = getRandomPositionNearCamera(sceneView.cameraNode.worldPosition, 5f)
-//                            sceneView.addChildNode(fenceModels.get(modelName)!!.modelNode)
-//                        }else{
-//                            val modelResId = activity?.resources?.getIdentifier(
-//                                modelName, "raw", activity?.packageName
-//                            )
-//                            Log.d(TAG,">>>>>>>>>>>>>>>>>>>>  $modelName   $modelResId  ")
-//                            if (modelResId != null && modelResId != 0) {
-//                                (activity as? LifecycleOwner)?.lifecycleScope?.launch {
-//                                    // Usa `modelResId` en lugar de `R.raw.disc`
-//                                    Log.d(TAG,">>>>>>>>>>>>>>>>>>>>  build model $modelResId  ")
-//                                    val modelNode = buildModelNode(modelResId, 1f)
-//
-//                                    modelNode?.let {
-//                                        val situmARModel = SitumARModel(geofence.name, cf.value, it)
-//                                        fenceModels[modelNode.name.toString()] = situmARModel
-//                                        modelNode.worldPosition = getRandomPositionNearCamera(sceneView.cameraNode.worldPosition, 5f)
-//                                        sceneView.addChildNode(it)
-//                                    }
-//                                }
-//                            } else {
-//                                Log.e("GeofenceHandler", "Modelo no encontrado en R.raw: $modelName")
-//                            }
-//                        }
-//
-//                    }
-//                }
-//            }
-//        }
-//
-//    }
-//
-//    override fun onExitedGeofences(geofences: MutableList<Geofence>?) {
-//        // unload models
-//        for (geofence in geofences!!){
-//            for (cf in geofence.customFields){
-//                if(cf.key.equals("ar_metadata")){
-//                    fenceModels.get(cf.value)?.removeFromScene(sceneView)
-//                }
-//            }
-//        }
-//    }
 }

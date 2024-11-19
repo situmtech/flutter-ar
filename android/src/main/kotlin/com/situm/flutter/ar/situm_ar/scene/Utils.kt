@@ -15,7 +15,10 @@ data class RelativePosition(
     }
 }
 
-fun interpolatePositions(positions: List<Vector3>, distanceBetweenPoints: Float = 1.0f): MutableList<Vector3> {
+fun interpolatePositions(
+    positions: List<Vector3>,
+    distanceBetweenPoints: Float = 1.0f
+): MutableList<Vector3> {
     val interpolatedPositions = mutableListOf<Vector3>()
 
     for (i in 0 until positions.size - 1) {
@@ -63,6 +66,15 @@ fun calculateDistance(start: Vector3, end: Vector3): Float {
     ).toFloat()
 }
 
+fun multiplyVectorScalar(vector: Vector3, scalar: Float): Vector3 {
+    return Vector3(vector.x * scalar, vector.y * scalar, vector.z * scalar)
+}
+
+
+fun addVectors(vector1: Vector3, vector2: Vector3): Vector3 {
+    return Vector3(vector1.x + vector2.x, vector1.y + vector2.y, vector1.z + vector2.z)
+}
+
 fun calculate2DDistance(start: Vector3, end: Vector3): Float {
     return Math.sqrt(
         ((end.x - start.x) * (end.x - start.x) +
@@ -74,10 +86,14 @@ inline fun logExecutionTime(tag: String = "ExecutionTime", block: () -> Unit) {
     val time = measureTimeMillis {
         block()
     }
-    Log.e(tag, "Tiempo de ejecución: $time ms")
+    Log.d(tag, "Tiempo de ejecución: $time ms")
 }
 
-fun getRandomPositionNearPosition(cameraPosition: Position, maxDistance: Float, heightOffset: Float): Position {
+fun getRandomPositionNearPosition(
+    cameraPosition: Position,
+    maxDistance: Float,
+    heightOffset: Float
+): Position {
     // Genera desplazamientos aleatorios en los ejes X, Y y Z
     val randomOffsetX = Random.nextFloat() * maxDistance * 2 - maxDistance
     val randomOffsetZ = Random.nextFloat() * maxDistance * 2 - maxDistance
@@ -85,7 +101,7 @@ fun getRandomPositionNearPosition(cameraPosition: Position, maxDistance: Float, 
     // Suma los desplazamientos aleatorios a la posición de la cámara
     return Position(
         cameraPosition.x + randomOffsetX,
-        cameraPosition.y +heightOffset,
+        cameraPosition.y + heightOffset,
         cameraPosition.z + randomOffsetZ
     )
 }

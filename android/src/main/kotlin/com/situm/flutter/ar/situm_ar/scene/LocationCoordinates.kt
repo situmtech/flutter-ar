@@ -13,8 +13,8 @@ data class LocationCoordinates(
     val yaw: Double,
     val timestamp: Long,
     val floorIdentifier: String = "",
-    val accuracy : Long =0,
-    val hasBearing : Boolean = true,
+    val accuracy: Long = 0,
+    val hasBearing: Boolean = true,
 ) {
 
     operator fun minus(other: LocationCoordinates): LocationCoordinates {

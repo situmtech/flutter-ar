@@ -22,7 +22,7 @@ class ARMethodCallHandler(
             "unload" -> handleUnload(arguments, result)
             "worldRedraw" -> handleRedraw(arguments, result)
             "updateArrowTarget" -> handleUpdateArrowTarget(arguments, result)
-            "showRouteOnAR" ->  handleShowRouteOnAR(arguments, result)
+            "showRouteOnAR" -> handleShowRouteOnAR(arguments, result)
             "getDebugInfo" -> handleGetDebugInfo(arguments, result)
             else -> result.notImplemented()
         }
@@ -68,10 +68,9 @@ class ARMethodCallHandler(
         result.success(DONE)
     }
 
-    private fun handleGetDebugInfo(arguments: Map<String, Any>, result: MethodChannel.Result){
+    private fun handleGetDebugInfo(arguments: Map<String, Any>, result: MethodChannel.Result) {
         result.success(controller.getDebugInfo())
     }
-
 
 
 }
