@@ -18,6 +18,9 @@ class ConfigDebug {
     var infoLabel3: UILabel?
     var infoLabel4: UILabel?
     var infoLabel5: UILabel?
+    var infoLabel6: UILabel?
+    var infoLabel7: UILabel?
+    var infoLabel8: UILabel?
     
     var configTextField1: UITextField?
     var configTextField2: UITextField?
@@ -26,7 +29,7 @@ class ConfigDebug {
     
     var qualityDecrease = 0.005
     var thresholdDecrease = 0.03
-    var cameraDeph = 20
+    var cameraDeph = 30
     var arrowDistance = 20
     
     var configStackView: UIStackView?
@@ -172,15 +175,19 @@ class ConfigDebug {
         infoLabel3 = UILabel()
         infoLabel4 = UILabel()
         infoLabel5 = UILabel()
+        infoLabel6 = UILabel()
+        infoLabel7 = UILabel()
+        infoLabel8 = UILabel()
+        
 
         // Configurar las etiquetas
-        [infoLabel1, infoLabel2, infoLabel3, infoLabel4, infoLabel5].forEach { label in
+        [infoLabel1, infoLabel2, infoLabel3, infoLabel4, infoLabel5, infoLabel6, infoLabel7, infoLabel8].forEach { label in
             label?.textAlignment = .left
-            label?.textColor = .black
+            label?.textColor = .white
         }
 
         // Organizar las etiquetas de información en un UIStackView
-        infoStackView = UIStackView(arrangedSubviews: [infoLabel1!, infoLabel2!, infoLabel3!, infoLabel4!, infoLabel5!])
+        infoStackView = UIStackView(arrangedSubviews: [infoLabel2!, infoLabel3!, infoLabel6!, infoLabel5!, infoLabel7!, infoLabel7!, infoLabel8!, infoLabel1!])
         infoStackView?.axis = .vertical
         infoStackView?.spacing = 5
         infoStackView?.alignment = .fill
@@ -220,7 +227,7 @@ class ConfigDebug {
     private func createLabeledTextField(labelText: String, placeholder: String, value: String) -> UIStackView {
         let label = UILabel()
         label.text = labelText
-        label.textColor = .black
+        label.textColor = .white
         label.font = UIFont.systemFont(ofSize: 14)
         label.widthAnchor.constraint(equalToConstant: 150).isActive = true
 
@@ -349,7 +356,11 @@ class ConfigDebug {
 
             // Actualizar las etiquetas con los nuevos valores, desenvolviendo opcionales
             infoLabel1?.text = "HasToRefresh: \(arQuality.hasToResetWorld())"
-            infoLabel2?.text = "GlobalQuality: \(roundedQuality)"
+            infoLabel2?.text = "Quality: \(roundedQuality)"
+            infoLabel6?.text = "OdometriesDistanceConf: \(arQuality.odometriesDistanceConf)"
+            infoLabel7?.text = "SitumDisplacementConf: \(arQuality.situmDisplacementConf)"
+            infoLabel8?.text = "ArDisplacementConf: \(arQuality.arDisplacementConf)"
+            
             
             // Asegúrate de desenvolver correctamente las variables opcionales
             if let dynamicRefreshThreshold = infoDebug["DynamicRefreshThreshold"] {
@@ -370,7 +381,7 @@ class ConfigDebug {
                 infoLabel5?.text = "SitumConf: N/A"
             }
         } else {
-            infoLabel2?.text = "GlobalQuality: N/A"
+            infoLabel2?.text = "Quality: N/A"
         }
         
     }

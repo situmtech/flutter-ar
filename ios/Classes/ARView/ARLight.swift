@@ -2,7 +2,7 @@ import Foundation
 import RealityKit
 
 func addDirectionalLight(to arView: ARView) {
-    // Crear una entidad de anclaje para la luz
+   /* // Crear una entidad de anclaje para la luz
     let lightAnchor = AnchorEntity(world: SIMD3<Float>(0, 0, 0))
     
     // Crear una luz direccional
@@ -17,5 +17,5 @@ func addDirectionalLight(to arView: ARView) {
     lightAnchor.addChild(directionalLight)
     
     // Añadir el ancla a la vista AR
-    arView.scene.addAnchor(lightAnchor)
+    arView.scene.addAnchor(lightAnchor)*/
 }

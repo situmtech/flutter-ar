@@ -64,7 +64,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         setupFixedAnchor(arSceneView: arSceneView)
         
         // Agregar la luz direccional
-        addDirectionalLight(to: arSceneView)
+        //addDirectionalLight(to: arSceneView)
         
         // Inicializa el temporizador para ajustar la visibilidad de los objetos en función de la distancia
         updateTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in

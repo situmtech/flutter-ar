@@ -2,21 +2,61 @@ import Foundation
 import RealityKit
 import SitumSDK
 //Create Situm Arrow
+@available(iOS 15.0, *)
 func createArrowAnchor() -> AnchorEntity {
     let anchor = AnchorEntity()
 
     do {
-        let arrowEntity = try ModelEntity.load(named: "arrow_situm.usdz")
-        arrowEntity.scale = SIMD3<Float>(0.015, 0.015, 0.015)
-        arrowEntity.orientation = simd_quatf(angle: .pi / 2, axis: [1, 0, 0])
+        // Cargar el modelo como ModelEntity
+        guard let arrowEntity = try? ModelEntity.load(named: "arrowSitumColor.usdz") else {
+            print("Error: El modelo no se pudo cargar como ModelEntity.")
+            return anchor
+        }
+
+        // Configurar escala, orientación y posición
+        arrowEntity.scale = SIMD3<Float>(0.03, 0.03, 0.03)
         arrowEntity.position = SIMD3<Float>(0.0, 0.0, 0.0)
+
+        // Definir el color personalizado con R=40, G=51, B=128
+        let customColor = UIColor(red: 40.0 / 255.0, green: 51.0 / 255.0, blue: 128.0 / 255.0, alpha: 1.0)
+
+        // Aplicar el color al modelo y sus subentidades
+        applyColorToEntityAndChildren(entity: arrowEntity, color: customColor)
+
+
+        // Aplicar el color al modelo y sus subentidades
+        applyColorToEntityAndChildren(entity: arrowEntity, color: customColor)
+
+        // Añadir el modelo al ancla
         anchor.addChild(arrowEntity)
+
     } catch {
         print("Error al cargar el modelo de la flecha: \(error.localizedDescription)")
     }
 
     return anchor
 }
+
+// Función recursiva para aplicar un color a todas las subentidades
+func applyColorToEntityAndChildren(entity: Entity, color: UIColor) {
+    if var modelComponent = entity.components[ModelComponent.self] as? ModelComponent {
+        // Crear un material simple con el color deseado
+        let colorMaterial = SimpleMaterial(color: color, isMetallic: false)
+
+        // Reemplazar todos los materiales de la entidad
+        modelComponent.materials = Array(repeating: colorMaterial, count: modelComponent.materials.count)
+        entity.components[ModelComponent.self] = modelComponent
+    }
+
+    // Recorrer las entidades hijas y aplicar el color
+    for child in entity.children {
+        applyColorToEntityAndChildren(entity: child, color: color)
+    }
+}
+
+
+
+
 
 func loadDynamicsModels(geofences: [SITGeofence], arView: ARView, mainAnchor: AnchorEntity,  dynamicModels: inout [ModelEntity]){
     
@@ -46,7 +86,7 @@ func loadDynamicModel(model: String, arView: ARView, mainAnchor: AnchorEntity, d
         let cameraPosition = arView.cameraTransform.translation
         let modelEntity = try ModelEntity.load(named: model)
         modelEntity.scale = SIMD3<Float>(0.015, 0.015, 0.015)
-        modelEntity.position = SIMD3<Float>(cameraPosition.x - Float.random(in: -3.0...3.0), cameraPosition.y - 1.5, cameraPosition.z - Float.random(in: 5.0...15.0))
+        modelEntity.position = SIMD3<Float>(cameraPosition.x - Float.random(in: -3.0...3.0), cameraPosition.y - 1.5, cameraPosition.z - Float.random(in: 10.0...20.0))
         modelEntity.name = "dynamic_" + model
 
         if let animation = modelEntity.availableAnimations.first(where: { $0.name == "global scene animation" }) {

@@ -121,10 +121,10 @@ class Coordinator: NSObject, ARSessionDelegate {
     
     func calculateAndSetTargetPoint() {
         guard let arView = arView else { return }
-        
+
         // Obtener la posición actual de la cámara
         let cameraPosition = SIMD2<Float>(arView.cameraTransform.translation.x, arView.cameraTransform.translation.z)
-        
+
         // Usamos un bucle while para eliminar puntos sin saltar ningún índice
         var i = 0
         while i < storedTransformedPositions.count {
@@ -132,18 +132,24 @@ class Coordinator: NSObject, ARSessionDelegate {
             // Calcular la distancia entre la cámara y el punto
             let distanceToCamera = simd_distance(cameraPosition, SIMD2<Float>(self.storedTransformedPositions[i].x, self.storedTransformedPositions[i].z))
             
-            // Si la distancia es menor que el umbral, eliminamos el punto
+            // Si la distancia es menor que el umbral
             if distanceToCamera < Float(arrowDistance) {
                 print("Eliminando punto en índice \(i) con distancia \(distanceToCamera)")
+                
+                // Llamar a setTargetCoordinates antes de eliminar el punto
+                if i + 1 < storedTransformedPositions.count {
+                    setTargetCoordinates(x: storedTransformedPositions[i + 1].x, z: storedTransformedPositions[i + 1].z)
+                }
+
+                // Eliminar el punto
                 storedTransformedPositions.remove(at: i)
-                setTargetCoordinates(x: storedTransformedPositions[i].x, z: storedTransformedPositions[i].z)
             } else {
                 // Solo incrementamos el índice si no eliminamos el punto
                 i += 1
             }
         }
-        
     }
+
     
     
     func updateArrowPositionAndDirection() {
@@ -154,12 +160,12 @@ class Coordinator: NSObject, ARSessionDelegate {
         let cameraPosition = cameraTransform.translation
 
         // Calcular una posición fija en frente de la cámara
-        let distanceInFrontOfCamera: Float = 1.0
+        let distanceInFrontOfCamera: Float = 0.5
         let forwardDirection = cameraTransform.matrix.columns.2
         let forwardVector = SIMD3<Float>(forwardDirection.x, forwardDirection.y, forwardDirection.z) * distanceInFrontOfCamera
         let targetPosition = cameraPosition - forwardVector
         
-        // Suavizado de posición
+        // Suavizado de posición4
         let smoothingFactor: Float = 0.35 // Ajusta este valor para controlar el nivel de suavidad
         arrowAnchor.position = arrowAnchor.position + (targetPosition - arrowAnchor.position) * smoothingFactor
 
@@ -169,14 +175,23 @@ class Coordinator: NSObject, ARSessionDelegate {
             showPointTarget()
         }
 
-        if targetX != 0 && targetZ != 0, let yawPoint = calculateAngleToTarget(), let arrowEntity = arrowAnchor.children.first, yawPoint != 0.0 {
-            let rotationX = simd_quatf(angle: .pi / 2, axis: SIMD3<Float>(1, 0, 0))
-            let rotationY = simd_quatf(angle: yawPoint, axis: SIMD3<Float>(0, -1, 0))
-            let targetRotation = rotationY * rotationX
-            
-            // Suavizado de rotación
-            arrowEntity.orientation = simd_slerp(arrowEntity.orientation, targetRotation, smoothingFactor)
-        }
+        if targetX != 0 && targetZ != 0 {
+                // Calcular el ángulo hacia el objetivo
+                let arrowPosition = arrowAnchor.position
+                let targetVector = SIMD2<Float>(Float(targetX) - arrowPosition.x, Float(targetZ) - arrowPosition.z)
+                var angleToTarget = atan2(-targetVector.y, targetVector.x)
+
+                angleToTarget -= .pi / 2
+                if let arrowEntity = arrowAnchor.children.first {
+                    print("TARGET X AND Z: ", targetX, "    ", targetZ)
+                    
+                    // Crear la rotación necesaria
+                    let targetRotation = simd_quatf(angle: angleToTarget, axis: SIMD3<Float>(0, 1, 0))
+                    
+                    // Suavizado de rotación
+                    arrowEntity.orientation = simd_slerp(arrowEntity.orientation, targetRotation, smoothingFactor)
+                }
+            }
     }
 
     

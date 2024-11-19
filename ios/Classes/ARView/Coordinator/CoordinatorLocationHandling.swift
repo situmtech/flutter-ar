@@ -91,7 +91,7 @@ extension Coordinator {
     }
     
     /// Calcula el ángulo hacia el objetivo a partir de la posición de la cámara.
-    func calculateAngleToTarget() -> Float? {
+    /*func calculateAngleToTarget() -> Float? {
         guard let arView = arView else { return nil }
         
         let cameraTransform = arView.cameraTransform
@@ -106,7 +106,7 @@ extension Coordinator {
         let angleDifference = angleToTarget + .pi / 2.0
         
         return angleDifference
-    }
+    }*/
     
     /// Obtiene el yaw de la cámara respecto al norte.
     func getCameraYawRespectToNorth() -> Float? {

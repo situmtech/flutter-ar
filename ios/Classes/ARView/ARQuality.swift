@@ -21,11 +21,11 @@ class ARQuality {
 
     private var quality: Double = 0.0
 
-    private var odometriesDistanceConf: Double = 0.0
+    var odometriesDistanceConf: Double = 0.0
     private var situmConf: Double = 0.0
     private var arConf: Double = 0.0
-    private var arDisplacementConf: Double = 0.0
-    private var situmDisplacementConf: Double = 0.0
+    var arDisplacementConf: Double = 0.0
+    var situmDisplacementConf: Double = 0.0
 
     private var arLocationBuffer: [LocationCoordinates] = []
     private var situmLocationBuffer: [LocationCoordinates] = []
