@@ -21,6 +21,7 @@ class Coordinator: NSObject, ARSessionDelegate {
     var targetZ = 0.0
     var targetFloorIdentifier = 0
     var arrowDistance = 5.0
+    var hasToRefresh = true
     
     var pointsList: [[String: Any]] = []
     var storedTransformedPositions: [SIMD3<Float>] = []
@@ -45,9 +46,13 @@ class Coordinator: NSObject, ARSessionDelegate {
         
         updateArrowPositionAndDirection()
         showPointDebug()
-        rotateIconPoiAndText(arView: arView)
+        updatePOIOrientationToCamera(arView: arView)
         arSceneHandler?.handleFrameUpdate(frame: frame) // Reenviar al ARSceneHandler
         
+    }
+    
+    func setHasToReset(hasToRefresh: Bool){
+        self.hasToRefresh = hasToRefresh
     }
     
     func showPointDebug(){
@@ -166,7 +171,11 @@ class Coordinator: NSObject, ARSessionDelegate {
         let targetPosition = cameraPosition - forwardVector
         
         // Suavizado de posición4
-        let smoothingFactor: Float = 0.35 // Ajusta este valor para controlar el nivel de suavidad
+        var smoothingFactor: Float = 0.2 // Ajusta este valor para controlar el nivel de suavidad
+        print("has to reset:    ", self.hasToRefresh)
+        if (self.hasToRefresh){
+            smoothingFactor = 0.10
+        }
         arrowAnchor.position = arrowAnchor.position + (targetPosition - arrowAnchor.position) * smoothingFactor
 
         calculateAndSetTargetPoint()

@@ -64,15 +64,14 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         setupFixedAnchor(arSceneView: arSceneView)
         
         // Agregar la luz direccional
-        //addDirectionalLight(to: arSceneView)
+        addDirectionalLight(to: arSceneView)
         
         // Inicializa el temporizador para ajustar la visibilidad de los objetos en función de la distancia
         updateTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
             guard let self = self, let mainAnchor = self.mainAnchor else { return }
             self.adjustVisibilityBasedOnDistance(arSceneView: arSceneView, mainAnchor: mainAnchor, nearDistance: 0.1, farDistance: Float(cameraDeph))
         }
-        
-    
+            
         
         // Instancia el Coordinator
         self.coordinator = makeCoordinator()
@@ -197,6 +196,8 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
                 stopRefreshing()
             }
         }
+        
+        coordinator?.setHasToReset(hasToRefresh: hasToRefresh)
     }
     
     func refresh() {
@@ -237,7 +238,6 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         updateRefreshing()
         arQuality?.updateSitumLocation(location: location)
         
-
         // Desempaquetar los valores opcionales de coordenadas de cámara
         if let worldPosition = coordinator?.arView?.cameraTransform.translation,
            let worldRotation = coordinator?.arView?.cameraTransform.rotation {
@@ -387,6 +387,15 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         if let arView = self.coordinator?.arView, let mainAnchor = mainAnchor {
             loadDynamicsModels(geofences: geofences, arView: arView, mainAnchor: mainAnchor, dynamicModels: &dynamicModels)
         }
+       
+        
+        if coordinator?.isDebugEnabled == true {
+            // show toast
+            DispatchQueue.main.async {
+                       self.coordinator?.arView?.showToast(message: "Entered geofences: \(geofences.map { $0.name }.joined(separator: ", "))")
+                   }
+        }
+
     }
 
 

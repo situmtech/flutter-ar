@@ -212,11 +212,11 @@ func addPointLightToScene(at position: SIMD3<Float>, arView: ARView) {
 @available(iOS 15.0, *)
 func addLightToScene(arView: ARView) {
     let lightEntity = DirectionalLight()
-    lightEntity.light.intensity = 15000  // Aumenta la intensidad según el nivel de iluminación deseado
+    lightEntity.light.intensity = 10000  // Aumenta la intensidad según el nivel de iluminación deseado
     lightEntity.light.color = .white
-    lightEntity.orientation = simd_quatf(angle: -.pi / 2, axis: SIMD3<Float>(1, 0, 0))
+    lightEntity.orientation = simd_quatf(angle: .pi , axis: SIMD3<Float>(1, 0, 0))
     
-    let lightAnchor = AnchorEntity(world: SIMD3<Float>(0, 3, 0)) // Posición de la luz sobre los POIs
+    let lightAnchor = AnchorEntity(world: SIMD3<Float>(0, -3, 0)) // Posición de la luz sobre los POIs
     lightAnchor.addChild(lightEntity)
     arView.scene.addAnchor(lightAnchor)
 }
@@ -224,7 +224,8 @@ func addLightToScene(arView: ARView) {
 
 @available(iOS 15.0, *)
 func createTextEntity(text: String, poiPosition: SIMD3<Float>, arView: ARView) -> ModelEntity {
-    let mesh = MeshResource.generateText(
+    // Generar el texto principal
+    let mainMesh = MeshResource.generateText(
         text,
         extrusionDepth: 0.02,
         font: .systemFont(ofSize: 1.0),
@@ -232,22 +233,42 @@ func createTextEntity(text: String, poiPosition: SIMD3<Float>, arView: ARView) -
         alignment: .center,
         lineBreakMode: .byWordWrapping
     )
-    
-    let material = SimpleMaterial(color: .white, isMetallic: false)
-    let textEntity = ModelEntity(mesh: mesh, materials: [material])
-    
-    // Escalar el texto y colocarlo directamente encima del POI en posición fija
-    textEntity.scale = SIMD3<Float>(0.35, 0.35, 0.35)
-    textEntity.position = SIMD3<Float>(poiPosition.x, poiPosition.y + 0.75, poiPosition.z) // Posición fija en Y para colocarlo encima del POI
+    let mainMaterial = SimpleMaterial(color: .white, isMetallic: false)
+    let mainTextEntity = ModelEntity(mesh: mainMesh, materials: [mainMaterial])
+    mainTextEntity.scale = SIMD3<Float>(0.35, 0.35, 0.35)
 
-    // Ajustar la posición del texto para centrarlo horizontalmente
-    let bound = textEntity.visualBounds(relativeTo: nil)
-    let textWidth = bound.extents.x
-    textEntity.position.x -= textWidth / 2.0
+    // Generar el texto para el borde
+    let borderMesh = MeshResource.generateText(
+        text,
+        extrusionDepth: 0.025, // Extrusión ligeramente mayor
+        font: .systemFont(ofSize: 1.0),
+        containerFrame: .zero,
+        alignment: .center,
+        lineBreakMode: .byWordWrapping
+    )
+    let borderMaterial = SimpleMaterial(color: .black, isMetallic: false)
+    let borderTextEntity = ModelEntity(mesh: borderMesh, materials: [borderMaterial])
+    borderTextEntity.scale = SIMD3<Float>(0.355, 0.355, 0.355) // Misma escala que el texto principal
+    borderTextEntity.position = SIMD3<Float>(0, 0, -0.002) // Ajustar ligeramente hacia atrás
 
-    
-    return textEntity
+    // Contenedor para mantener ambos textos juntos
+    let containerEntity = ModelEntity()
+    containerEntity.addChild(borderTextEntity) // Añadir el texto del borde primero
+    containerEntity.addChild(mainTextEntity)  // Añadir el texto principal
+
+    // Posicionar el contenedor directamente encima del POI
+    containerEntity.position = SIMD3<Float>(poiPosition.x, poiPosition.y + 1.05, poiPosition.z)
+
+    // Centrar el texto en el eje X
+    let bounds = containerEntity.visualBounds(relativeTo: nil)
+    let textWidth = bounds.extents.x
+    containerEntity.position.x -= textWidth / 2.0
+
+    return containerEntity
 }
+
+
+
 
 
 
@@ -265,6 +286,50 @@ func rotateIconPoiAndText(arView: ARView) {
         }
     }
 }
+
+func updatePOIOrientationToCamera(arView: ARView) {
+    guard let fixedPOIAnchor = arView.scene.anchors.first(where: { $0.name == "fixedPOIAnchor" }) as? AnchorEntity else {
+        return
+    }
+
+    // Obtener la posición de la cámara
+    let cameraPosition = arView.cameraTransform.translation
+
+    for child in fixedPOIAnchor.children {
+        // Verificar si la entidad es un contenedor de POI
+        if child.name.starts(with: "poiContainer_") {
+            // Calcular la posición del POI
+            let poiPosition = child.position(relativeTo: nil)
+
+            // Orientar el POI hacia la cámara
+            if let poiEntity = child.children.first(where: { $0.name.starts(with: "poi_") }) {
+                poiEntity.look(at: cameraPosition, from: poiPosition, relativeTo: nil)
+            }
+
+            // Ajustar y centrar el texto
+            if let textEntity = child.children.first(where: { $0.name.starts(with: "text_") }) {
+                // Mantener el texto por encima del POI
+                textEntity.position = SIMD3<Float>(0, 1.05, 0)
+
+                // Centrar el texto respecto al POI
+                let bounds = textEntity.visualBounds(relativeTo: textEntity.parent)
+                let textWidth = bounds.extents.x
+                textEntity.position.x -= bounds.center.x // Centrar horizontalmente usando el centro del texto
+                textEntity.position.z -= bounds.center.z // Asegurar el centrado en profundidad
+
+                // Orientar el texto hacia la cámara
+                textEntity.look(at: cameraPosition, from: textEntity.position(relativeTo: nil), relativeTo: nil)
+
+                // Evitar que el texto se invierta
+                let textRotationCorrection = simd_quatf(angle: .pi, axis: SIMD3<Float>(0, 1, 0))
+                textEntity.orientation = simd_mul(textEntity.orientation, textRotationCorrection)
+            }
+        }
+    }
+}
+
+
+
 
 func areLastThreeValuesDistinct(locationBuffer: [String?], currentIndex: Int) -> Bool {
     // Asegurarse de que el buffer tenga al menos 3 valores para comparar
@@ -334,6 +399,48 @@ extension simd_float4x4 {
 }
 
 
+extension UIView {
+    func showToast(message: String, duration: TimeInterval = 2.0) {
+        let toastContainer = UIView(frame: CGRect())
+        toastContainer.backgroundColor = UIColor.black.withAlphaComponent(0.8)
+        toastContainer.alpha = 0.0
+        toastContainer.layer.cornerRadius = 10
+        toastContainer.clipsToBounds = true
 
+        let toastLabel = UILabel(frame: CGRect())
+        toastLabel.textColor = UIColor.white
+        toastLabel.textAlignment = .center
+        toastLabel.font = UIFont.systemFont(ofSize: 14)
+        toastLabel.text = message
+        toastLabel.numberOfLines = 0
+
+        toastContainer.addSubview(toastLabel)
+        self.addSubview(toastContainer)
+
+        toastLabel.translatesAutoresizingMaskIntoConstraints = false
+        toastContainer.translatesAutoresizingMaskIntoConstraints = false
+
+        NSLayoutConstraint.activate([
+            toastLabel.leadingAnchor.constraint(equalTo: toastContainer.leadingAnchor, constant: 10),
+            toastLabel.trailingAnchor.constraint(equalTo: toastContainer.trailingAnchor, constant: -10),
+            toastLabel.topAnchor.constraint(equalTo: toastContainer.topAnchor, constant: 10),
+            toastLabel.bottomAnchor.constraint(equalTo: toastContainer.bottomAnchor, constant: -10),
+
+            toastContainer.centerXAnchor.constraint(equalTo: self.centerXAnchor),
+            toastContainer.bottomAnchor.constraint(equalTo: self.bottomAnchor, constant: -100),
+            toastContainer.widthAnchor.constraint(lessThanOrEqualToConstant: self.frame.width - 40)
+        ])
+
+        UIView.animate(withDuration: 0.5, animations: {
+            toastContainer.alpha = 1.0
+        }) { _ in
+            UIView.animate(withDuration: 0.5, delay: duration, options: .curveEaseOut, animations: {
+                toastContainer.alpha = 0.0
+            }) { _ in
+                toastContainer.removeFromSuperview()
+            }
+        }
+    }
+}
 
 

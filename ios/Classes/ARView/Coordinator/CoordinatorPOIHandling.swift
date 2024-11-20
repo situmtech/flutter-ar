@@ -67,7 +67,7 @@ extension Coordinator {
                         poiEntity.name = "poi_\(index)"
                        
                         // Configurar el texto
-                        let textEntity = createTextEntity(text: name, poiPosition: SIMD3<Float>(0, 0.3, 0), arView: arView) // Coloca el texto encima del POI
+                        let textEntity = createTextEntity(text: name, poiPosition: SIMD3<Float>(0, 0, 0), arView: arView) // Coloca el texto encima del POI
                         textEntity.name = "text_\(index)"
                        
                         // Añadir POI y texto al contenedor

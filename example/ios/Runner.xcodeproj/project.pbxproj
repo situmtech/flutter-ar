@@ -20,7 +20,6 @@
 		E7C6D53D2CE38E800064A2D9 /* Sea_Turtle.usdz in Resources */ = {isa = PBXBuildFile; fileRef = E7C6D53B2CE38E800064A2D9 /* Sea_Turtle.usdz */; };
 		E7C6D53E2CE38E800064A2D9 /* Mosasaurus.usdz in Resources */ = {isa = PBXBuildFile; fileRef = E7C6D53C2CE38E800064A2D9 /* Mosasaurus.usdz */; };
 		E7C6D5422CE5EC4A0064A2D9 /* Manta.usdz in Resources */ = {isa = PBXBuildFile; fileRef = E7C6D5412CE5EC4A0064A2D9 /* Manta.usdz */; };
-		E7C6D5442CE604610064A2D9 /* woman.usdz in Resources */ = {isa = PBXBuildFile; fileRef = E7C6D5432CE604600064A2D9 /* woman.usdz */; };
 		E7DF0B102CBD2CD600DCB5AC /* arrow_situm.usdz in Sources */ = {isa = PBXBuildFile; fileRef = E7DF0B0F2CBD2CD600DCB5AC /* arrow_situm.usdz */; };
 		E7DF0B1C2CBD2E6200DCB5AC /* Animated_Dragon_Three_Motion_Loops.usdz in Resources */ = {isa = PBXBuildFile; fileRef = E7DF0B162CBD2E6200DCB5AC /* Animated_Dragon_Three_Motion_Loops.usdz */; };
 		E7DF0B1D2CBD2E6200DCB5AC /* arrow_situm.usdz in Resources */ = {isa = PBXBuildFile; fileRef = E7DF0B172CBD2E6200DCB5AC /* arrow_situm.usdz */; };
@@ -81,7 +80,6 @@
 		E7C6D53B2CE38E800064A2D9 /* Sea_Turtle.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = Sea_Turtle.usdz; sourceTree = "<group>"; };
 		E7C6D53C2CE38E800064A2D9 /* Mosasaurus.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = Mosasaurus.usdz; sourceTree = "<group>"; };
 		E7C6D5412CE5EC4A0064A2D9 /* Manta.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = Manta.usdz; sourceTree = "<group>"; };
-		E7C6D5432CE604600064A2D9 /* woman.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = woman.usdz; sourceTree = "<group>"; };
 		E7DF0B0F2CBD2CD600DCB5AC /* arrow_situm.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; name = arrow_situm.usdz; path = ../../ios/Assets/arrow_situm.usdz; sourceTree = "<group>"; };
 		E7DF0B162CBD2E6200DCB5AC /* Animated_Dragon_Three_Motion_Loops.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = Animated_Dragon_Three_Motion_Loops.usdz; sourceTree = "<group>"; };
 		E7DF0B172CBD2E6200DCB5AC /* arrow_situm.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = arrow_situm.usdz; sourceTree = "<group>"; };
@@ -198,7 +196,6 @@
 				E7C6D53C2CE38E800064A2D9 /* Mosasaurus.usdz */,
 				E734BDDA2CEB9BC80072C7F6 /* arrowSitumColor.usdz */,
 				E7C6D53B2CE38E800064A2D9 /* Sea_Turtle.usdz */,
-				E7C6D5432CE604600064A2D9 /* woman.usdz */,
 				E734BDCC2CEB5F300072C7F6 /* arrowSitum.usdz */,
 				E7C6D5412CE5EC4A0064A2D9 /* Manta.usdz */,
 				E7DF0B172CBD2E6200DCB5AC /* arrow_situm.usdz */,
@@ -308,7 +305,6 @@
 				E7C6D5422CE5EC4A0064A2D9 /* Manta.usdz in Resources */,
 				E7DF0B1D2CBD2E6200DCB5AC /* arrow_situm.usdz in Resources */,
 				E734BDDB2CEB9BC90072C7F6 /* arrowSitumColor.usdz in Resources */,
-				E7C6D5442CE604610064A2D9 /* woman.usdz in Resources */,
 				E7DF0B1C2CBD2E6200DCB5AC /* Animated_Dragon_Three_Motion_Loops.usdz in Resources */,
 				E734BDCD2CEB5F300072C7F6 /* arrowSitum.usdz in Resources */,
 				E7C6D53D2CE38E800064A2D9 /* Sea_Turtle.usdz in Resources */,

@@ -90,23 +90,6 @@ extension Coordinator {
         return distanceToCamera
     }
     
-    /// Calcula el ángulo hacia el objetivo a partir de la posición de la cámara.
-    /*func calculateAngleToTarget() -> Float? {
-        guard let arView = arView else { return nil }
-        
-        let cameraTransform = arView.cameraTransform
-        let cameraPosition = cameraTransform.translation
-        
-        // Crear el vector desde la cámara hasta el objetivo en el plano XZ
-        let directionToTarget = SIMD2<Float>(Float(self.targetX) - cameraPosition.x, Float(self.targetZ) - cameraPosition.z)
-        let normalizedDirectionToTarget = normalize(directionToTarget)
-        
-        // Calcular el ángulo hacia el objetivo
-        let angleToTarget = atan2(normalizedDirectionToTarget.y, normalizedDirectionToTarget.x)
-        let angleDifference = angleToTarget + .pi / 2.0
-        
-        return angleDifference
-    }*/
     
     /// Obtiene el yaw de la cámara respecto al norte.
     func getCameraYawRespectToNorth() -> Float? {
