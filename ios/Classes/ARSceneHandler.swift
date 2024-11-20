@@ -203,7 +203,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     func refresh() {
         let currentTimestamp = Int(Date().timeIntervalSince1970 * 1000) // Obtener el timestamp en milisegundos
         if currentTimestamp > timestampLastRefresh + 5000 {
-            if let coordinator = self.coordinator {
+            if let coordinator = self.coordinator {                
                 coordinator.updatePOIs()
             }
             timestampLastRefresh = currentTimestamp
@@ -249,7 +249,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
                                          worldRotation.axis.z,
                                          worldRotation.angle)
             arQuality?.updateARLocation(worldPosition: position, worldRotation: rotation)
-            //self.setSitArData()
+            self.setSitArData()
             
         } else {
             print("Error: no se pudieron obtener los valores de la cámara")

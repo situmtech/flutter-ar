@@ -75,7 +75,7 @@ func parsePois(pois: [SITPOI]) -> [[String: Any]] {
                     for (key, value) in customFields {
                         if key == "hide", let stringValue = value as? String, stringValue == "on_map" {
                                                        shouldSkip = true
-                            break 
+                            break
                         }
                     }
                     if shouldSkip {
@@ -242,7 +242,7 @@ func createTextEntity(text: String, poiPosition: SIMD3<Float>, arView: ARView) -
     let mainMesh = MeshResource.generateText(
         text,
         extrusionDepth: 0.02,
-        font: .systemFont(ofSize: 1.0),
+        font: .systemFont(ofSize: 1.2),
         containerFrame: .zero,
         alignment: .center,
         lineBreakMode: .byWordWrapping
@@ -255,7 +255,7 @@ func createTextEntity(text: String, poiPosition: SIMD3<Float>, arView: ARView) -
     let borderMesh = MeshResource.generateText(
         text,
         extrusionDepth: 0.025, // Extrusión ligeramente mayor
-        font: .systemFont(ofSize: 1.0),
+        font: .systemFont(ofSize: 1.2),
         containerFrame: .zero,
         alignment: .center,
         lineBreakMode: .byWordWrapping
@@ -280,10 +280,6 @@ func createTextEntity(text: String, poiPosition: SIMD3<Float>, arView: ARView) -
 
     return containerEntity
 }
-
-
-
-
 
 
 func rotateIconPoiAndText(arView: ARView) {

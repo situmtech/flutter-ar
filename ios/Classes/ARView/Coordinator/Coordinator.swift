@@ -171,7 +171,7 @@ class Coordinator: NSObject, ARSessionDelegate {
         let targetPosition = cameraPosition - forwardVector
         
         // Suavizado de posición4
-        var smoothingFactor: Float = 0.2 // Ajusta este valor para controlar el nivel de suavidad
+        var smoothingFactor: Float = 0.2 // Ajusta este valor para controlar el nivel de suavidad        
         if (self.hasToRefresh){
             smoothingFactor = 0.10
         }
@@ -191,8 +191,6 @@ class Coordinator: NSObject, ARSessionDelegate {
 
                 angleToTarget -= .pi / 2
                 if let arrowEntity = arrowAnchor.children.first {
-                    print("TARGET X AND Z: ", targetX, "    ", targetZ)
-                    
                     // Crear la rotación necesaria
                     let targetRotation = simd_quatf(angle: angleToTarget, axis: SIMD3<Float>(0, 1, 0))
                     

@@ -28,8 +28,7 @@ extension Coordinator {
             print("Error: No se encontró la clave 'pois' en el mapa de POIs")
             return
         }
-       
-        print("floor id:   ", initialLocation.altitude)
+               
         // Añadir los nuevos POIs
         for (index, poi) in poisList.enumerated() {
             if let position = poi["position"] as? [String: Any],
@@ -84,6 +83,7 @@ extension Coordinator {
             }
         }
         self.updatePointsList()
+        self.updateArrowPositionAndDirection()
     }
     
     /// Maneja la actualización de los POIs recibidos y los actualiza en la escena.
