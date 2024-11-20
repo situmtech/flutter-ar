@@ -38,7 +38,10 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     var hasToResetChangeFloor = false
     
     var staticRoute: [[String: Any]] = []
-    var dynamicModels: [ModelEntity] = []
+    
+
+    var modelManager = DynamicModelManager()
+    private var fenceCheckTimer: Timer?
     
     
     func setupSceneView(arSceneView: CustomARSceneView) {
@@ -50,21 +53,20 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         
         configuration.planeDetection = []
         arSceneView.session.run(configuration)
-        
-   
-        addLightToScene(arView: arSceneView)
-         
+             
         arQuality = ARQuality()
         sitArData = SITArData()
         sitExternalSensorManager = SITExternalSensorManager()
-     
-        configDebug = ConfigDebug(arQuality: arQuality, hasToRefresh: hasToRefresh)
-
         //Fija un ancla en el origen de coordenadas
         setupFixedAnchor(arSceneView: arSceneView)
-        
-        // Agregar la luz direccional
+
+        //Lights
+        addLightToScene(arView: arSceneView)
         addDirectionalLight(to: arSceneView)
+        
+        //Debug panel
+        configDebug = ConfigDebug(arQuality: arQuality, hasToRefresh: hasToRefresh)
+        
         
         // Inicializa el temporizador para ajustar la visibilidad de los objetos en función de la distancia
         updateTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
@@ -384,8 +386,9 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     
     func didEnteredGeofences(_ geofences: [SITGeofence]!) {
         NSLog("ARSceneHandler - Entered geofences: \(geofences)")
+       
         if let arView = self.coordinator?.arView, let mainAnchor = mainAnchor {
-            loadDynamicsModels(geofences: geofences, arView: arView, mainAnchor: mainAnchor, dynamicModels: &dynamicModels)
+            self.modelManager.loadDynamicsModels(geofences: geofences, arView: arView, mainAnchor: mainAnchor)
         }
        
         
@@ -401,28 +404,44 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
 
     func didExitedGeofences(_ geofences: [SITGeofence]!) {
         NSLog("ARSceneHandler - Exit from geofences: \(geofences)")
-        
-        if let arView = self.coordinator?.arView, let mainAnchor = mainAnchor {
-            // Elimina todos los modelos de `dynamicModels`
-            for modelEntity in dynamicModels {
-                modelEntity.removeFromParent()
-                print("Removed model with name: \(modelEntity.name)")
-            }
-            
-            // Limpiar el array después de eliminar todos los modelos
-            dynamicModels.removeAll()
-            
-            // Recorre los hijos de `mainAnchor` y elimina los modelos restantes con el prefijo "dynamic_"
-            for child in mainAnchor.children {
-                if child.name.hasPrefix("dynamic_") {
-                    child.removeFromParent()
-                    print("Removed model from mainAnchor with name: \(child.name)")
-                }
-            }
+       
+        if let mainAnchor = mainAnchor {
+            modelManager.removeModels(from: mainAnchor)
+        }
+    }
+    
+    
+   //////////Check and update models in fence if user is inside
 
-            print("All dynamic models have been removed from mainAnchor")
+    func startFenceTimer() {
+        // Inicia un temporizador para verificar `userInFence` cada 5 segundos
+        fenceCheckTimer = Timer.scheduledTimer(withTimeInterval: 20.0, repeats: true) { [weak self] _ in
+            self?.checkFenceStatus()
+        }
+    }
+
+    func stopFenceTimer() {
+        // Detiene el temporizador
+        fenceCheckTimer?.invalidate()
+        fenceCheckTimer = nil
+    }
+
+    private func checkFenceStatus() {
+        // Ejecuta una acción si `userInFence` es true
+        if modelManager.userInFence {
+            print("User is in fence. Executing periodic task...")
+            performPeriodicTask()
         } else {
-            print("ARSceneHandler - arView o mainAnchor es nil")
+            print("User is not in fence. Timer will stop.")
+            stopFenceTimer()
+        }
+    }
+
+    private func performPeriodicTask() {
+        // Aquí defines la tarea que se ejecuta periódicamente
+        print("Performing task every 5 seconds while user is in fence.")
+        if let arView = self.coordinator?.arView, let mainAnchor = mainAnchor {
+            modelManager.updateModelLocation(arView: arView, from: mainAnchor)
         }
     }
 
