@@ -69,6 +69,20 @@ func parsePois(pois: [SITPOI]) -> [[String: Any]] {
     var poisMap: [[String: Any]] = []
 
     for poi in pois {
+        
+        if let customFields = poi.customFields as? [String: Any] {
+                    var shouldSkip = false
+                    for (key, value) in customFields {
+                        if key == "hide", let stringValue = value as? String, stringValue == "on_map" {
+                                                       shouldSkip = true
+                            break 
+                        }
+                    }
+                    if shouldSkip {
+                        continue
+                    }
+                }
+
         // Llamar a la función position() para obtener el valor de SITPoint
         let position = poi.position()
         let icon = poi.category.iconURL

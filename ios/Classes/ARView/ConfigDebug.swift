@@ -108,7 +108,7 @@ class ConfigDebug {
     func setupInfoPanel(view: UIView) {
         infoPanel = UIView()
         infoPanel?.translatesAutoresizingMaskIntoConstraints = false
-        infoPanel?.backgroundColor = UIColor.black.withAlphaComponent(0.5)
+        infoPanel?.backgroundColor = UIColor.black.withAlphaComponent(0.2)
         infoPanel?.layer.cornerRadius = 10
         infoPanel?.layer.borderWidth = 2
         infoPanel?.layer.borderColor = UIColor.lightGray.cgColor

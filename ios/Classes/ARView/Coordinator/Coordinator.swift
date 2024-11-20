@@ -172,7 +172,6 @@ class Coordinator: NSObject, ARSessionDelegate {
         
         // Suavizado de posición4
         var smoothingFactor: Float = 0.2 // Ajusta este valor para controlar el nivel de suavidad
-        print("has to reset:    ", self.hasToRefresh)
         if (self.hasToRefresh){
             smoothingFactor = 0.10
         }
