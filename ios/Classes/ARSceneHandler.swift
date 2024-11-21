@@ -377,7 +377,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
             sitArData.zEuler = Float(eulerAngles.z) // Yaw
 
             // Llama a setArData sin la etiqueta
-            sitExternalSensorManager?.setArData(sitArData) // Aquí se pasa sitArData directamente
+            //sitExternalSensorManager?.setArData(sitArData) // Aquí se pasa sitArData directamente
         }
         
         lastTimestamp = currentTimestamp
@@ -385,8 +385,9 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
 
     
     func didEnteredGeofences(_ geofences: [SITGeofence]!) {
-        NSLog("ARSceneHandler - Entered geofences: \(geofences)")
-       
+        NSLog("ARSceneHandler - Entered geofences@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@: \(geofences)")
+        print("ARSceneHandler - Entered geofences@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@: \(geofences)")
+
         if let arView = self.coordinator?.arView, let mainAnchor = mainAnchor {
             self.modelManager.loadDynamicsModels(geofences: geofences, arView: arView, mainAnchor: mainAnchor)
         }

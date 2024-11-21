@@ -17,6 +17,7 @@ class DynamicModelManager {
                 for (key, value) in customFields {
                     if key == "ar_metadata_ios" {
                         NSLog("\(key): \(value)")
+                        print("key value:    ", key,"     ", value)
                         let model = String(describing: value)
                         loadDynamicModel(model: model, arView: arView, mainAnchor: mainAnchor)
                     }
@@ -33,17 +34,22 @@ class DynamicModelManager {
         do {
             let cameraPosition = arView.cameraTransform.translation
             
-            // Intentar cargar el modelo y realizar el casting a ModelEntity
-            guard let modelEntity = try ModelEntity.load(named: model) as? ModelEntity else {
-                print("El modelo cargado no es del tipo ModelEntity")
+            // Intentar cargar el modelo sin realizar el casting inmediato
+            let entity = try ModelEntity.load(named: model)
+
+            // Verificar si el modelo es un ModelEntity
+            guard let modelEntity = entity as? ModelEntity else {
+                print("El modelo cargado no es del tipo ModelEntity. Verifica el archivo .usdz")
                 return
             }
             
+            
+
             modelEntity.scale = SIMD3<Float>(0.015, 0.015, 0.015)
             modelEntity.position = SIMD3<Float>(
                 cameraPosition.x - Float.random(in: -3.0...3.0),
                 cameraPosition.y - 1.5,
-                cameraPosition.z - Float.random(in: 10.0...20.0)
+                cameraPosition.z
             )
             modelEntity.name = "dynamic_" + model
 
@@ -58,10 +64,13 @@ class DynamicModelManager {
             // Agregar el modelo a la lista de modelos dinámicos
             dynamicModels.append(modelEntity)
             
+            print("Modelo cargado exitosamente: \(modelEntity.name)")
+            
         } catch {
             print("Error al cargar el modelo animado: \(error.localizedDescription)")
         }
     }
+
 
 
     /// Configura y devuelve un modelo estático predefinido en un `AnchorEntity`.
@@ -169,7 +178,7 @@ func createArrowAnchor() -> AnchorEntity {
 
     do {
         // Cargar el modelo como ModelEntity
-        guard let arrowEntity = try? ModelEntity.load(named: "arrowSitumColor.usdz") else {
+        guard let arrowEntity = try? ModelEntity.load(named: "arrowSitum.usdz") else {
             print("Error: El modelo no se pudo cargar como ModelEntity.")
             return anchor
         }

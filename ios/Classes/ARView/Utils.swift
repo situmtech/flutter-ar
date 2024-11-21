@@ -174,40 +174,77 @@ func createTexturedDisk(with image: UIImage, diameter: Float) -> ModelEntity? {
 
 
 @available(iOS 15.0, *)
-func loadCylinderWithTexturedEnds(url: URL, completion: @escaping (ModelEntity?) -> Void) {
-    // Cargar el cilindro desde el modelo USDZ
-    guard let cylinderEntity = try? ModelEntity.loadModel(named: "cylinder.usdz") else {
-        print("Error al cargar el modelo USDZ")
+func replaceTextureOnCylinder(url: URL, completion: @escaping (Entity?) -> Void) {
+    let modelName = "cylinder.usdz"
+
+    do {
+        // Cargar el modelo como una Entity
+        let entity = try Entity.load(named: modelName)
+        print("Entidad cargada correctamente: \(entity)")
+
+        // Rotar el modelo para que la textura quede en el lado correcto
+      /*  let rotation = simd_quatf(angle: .pi, axis: SIMD3<Float>(0, 0, 1)) // Rotar 180° en el eje X
+        entity.transform.rotation *= rotation*/
+
+        // Cargar la nueva textura desde la URL
+        ImageCacheManager.shared.loadImage(from: url) { image in
+            guard let image = image else {
+                print("Error al cargar la imagen para la textura.")
+                completion(nil)
+                return
+            }
+
+            print("Imagen cargada con éxito.")
+
+            // Convertir la UIImage a CGImage
+            guard let cgImage = image.cgImage else {
+                print("Error al convertir UIImage a CGImage.")
+                completion(nil)
+                return
+            }
+
+            // Generar la textura desde el CGImage
+            let options = TextureResource.CreateOptions(semantic: .color)
+            guard let texture = try? TextureResource.generate(from: cgImage, options: options) else {
+                print("Error al generar la textura desde CGImage.")
+                completion(nil)
+                return
+            }
+
+            print("Textura generada con éxito.")
+
+            // Aplicar la textura a todos los nodos ModelEntity
+            applyTextureToModelEntities(in: entity, texture: texture)
+
+            print("Textura aplicada a todos los nodos ModelEntity.")
+            completion(entity)
+        }
+    } catch {
+        print("Error al cargar el modelo: \(error.localizedDescription)")
         completion(nil)
-        return
-    }
-
-    // Cargar la imagen y crear los discos con la textura circular
-    ImageCacheManager.shared.loadImage(from: url) { image in
-        guard let image = image else {
-            completion(nil)
-            return
-        }
-
-        // Crear el disco para la cara frontal y posicionarlo en la parte superior del cilindro
-        if let frontDisk = createTexturedDisk(with: image, diameter: 2.0) { // Ajusta el diámetro según sea necesario
-            frontDisk.transform.rotation = simd_quatf(angle: .pi / 2, axis: [1, 0, 0])
-            frontDisk.position = SIMD3<Float>(0, 0, 0.2) // Ajusta la posición para alinearlo en la parte superior
-            cylinderEntity.addChild(frontDisk)
-        }
-
-        // Crear el disco para la cara posterior y posicionarlo en la parte inferior del cilindro
-        if let backDisk = createTexturedDisk(with: image, diameter: 2.0) {
-            // Rotar 180 grados para orientarlo hacia el lado opuesto
-            backDisk.transform.rotation = simd_quatf(angle: .pi / 2, axis: [1, 0, 0]) * simd_quatf(angle: .pi, axis: [0, 0, 1])
-            backDisk.position = SIMD3<Float>(0, 0, -0.2) // Ajusta la posición para alinearlo en la parte inferior
-            cylinderEntity.addChild(backDisk)
-        }
-
-        completion(cylinderEntity)
     }
 }
+@available(iOS 15.0, *)
+func applyTextureToModelEntities(in entity: Entity, texture: TextureResource) {
+    // Si la entidad es un ModelEntity, aplicar la textura
+    if var modelEntity = entity as? ModelEntity,
+       var modelComponent = modelEntity.components[ModelComponent.self] as? ModelComponent {
+        print("Aplicando textura al nodo: \(modelEntity.name)")
+        for index in modelComponent.materials.indices {
+            var newMaterial = PhysicallyBasedMaterial()
+            newMaterial.baseColor.texture = .init(texture)
+            newMaterial.baseColor.tint = .white
+            modelComponent.materials[index] = newMaterial
+            print("Textura reemplazada en el material \(index).")
+        }
+        modelEntity.components[ModelComponent.self] = modelComponent
+    }
 
+    // Buscar recursivamente en los hijos
+    for child in entity.children {
+        applyTextureToModelEntities(in: child, texture: texture)
+    }
+}
 
 
 

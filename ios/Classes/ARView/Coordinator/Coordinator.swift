@@ -47,6 +47,7 @@ class Coordinator: NSObject, ARSessionDelegate {
         updateArrowPositionAndDirection()
         showPointDebug()
         updatePOIOrientationToCamera(arView: arView)
+        //rotateIconPoiAndText(arView: arView)
         arSceneHandler?.handleFrameUpdate(frame: frame) // Reenviar al ARSceneHandler
         
     }

@@ -51,7 +51,7 @@ extension Coordinator {
                 }
                 
 
-                loadCylinderWithTexturedEnds(url: iconUrl) { poiEntity in
+                replaceTextureOnCylinder(url: iconUrl) { poiEntity in
                      guard let poiEntity = poiEntity else {
                          print("Error: No se pudo crear el disco para el POI")
                          return
