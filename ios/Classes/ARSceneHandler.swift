@@ -74,7 +74,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
             self.adjustVisibilityBasedOnDistance(arSceneView: arSceneView, mainAnchor: mainAnchor, nearDistance: 0.1, farDistance: Float(cameraDeph))
         }
             
-        
+       
         // Instancia el Coordinator
         self.coordinator = makeCoordinator()
         self.coordinator?.arView = arSceneView // Asigna la vista AR
@@ -407,7 +407,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         NSLog("ARSceneHandler - Exit from geofences: \(geofences)")
        
         if let mainAnchor = mainAnchor {
-            modelManager.removeModels(from: mainAnchor)
+            modelManager.removeModels(geofences: geofences, from: mainAnchor)
         }
     }
     

@@ -33,43 +33,66 @@ class DynamicModelManager {
         print("Model to load!:   ", model)
         do {
             let cameraPosition = arView.cameraTransform.translation
-            
-            // Intentar cargar el modelo sin realizar el casting inmediato
-            let entity = try ModelEntity.load(named: model)
 
-            // Verificar si el modelo es un ModelEntity
-            guard let modelEntity = entity as? ModelEntity else {
-                print("El modelo cargado no es del tipo ModelEntity. Verifica el archivo .usdz")
+            // Cargar el modelo como Entity
+            let entity = try Entity.load(named: model)
+            print("Entidad cargada correctamente: \(entity)")
+
+            // Buscar el primer ModelEntity en la jerarquía
+            guard let modelEntity = findFirstModelEntity(in: entity) else {
+                print("Error: No se encontró un ModelEntity en la jerarquía del modelo \(model).")
                 return
             }
-            
-            
 
+            // Configurar el ModelEntity
             modelEntity.scale = SIMD3<Float>(0.015, 0.015, 0.015)
             modelEntity.position = SIMD3<Float>(
-                cameraPosition.x - Float.random(in: -3.0...3.0),
+                cameraPosition.x - Float.random(in: -2.0...2.0),
                 cameraPosition.y - 1.5,
-                cameraPosition.z
+                cameraPosition.z - Float.random(in: 0.0...25.0)
             )
             modelEntity.name = "dynamic_" + model
 
             // Reproducir la animación si está disponible
-            if let animation = modelEntity.availableAnimations.first(where: { $0.name == "global scene animation" }) {
-                modelEntity.playAnimation(animation.repeat(), transitionDuration: 0.5, startsPaused: false)
-            }
+            playAnimationIfAvailable(for: modelEntity)
 
             // Añadir el modelo al anchor principal
             mainAnchor.addChild(modelEntity)
-            
+
             // Agregar el modelo a la lista de modelos dinámicos
             dynamicModels.append(modelEntity)
-            
+
             print("Modelo cargado exitosamente: \(modelEntity.name)")
-            
+
         } catch {
-            print("Error al cargar el modelo animado: \(error.localizedDescription)")
+            print("Error al cargar el modelo: \(error.localizedDescription)")
         }
     }
+
+    /// Función para buscar el primer ModelEntity en una jerarquía de Entity
+    private func findFirstModelEntity(in entity: Entity) -> ModelEntity? {
+        if let modelEntity = entity as? ModelEntity {
+            return modelEntity
+        }
+        for child in entity.children {
+            if let modelEntity = findFirstModelEntity(in: child) {
+                return modelEntity
+            }
+        }
+        return nil
+    }
+
+    /// Función para reproducir animación si está disponible
+    private func playAnimationIfAvailable(for modelEntity: ModelEntity) {
+        guard let animation = modelEntity.availableAnimations.first else {
+            print("No se encontraron animaciones disponibles para \(modelEntity.name).")
+            return
+        }
+
+        print("Animación encontrada: \(animation.name)")
+        modelEntity.playAnimation(animation.repeat(), transitionDuration: 0.5, startsPaused: false)
+    }
+
 
 
 
@@ -106,28 +129,47 @@ class DynamicModelManager {
         return fixedAnchorModel
     }
     
-    func removeModels(from mainAnchor: AnchorEntity) {
-        
-        userInFence = false
-        // Elimina todos los modelos de `dynamicModels`
-        for modelEntity in dynamicModels {
-            modelEntity.removeFromParent()
-            print("Removed model with name: \(modelEntity.name)")
-        }
-        
-        // Limpiar el array después de eliminar todos los modelos
-        dynamicModels.removeAll()
-        
-        // Recorre los hijos de `mainAnchor` y elimina los modelos restantes con el prefijo "dynamic_"
-        for child in mainAnchor.children {
-            if child.name.hasPrefix("dynamic_") {
-                child.removeFromParent()
-                print("Removed model from mainAnchor with name: \(child.name)")
+    func removeModels(geofences: [SITGeofence], from mainAnchor: AnchorEntity) {
+        // Verifica y elimina modelos asociados a los geofences
+        for geofence in geofences {
+            if let customFields = geofence.customFields as? [String: Any] {
+                for (key, value) in customFields {
+                    if key == "ar_metadata_ios", let modelName = value as? String {
+                        print("Processing geofence with metadata: \(modelName)")
+
+                        // Buscar el modelo dinámico correspondiente
+                        if let modelToRemove = dynamicModels.first(where: { $0.name == "dynamic_\(modelName)" }) {
+                            modelToRemove.removeFromParent()
+                            dynamicModels.removeAll { $0 == modelToRemove }
+                            print("Removed dynamic model associated with geofence: \(modelName)")
+                        }
+                    }
+                }
             }
         }
 
-        print("All dynamic models have been removed from mainAnchor")
+        // Recorre los hijos de `mainAnchor` y elimina los que coincidan con el prefijo "dynamic_"
+        for child in mainAnchor.children {
+            if child.name.hasPrefix("dynamic_") {
+                // Verificar si el nombre coincide con algún geofence
+                let geofenceMatch = geofences.contains { geofence in
+                    if let customFields = geofence.customFields as? [String: Any],
+                       let modelName = customFields["ar_metadata_ios"] as? String {
+                        return child.name == "dynamic_\(modelName)"
+                    }
+                    return false
+                }
+
+                if geofenceMatch {
+                    child.removeFromParent()
+                    print("Removed model from mainAnchor with name: \(child.name)")
+                }
+            }
+        }
+
+        print("All matching dynamic models have been removed.")
     }
+
     
     func updateModelLocation( arView: ARView, from mainAnchor: AnchorEntity){
         
