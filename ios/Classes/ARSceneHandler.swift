@@ -385,8 +385,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
 
     
     func didEnteredGeofences(_ geofences: [SITGeofence]!) {
-        NSLog("ARSceneHandler - Entered geofences@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@: \(geofences)")
-        print("ARSceneHandler - Entered geofences@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@: \(geofences)")
+        NSLog("ARSceneHandler - Entered geofences: \(geofences)")
 
         if let arView = self.coordinator?.arView, let mainAnchor = mainAnchor {
             self.modelManager.loadDynamicsModels(geofences: geofences, arView: arView, mainAnchor: mainAnchor)
@@ -415,7 +414,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
    //////////Check and update models in fence if user is inside
 
     func startFenceTimer() {
-        // Inicia un temporizador para verificar `userInFence` cada 5 segundos
+        // Inicia un temporizador para verificar `userInFence` cada 20 segundos
         fenceCheckTimer = Timer.scheduledTimer(withTimeInterval: 20.0, repeats: true) { [weak self] _ in
             self?.checkFenceStatus()
         }
