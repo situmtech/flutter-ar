@@ -175,16 +175,12 @@ func createTexturedDisk(with image: UIImage, diameter: Float) -> ModelEntity? {
 
 @available(iOS 15.0, *)
 func replaceTextureOnCylinder(url: URL, completion: @escaping (Entity?) -> Void) {
+    
     let modelName = "cylinder.usdz"
 
     do {
         // Cargar el modelo como una Entity
         let entity = try Entity.load(named: modelName)
-        print("Entidad cargada correctamente: \(entity)")
-
-        // Rotar el modelo para que la textura quede en el lado correcto
-      /*  let rotation = simd_quatf(angle: .pi, axis: SIMD3<Float>(0, 0, 1)) // Rotar 180° en el eje X
-        entity.transform.rotation *= rotation*/
 
         // Cargar la nueva textura desde la URL
         ImageCacheManager.shared.loadImage(from: url) { image in
@@ -193,8 +189,6 @@ func replaceTextureOnCylinder(url: URL, completion: @escaping (Entity?) -> Void)
                 completion(nil)
                 return
             }
-
-            print("Imagen cargada con éxito.")
 
             // Convertir la UIImage a CGImage
             guard let cgImage = image.cgImage else {
@@ -210,13 +204,9 @@ func replaceTextureOnCylinder(url: URL, completion: @escaping (Entity?) -> Void)
                 completion(nil)
                 return
             }
-
-            print("Textura generada con éxito.")
-
             // Aplicar la textura a todos los nodos ModelEntity
             applyTextureToModelEntities(in: entity, texture: texture)
 
-            print("Textura aplicada a todos los nodos ModelEntity.")
             completion(entity)
         }
     } catch {
@@ -229,13 +219,11 @@ func applyTextureToModelEntities(in entity: Entity, texture: TextureResource) {
     // Si la entidad es un ModelEntity, aplicar la textura
     if var modelEntity = entity as? ModelEntity,
        var modelComponent = modelEntity.components[ModelComponent.self] as? ModelComponent {
-        print("Aplicando textura al nodo: \(modelEntity.name)")
         for index in modelComponent.materials.indices {
             var newMaterial = PhysicallyBasedMaterial()
             newMaterial.baseColor.texture = .init(texture)
             newMaterial.baseColor.tint = .white
-            modelComponent.materials[index] = newMaterial
-            print("Textura reemplazada en el material \(index).")
+            modelComponent.materials[index] = newMaterial           
         }
         modelEntity.components[ModelComponent.self] = modelComponent
     }
@@ -251,7 +239,7 @@ func applyTextureToModelEntities(in entity: Entity, texture: TextureResource) {
 @available(iOS 15.0, *)
 func addPointLightToScene(at position: SIMD3<Float>, arView: ARView) {
     let lightEntity = PointLight()
-    lightEntity.light.intensity = 25000  // Ajusta según el nivel de brillo que desees
+    lightEntity.light.intensity = 15000  // Ajusta según el nivel de brillo que desees
     lightEntity.light.color = .white
     
     let lightAnchor = AnchorEntity(world: position)
