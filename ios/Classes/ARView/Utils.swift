@@ -247,20 +247,6 @@ func addPointLightToScene(at position: SIMD3<Float>, arView: ARView) {
     arView.scene.addAnchor(lightAnchor)
 }
 
-
-@available(iOS 15.0, *)
-func addLightToScene(arView: ARView) {
-    let lightEntity = DirectionalLight()
-    lightEntity.light.intensity = 10000  // Aumenta la intensidad según el nivel de iluminación deseado
-    lightEntity.light.color = .white
-    lightEntity.orientation = simd_quatf(angle: .pi/2.0 , axis: SIMD3<Float>(1, 0, 0))
-    
-    let lightAnchor = AnchorEntity(world: SIMD3<Float>(0, -3, 0)) // Posición de la luz sobre los POIs
-    lightAnchor.addChild(lightEntity)
-    arView.scene.addAnchor(lightAnchor)
-}
-
-
 @available(iOS 15.0, *)
 func createTextEntity(text: String, poiPosition: SIMD3<Float>, arView: ARView) -> ModelEntity {
     // Generar el texto principal

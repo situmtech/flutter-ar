@@ -61,8 +61,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         setupFixedAnchor(arSceneView: arSceneView)
 
         //Lights
-        addLightToScene(arView: arSceneView)
-        addDirectionalLight(to: arSceneView)
+        setupLighting(arView: arSceneView)
         
         //Debug panel
         configDebug = ConfigDebug(arQuality: arQuality, hasToRefresh: hasToRefresh)
@@ -423,7 +422,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     }
 
     func stopFenceTimer() {
-        print("Stopping fence timer.")
+        print("Stopping fence timer!!!!!!!!!!!!!!!!!!!!!!!!!.")
         fenceCheckTimer?.invalidate()
         fenceCheckTimer = nil
     }
@@ -431,10 +430,10 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     private func checkFenceStatus() {
         print("Checking fence status. userInFence: \(modelManager.userInFence)")
         if modelManager.userInFence {
-            print("User is in fence. Executing periodic task.")
+            print("User is in fence. Executing periodic task.!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             performPeriodicTask()
         } else {
-            print("User is not in fence. Stopping timer.")
+            print("User is not in fence. Stopping timer!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!.")
             stopFenceTimer()
         }
     }

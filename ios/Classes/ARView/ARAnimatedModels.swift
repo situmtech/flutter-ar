@@ -15,12 +15,17 @@ class DynamicModelManager {
         for geofence in geofences {
             if let customFields = geofence.customFields as? [String: Any] {
                 for (key, value) in customFields {
-                    if key == "ar_metadata_ios" {
+                    if key == "ar_metadata" {
                         NSLog("\(key): \(value)")
                         print("key value:    ", key,"     ", value)
-                        let model = String(describing: value)
+                        let modelsString = String(describing: value)
+                        let modelNames = modelsString.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+                        
                         userInFence = true
-                        loadDynamicModel(model: model, arView: arView, mainAnchor: mainAnchor)
+                        for model in modelNames {
+                            loadDynamicModel(model: model, arView: arView, mainAnchor: mainAnchor)
+                        }
+                  
                     }
                 }
             } else {
@@ -36,7 +41,7 @@ class DynamicModelManager {
             let cameraPosition = arView.cameraTransform.translation
 
             // Cargar el modelo como Entity
-            let entity = try Entity.load(named: model)
+            let entity = try Entity.load(named: model + ".usdz")
             print("Entidad cargada correctamente: \(entity)")
 
             // Buscar el primer ModelEntity en la jerarquía
@@ -49,8 +54,8 @@ class DynamicModelManager {
             modelEntity.scale = SIMD3<Float>(0.015, 0.015, 0.015)
             modelEntity.position = SIMD3<Float>(
                 cameraPosition.x - Float.random(in: -3.0...3.0),
-                cameraPosition.y - 1.5,
-                cameraPosition.z - Float.random(in: 10.0...35.0)
+                cameraPosition.y - 1.0,
+                cameraPosition.z - Float.random(in: 5.0...20.0)
             )
             modelEntity.name = "dynamic_" + model
 
@@ -135,7 +140,7 @@ class DynamicModelManager {
         for geofence in geofences {
             if let customFields = geofence.customFields as? [String: Any] {
                 for (key, value) in customFields {
-                    if key == "ar_metadata_ios", let modelName = value as? String {
+                    if key == "ar_metadata", let modelName = value as? String {
                         print("Processing geofence with metadata: \(modelName)")
                         userInFence = false
                         // Buscar el modelo dinámico correspondiente
@@ -155,7 +160,7 @@ class DynamicModelManager {
                 // Verificar si el nombre coincide con algún geofence
                 let geofenceMatch = geofences.contains { geofence in
                     if let customFields = geofence.customFields as? [String: Any],
-                       let modelName = customFields["ar_metadata_ios"] as? String {
+                       let modelName = customFields["ar_metadata"] as? String {
                         return child.name == "dynamic_\(modelName)"
                     }
                     return false
@@ -181,10 +186,10 @@ class DynamicModelManager {
             if modelEntity.name.hasPrefix("dynamic_") {
                 modelEntity.position = SIMD3<Float>(
                     cameraPosition.x - Float.random(in: -3.0...3.0),
-                    cameraPosition.y - 1.5,
-                    cameraPosition.z - Float.random(in: 10.0...35.0)
+                    cameraPosition.y - 1.0,
+                    cameraPosition.z - Float.random(in: 5.0...20.0)
                 )
-                print ("Updating asdfklasdlfkjasdlkfjasdkfljasdñkfljsadñklfjasklf")
+              
                 // Reproducir la animación si está disponible
                 if let animation = modelEntity.availableAnimations.first(where: { $0.name == "global scene animation" }) {
                     modelEntity.playAnimation(animation.repeat(), transitionDuration: 0.5, startsPaused: false)
@@ -227,7 +232,7 @@ func createArrowAnchor() -> AnchorEntity {
         }
 
         // Configurar escala, orientación y posición
-        arrowEntity.scale = SIMD3<Float>(0.03, 0.03, 0.03)
+        arrowEntity.scale = SIMD3<Float>(0.025, 0.025, 0.025)
         arrowEntity.position = SIMD3<Float>(0.0, 0.0, 0.0)
 
         // Definir el color personalizado con R=40, G=51, B=128
