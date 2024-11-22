@@ -844,7 +844,7 @@ class ARSceneHandler(
                                         val modelNode = buildModelNode(modelResId, scale)
                                         Log.d(
                                             TAG,
-                                            ">>>>>>>>>>>>>>>>>>>> Building model $modelResId   -> trexmodel ${R.raw.trex} / eren model ${R.raw.eren_hiphop_dance} / sad person ${R.raw.sad_person} ${R.raw.phoenix_bird} ${R.raw.hummingbird} ${R.raw.saturn}"
+                                            ">>>>>>>>>>>>>>>>>>>> Building model $modelResId   -> trexmodel ${R.raw.trex} /  ${R.raw.phoenix_bird} ${R.raw.hummingbird} ${R.raw.saturn}"
                                         )
 
                                         modelNode?.let {

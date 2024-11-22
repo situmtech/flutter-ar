@@ -88,12 +88,6 @@ class ARController {
         {"buildingIdentifier": _widgetState?.widget.buildingIdentifier});
   }
 
-  Future<String> getStatus() async {
-    debugPrint("Situm > AR>getStatus.");
-    final String status = await _channel.invokeMethod("getDebugInfo", {});
-    return status;
-  }
-
   // === Set of methods to keep the AR module updated regarding position and navigation.
   Future<void> _situmSDKMethodCallHandler(InternalCall call) async {
     // TODO: restore.
