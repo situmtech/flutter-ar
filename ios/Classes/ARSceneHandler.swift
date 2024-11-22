@@ -71,7 +71,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         // Inicializa el temporizador para ajustar la visibilidad de los objetos en función de la distancia
         updateTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
             guard let self = self, let mainAnchor = self.mainAnchor else { return }
-            self.adjustVisibilityBasedOnDistance(arSceneView: arSceneView, mainAnchor: mainAnchor, nearDistance: 0.1, farDistance: Float(cameraDeph))
+            self.adjustVisibilityBasedOnDistance(arSceneView: arSceneView, mainAnchor: mainAnchor, nearDistance: 2.0, farDistance: Float(cameraDeph))
         }
             
        
@@ -390,7 +390,9 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         if let arView = self.coordinator?.arView, let mainAnchor = mainAnchor {
             self.modelManager.loadDynamicsModels(geofences: geofences, arView: arView, mainAnchor: mainAnchor)
         }
-       
+        if (self.modelManager.userInFence){
+            startFenceTimer()
+        }
         
         if coordinator?.isDebugEnabled == true {
             // show toast
@@ -411,39 +413,41 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     }
     
     
-   //////////Check and update models in fence if user is inside
-
+    //Update dynamic models in fence
     func startFenceTimer() {
-        // Inicia un temporizador para verificar `userInFence` cada 20 segundos
+        print("Starting fence timer.")
         fenceCheckTimer = Timer.scheduledTimer(withTimeInterval: 20.0, repeats: true) { [weak self] _ in
+            print("Timer triggered.")
             self?.checkFenceStatus()
         }
     }
 
     func stopFenceTimer() {
-        // Detiene el temporizador
+        print("Stopping fence timer.")
         fenceCheckTimer?.invalidate()
         fenceCheckTimer = nil
     }
 
     private func checkFenceStatus() {
-        // Ejecuta una acción si `userInFence` es true
+        print("Checking fence status. userInFence: \(modelManager.userInFence)")
         if modelManager.userInFence {
-            print("User is in fence. Executing periodic task...")
+            print("User is in fence. Executing periodic task.")
             performPeriodicTask()
         } else {
-            print("User is not in fence. Timer will stop.")
+            print("User is not in fence. Stopping timer.")
             stopFenceTimer()
         }
     }
 
     private func performPeriodicTask() {
-        // Aquí defines la tarea que se ejecuta periódicamente
-        print("Performing task every 5 seconds while user is in fence.")
-        if let arView = self.coordinator?.arView, let mainAnchor = mainAnchor {
-            modelManager.updateModelLocation(arView: arView, from: mainAnchor)
+        DispatchQueue.main.async {
+            print("Performing task every 5 seconds while user is in fence.")
+            if let arView = self.coordinator?.arView, let mainAnchor = self.mainAnchor {
+                self.modelManager.updateModelLocation(arView: arView, from: mainAnchor)
+            }
         }
     }
+
 
 
 

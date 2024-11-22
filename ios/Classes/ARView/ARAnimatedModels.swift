@@ -11,7 +11,7 @@ class DynamicModelManager {
     
     /// Carga modelos dinámicos basados en los `geofences`.
     func loadDynamicsModels(geofences: [SITGeofence], arView: ARView, mainAnchor: AnchorEntity) {
-        userInFence = true
+        
         for geofence in geofences {
             if let customFields = geofence.customFields as? [String: Any] {
                 for (key, value) in customFields {
@@ -19,6 +19,7 @@ class DynamicModelManager {
                         NSLog("\(key): \(value)")
                         print("key value:    ", key,"     ", value)
                         let model = String(describing: value)
+                        userInFence = true
                         loadDynamicModel(model: model, arView: arView, mainAnchor: mainAnchor)
                     }
                 }
@@ -47,9 +48,9 @@ class DynamicModelManager {
             // Configurar el ModelEntity
             modelEntity.scale = SIMD3<Float>(0.015, 0.015, 0.015)
             modelEntity.position = SIMD3<Float>(
-                cameraPosition.x - Float.random(in: -2.0...2.0),
+                cameraPosition.x - Float.random(in: -3.0...3.0),
                 cameraPosition.y - 1.5,
-                cameraPosition.z - Float.random(in: 0.0...25.0)
+                cameraPosition.z - Float.random(in: 10.0...35.0)
             )
             modelEntity.name = "dynamic_" + model
 
@@ -136,7 +137,7 @@ class DynamicModelManager {
                 for (key, value) in customFields {
                     if key == "ar_metadata_ios", let modelName = value as? String {
                         print("Processing geofence with metadata: \(modelName)")
-
+                        userInFence = false
                         // Buscar el modelo dinámico correspondiente
                         if let modelToRemove = dynamicModels.first(where: { $0.name == "dynamic_\(modelName)" }) {
                             modelToRemove.removeFromParent()
@@ -181,9 +182,9 @@ class DynamicModelManager {
                 modelEntity.position = SIMD3<Float>(
                     cameraPosition.x - Float.random(in: -3.0...3.0),
                     cameraPosition.y - 1.5,
-                    cameraPosition.z - Float.random(in: 10.0...20.0)
+                    cameraPosition.z - Float.random(in: 10.0...35.0)
                 )
-                
+                print ("Updating asdfklasdlfkjasdlkfjasdkfljasdñkfljsadñklfjasklf")
                 // Reproducir la animación si está disponible
                 if let animation = modelEntity.availableAnimations.first(where: { $0.name == "global scene animation" }) {
                     modelEntity.playAnimation(animation.repeat(), transitionDuration: 0.5, startsPaused: false)
