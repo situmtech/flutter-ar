@@ -29,7 +29,6 @@ import es.situm.sdk.model.cartography.BuildingInfo
 import es.situm.sdk.model.cartography.Geofence
 import es.situm.sdk.model.cartography.Poi
 import es.situm.sdk.model.cartography.PoiCategory
-import es.situm.sdk.model.cartography.Point
 import es.situm.sdk.model.directions.Route
 import es.situm.sdk.model.directions.RouteSegment
 import es.situm.sdk.model.location.CartesianCoordinate
@@ -72,23 +71,25 @@ class ARSceneHandler(
     }
 
     private var sendArGoneCallback: ARControllerCallback? = null
-
-    private var onDebug: Boolean = true
-    private var hasToShowDebugRoute: Boolean = false
-    private val dashboardDomain: String = "https://dashboard.situm.com"
-
+    private lateinit var sceneView: CustomARSceneView
     private val context: Context = activity
-
-    private var isRedrawing: Boolean = false        // not allow to redraw if is already redrawing
+    private lateinit var viewAttachmentManager: ViewAttachmentManager
 
     private var arQuality: ARQuality = ARQuality()
     private var poiUtils: PoiUtils = PoiUtils()
+    private lateinit var buildingInfo: BuildingInfo
+    private lateinit var currentPosition: Location
+
+    private var onDebug: Boolean = true
+    private var hasToShowDebugRoute: Boolean = false
+    private var isRedrawing: Boolean = false        // not allow to redraw if is already redrawing
+    private var lastTimestampRedraw: Long = 0
+
+    private val dashboardDomain: String = "https://dashboard.situm.com"
 
     private var arrowNode: ModelNode? = null
     private var targetArrow: Position? = null
-
     private var diskGeometry: Geometry? = null
-
 
     private lateinit var pois: List<Poi>
     val poisAR = mutableMapOf<String, PoiAR>()
@@ -100,15 +101,6 @@ class ARSceneHandler(
     private lateinit var route: Route
 
     private val routeNodes: MutableList<Node> = mutableListOf()     // only for debug
-
-    private lateinit var currentProjectedNodeGeometry: GeometryNode
-
-    private lateinit var buildingInfo: BuildingInfo
-    private lateinit var currentPosition: Location
-    private var lastTimestampRedraw: Long = 0
-
-    private lateinit var sceneView: CustomARSceneView
-    private lateinit var viewAttachmentManager: ViewAttachmentManager
 
     fun setCallback(callback: ARControllerCallback) {
         this.sendArGoneCallback = callback
@@ -472,8 +464,6 @@ class ARSceneHandler(
             Log.w(TAG, "< Closest node: ${closestPoint}")
         }
 
-        //drawCurrentProjectedPosition(Position(closestPoint.x,closestPoint.y,closestPoint.z))
-
         for (i in routePointsAR.indexOf(closestPoint) until routePointsAR.size) {
             val position = routePointsAR[i]
             val distanceFromClosest = calculate2DDistance(closestPoint, position)
@@ -517,44 +507,7 @@ class ARSceneHandler(
     private fun pointArrowToPosition(targetARPosition: Position) {
         targetArrow = targetARPosition
         arrowNode?.lookAt(targetARPosition, smooth = true)
-        // debug
-//        if (!::currentTargetNodeGeometry.isInitialized || currentTargetNodeGeometry == null) {
-//            val sphereGeometry =
-//                Sphere.Builder().radius(0.15f).build(sceneView.engine)
-//            val material = MaterialLoader(sceneView.engine, context).createColorInstance(
-//                Color(
-//                    0f,
-//                    1f,
-//                    0f,
-//                    0.8f
-//                )
-//            )
-//            targetNode = GeometryNode(sceneView.engine, sphereGeometry, material)
-//            sceneView.addChildNode(targetNode!!)
-//        } else {
-//            targetNode!!.worldPosition = targetARPosition
-//        }
-
     }
-
-    private fun drawCurrentProjectedPosition(projectedARPosition: Position) {
-        if (::currentProjectedNodeGeometry.isInitialized) {
-            sceneView.removeChildNode(currentProjectedNodeGeometry)
-        }
-        currentProjectedNodeGeometry =
-            drawSphereOnPosition(projectedARPosition, Color(1f, 1f, 0f, 0.8f))
-    }
-
-    private fun drawSphereOnPosition(arPosition: Position, color: Color): GeometryNode {
-        val sphereGeometry =
-            Sphere.Builder().radius(0.15f).center(arPosition).build(sceneView.engine)
-        val material = MaterialLoader(sceneView.engine, context).createColorInstance(color)
-        val sphereNode = GeometryNode(sceneView.engine, sphereGeometry, material)
-        sceneView.addChildNode(sphereNode)
-        return sphereNode
-    }
-
-    /////////////////////
 
     suspend fun loadTextureFromUrlAsync(context: Context, imageUrl: String): Texture? {
         return withContext(Dispatchers.IO) {
@@ -951,5 +904,13 @@ class ARSceneHandler(
                 }
             }
         }
+    }
+
+    fun isDebugMode(): Boolean {
+        return onDebug;
+    }
+
+    fun setDebugMode(debug: Boolean) {
+        onDebug = debug;
     }
 }

@@ -1,5 +1,6 @@
 package com.situm.flutter.ar.situm_ar
 
+import android.os.Looper
 import android.util.Log
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
@@ -23,12 +24,25 @@ class ARController(
     companion object {
         const val TAG = "Situm> AR>"
     }
+
     init {
         arSceneHandler.setCallback(this)
     }
 
     private var isLoaded = false
     private var isLoading = false
+
+    private val handler = android.os.Handler(Looper.getMainLooper())
+
+    private val updateDebugInfoRunnable = object : Runnable {
+        override fun run() {
+            if (isLoaded && arSceneHandler.isDebugMode()) {
+                updateDebugInfo()
+                handler.postDelayed(this, 1000) // Vuelve a ejecutar después de 1 segundo
+            }
+        }
+    }
+
 
     fun load(buildingIdentifier: String) {
         Log.d(TAG, "Situm> AR> L&U> CALLED LOAD")
@@ -49,6 +63,7 @@ class ARController(
                     arSceneHandler.setBuildingInfo(obtained as BuildingInfo)
                     Log.w(TAG, "> Situm: fetch Building info, Success")
                 }
+
                 override fun onFailure(error: es.situm.sdk.error.Error?) {
                     Log.e(TAG, "> Situm: fetch Building info error: ${error?.message}")
                 }
@@ -69,6 +84,8 @@ class ARController(
 
         isLoaded = true
         isLoading = false
+
+        handler.post(updateDebugInfoRunnable)
     }
 
     fun unload() {
@@ -111,16 +128,21 @@ class ARController(
         }
     }
 
+    fun updateDebugInfo() {
+        arView.updateDebugInfo(arSceneHandler.getCurrentStatusLog())
+    }
+
+    // buttons
     fun worldRedraw() {
         arSceneHandler.worldRedraw()
     }
 
-    fun updateArrowTarget(){
+    fun updateArrowTarget() {
         arSceneHandler.updateArrowTarget()
     }
 
     fun getDebugInfo(): String {
-        return  arSceneHandler.getCurrentStatusLog()
+        return arSceneHandler.getCurrentStatusLog()
     }
 
     fun showRouteOnAR() {
