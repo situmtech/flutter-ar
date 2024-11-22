@@ -88,21 +88,6 @@ class ARController {
         {"buildingIdentifier": _widgetState?.widget.buildingIdentifier});
   }
 
-  Future<void> worldRedraw() async {
-    debugPrint("Situm > AR> world redraw.");
-    await _channel.invokeMethod("worldRedraw", {});
-  }
-
-  Future<void> updateArrowTarget() async {
-    debugPrint("Situm > AR> world redraw.");
-    await _channel.invokeMethod("updateArrowTarget", {});
-  }
-
-  Future<void> showRouteOnAR() async {
-    debugPrint("Situm > AR> show route on ar.");
-    await _channel.invokeMethod("showRouteOnAR", {});
-  }
-
   Future<String> getStatus() async {
     debugPrint("Situm > AR>getStatus.");
     final String status = await _channel.invokeMethod("getDebugInfo", {});

@@ -56,44 +56,6 @@ Widget _createDebugModeSwitchButton(VoidCallback onPressed) {
   );
 }
 
-Widget _createButtonsDebugAR(VoidCallback onRedrawPressed,
-    VoidCallback onUpdatePressed, VoidCallback onShowRoutePressed) {
-  return Align(
-    alignment: Alignment.bottomRight,
-    child: Column(
-      mainAxisSize: MainAxisSize.min, // Minimizar la altura del Column
-      crossAxisAlignment: CrossAxisAlignment.end, // Alinear al final (derecha)
-      children: [
-        ElevatedButton(onPressed: onRedrawPressed, child: Text('Redraw World')),
-        SizedBox(height: 10), // Espacio entre los botones
-        ElevatedButton(onPressed: onUpdatePressed, child: Text('Update Arrow')),
-        SizedBox(height: 10), // Espacio entre los botones
-        ElevatedButton(
-            onPressed: onShowRoutePressed,
-            child: Text('Show route')), // Nuevo botón
-      ],
-    ),
-  );
-}
-
-Widget _createWorldRedrawButton(VoidCallback onPressed) {
-  return Align(
-    alignment: Alignment.bottomRight,
-    child: SizedBox(
-      child: ElevatedButton(onPressed: onPressed, child: Text('Redraw World')),
-    ),
-  );
-}
-
-Widget _createUpdateArrowTargetButton(VoidCallback onPressed) {
-  return Align(
-    alignment: Alignment.bottomCenter,
-    child: SizedBox(
-      child: ElevatedButton(onPressed: onPressed, child: Text('Update Arrow')),
-    ),
-  );
-}
-
 class ARLoadingWidget extends StatelessWidget {
   const ARLoadingWidget({super.key});
 
