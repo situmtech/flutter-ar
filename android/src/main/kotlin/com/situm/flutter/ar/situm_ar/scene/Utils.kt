@@ -3,6 +3,7 @@ package com.situm.flutter.ar.situm_ar.scene
 import android.util.Log
 import io.github.sceneview.collision.Vector3
 import io.github.sceneview.math.Position
+import io.github.sceneview.math.Rotation
 import kotlin.random.Random
 import kotlin.system.measureTimeMillis
 
@@ -103,5 +104,47 @@ fun getRandomPositionNearPosition(
         cameraPosition.x + randomOffsetX,
         cameraPosition.y + heightOffset,
         cameraPosition.z + randomOffsetZ
+    )
+}
+
+
+fun getRandomPositionInViewCone(
+    cameraPosition: Position,
+    cameraDirection: Rotation,
+    maxDistance: Float,
+    heightOffset: Float,
+    coneAngle: Float = 70f
+): Position {
+    // Genera un ángulo aleatorio dentro del rango ±coneAngle
+    val randomAngle = Random.nextFloat() * 2 * coneAngle - coneAngle
+
+    // Convierte el ángulo a radianes
+    val angleRad = Math.toRadians(randomAngle.toDouble())
+
+    // Genera una distancia aleatoria hacia adelante dentro del rango [0, maxDistance]
+    val distance = Random.nextFloat() * maxDistance
+
+    // Calcula las direcciones de desplazamiento en el plano XZ
+    val offsetX = distance * Math.cos(angleRad)
+    val offsetZ = distance * Math.sin(angleRad)
+
+    // Usa la dirección de la cámara para orientar los desplazamientos
+    val forwardX = cameraDirection.x
+    val forwardZ = -cameraDirection.z
+    val length = Math.sqrt((forwardX * forwardX + forwardZ * forwardZ).toDouble()) // Normalizar
+
+    // Evita división por cero al normalizar
+    val normalizedX = if(length > 1e-6) forwardX / length else 0f
+    val normalizedZ = if (length > 1e-6) forwardZ / length else 0f
+
+    // Proyecta la posición final en el cono de visión
+
+    val finalX = cameraPosition.x + (normalizedX.toFloat() * offsetX - normalizedZ.toFloat() * offsetZ).toFloat()
+    val finalZ = cameraPosition.z + (normalizedZ.toFloat() * offsetX + normalizedX.toFloat() * offsetZ).toFloat()
+
+    return Position(
+        x = finalX,
+        y = cameraPosition.y + heightOffset,
+        z = finalZ
     )
 }

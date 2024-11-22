@@ -132,23 +132,6 @@ class ARController(
         arView.updateDebugInfo(arSceneHandler.getCurrentStatusLog())
     }
 
-    // buttons
-    fun worldRedraw() {
-        arSceneHandler.worldRedraw()
-    }
-
-    fun updateArrowTarget() {
-        arSceneHandler.updateArrowTarget()
-    }
-
-    fun getDebugInfo(): String {
-        return arSceneHandler.getCurrentStatusLog()
-    }
-
-    fun showRouteOnAR() {
-        arSceneHandler.switchShowRouteOnAR()
-    }
-
 
     override fun sendARGone() {
         arMethodCallSender.sendArGoneRequired()

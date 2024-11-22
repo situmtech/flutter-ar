@@ -548,9 +548,9 @@ class ARSceneHandler(
                 MaterialLoader(sceneView.engine, context).createTextureInstance(
                     texture,
                     true,
+                    0.0f,
                     0.1f,
-                    0.8f,
-                    0.02f
+                    0.5f
                 )
             val diskNode = GeometryNode(sceneView.engine, diskGeometry!!, materialInstance)
 
@@ -821,12 +821,13 @@ class ARSceneHandler(
                             val existingModel = fenceModels[modelNameWithoutExtension]
 
                             if (existingModel != null) {
-                                existingModel.modelNode.worldPosition =
-                                    getRandomPositionNearPosition(
-                                        sceneView.cameraNode.worldPosition,
-                                        2f,
-                                        height
-                                    )
+                                existingModel.modelNode.worldPosition = getRandomPositionInViewCone(
+                                    sceneView.cameraNode.worldPosition,
+                                    sceneView.cameraNode.worldRotation,
+                                    5f,
+                                    height,
+                                    30f
+                                )
                                 existingModel.modelNode.isVisible = true
                             } else {
                                 val modelResId = activity?.resources?.getIdentifier(
@@ -850,10 +851,12 @@ class ARSceneHandler(
                                             val situmARModel =
                                                 SitumARModel(geofence.name, modelName, it)
                                             fenceModels[modelNameWithoutExtension] = situmARModel
-                                            modelNode.worldPosition = getRandomPositionNearPosition(
+                                            modelNode.worldPosition = getRandomPositionInViewCone(
                                                 sceneView.cameraNode.worldPosition,
-                                                2f,
-                                                height
+                                                sceneView.cameraNode.worldRotation,
+                                                5f,
+                                                height,
+                                                30f
                                             )
                                             sceneView.addChildNode(it)
 
