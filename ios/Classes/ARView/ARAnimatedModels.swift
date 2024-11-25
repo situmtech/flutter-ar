@@ -240,9 +240,6 @@ func createArrowAnchor() -> AnchorEntity {
         applyColorToEntityAndChildren(entity: arrowEntity, color: customColor)
 
 
-        // Aplicar el color al modelo y sus subentidades
-        applyColorToEntityAndChildren(entity: arrowEntity, color: customColor)
-
         // Añadir el modelo al ancla
         anchor.addChild(arrowEntity)
 
@@ -254,21 +251,27 @@ func createArrowAnchor() -> AnchorEntity {
 }
 
 // Función recursiva para aplicar un color a todas las subentidades
+@available(iOS 15.0, *)
 func applyColorToEntityAndChildren(entity: Entity, color: UIColor) {
-    if var modelComponent = entity.components[ModelComponent.self] as? ModelComponent {
-        // Crear un material simple con el color deseado
-        let colorMaterial = SimpleMaterial(color: color, isMetallic: false)
-
-        // Reemplazar todos los materiales de la entidad
-        modelComponent.materials = Array(repeating: colorMaterial, count: modelComponent.materials.count)
-        entity.components[ModelComponent.self] = modelComponent
+    if let modelEntity = entity as? ModelEntity {
+        // Crear un material completamente mate
+        var material = PhysicallyBasedMaterial()
+        // Configurar color base
+        material.baseColor = .init(tint: color)
+        // Configurar rugosidad máxima para eliminar brillos
+        material.roughness = .init(floatLiteral: 1.0) // Rugosidad máxima (completamente mate)
+        // Configurar metalicidad mínima
+        material.metallic = .init(floatLiteral: 0.0) // Sin efecto metálico
+        // Configurar reflectividad especular mínima
+        material.specular = .init(floatLiteral: 0.0) // Sin reflectividad
+        // Asignar el material al modelo
+        modelEntity.model?.materials = [material]
     }
 
-    // Recorrer las entidades hijas y aplicar el color
+    // Aplicar el material a las subentidades recursivamente
     for child in entity.children {
         applyColorToEntityAndChildren(entity: child, color: color)
     }
 }
-
 
 

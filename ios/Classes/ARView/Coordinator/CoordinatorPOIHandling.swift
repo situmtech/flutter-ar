@@ -76,7 +76,7 @@ extension Coordinator {
                         // Añadir el contenedor al ancla principal
                         fixedPOIAnchor.addChild(containerEntity)
                        
-                        addPointLightToScene(at: transformedPosition, arView: arView)
+                       // addPointLightToScene(at: transformedPosition, arView: arView)
                   
                     }
                 

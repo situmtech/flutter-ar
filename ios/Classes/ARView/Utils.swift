@@ -236,7 +236,7 @@ func applyTextureToModelEntities(in entity: Entity, texture: TextureResource) {
 
 
 
-@available(iOS 15.0, *)
+/*@available(iOS 15.0, *)
 func addPointLightToScene(at position: SIMD3<Float>, arView: ARView) {
     let lightEntity = PointLight()
     lightEntity.light.intensity = 15000  // Ajusta según el nivel de brillo que desees
@@ -245,7 +245,7 @@ func addPointLightToScene(at position: SIMD3<Float>, arView: ARView) {
     let lightAnchor = AnchorEntity(world: position)
     lightAnchor.addChild(lightEntity)
     arView.scene.addAnchor(lightAnchor)
-}
+}*/
 
 @available(iOS 15.0, *)
 func createTextEntity(text: String, poiPosition: SIMD3<Float>, arView: ARView) -> ModelEntity {

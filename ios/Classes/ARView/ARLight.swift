@@ -7,7 +7,7 @@ func setupLighting(arView: ARView) {
     
     let factorLight: Float = 0.3
     let lightAnchor = AnchorEntity(world: SIMD3<Float>(0, 0, 0))
-    
+ 
     // Luz ambiental para iluminar uniformemente toda la escena
     let ambientLight = Entity()
     let ambientLightComponent = PointLightComponent(
@@ -26,7 +26,7 @@ func setupLighting(arView: ARView) {
     directionalLightTop.position = SIMD3<Float>(0, 10, 0) // Luz desde arriba
     directionalLightTop.orientation = simd_quatf(angle: .pi / 2, axis: SIMD3<Float>(1, 0, 0))
     lightAnchor.addChild(directionalLightTop)
-    
+   
     // Luz direccional desde el frente de la cámara
     let directionalLightFront = DirectionalLight()
     directionalLightFront.light.intensity = 10000*factorLight
@@ -34,15 +34,16 @@ func setupLighting(arView: ARView) {
     directionalLightFront.position = SIMD3<Float>(0, 0, 10) // Luz desde frente
     directionalLightFront.orientation = simd_quatf(angle: 0, axis: SIMD3<Float>(0, 1, 0))
     lightAnchor.addChild(directionalLightFront)
-    
+  
     // Luz direccional desde atrás
     let directionalLightBack = DirectionalLight()
     directionalLightBack.light.intensity = 8000*factorLight
     directionalLightBack.light.color = .white
-    directionalLightBack.position = SIMD3<Float>(0, 0, -10) // Luz desde atrás
+    directionalLightBack.position = SIMD3<Float>(0, 0, 2) // Luz desde atrás
     directionalLightBack.orientation = simd_quatf(angle: .pi, axis: SIMD3<Float>(0, 1, 0))
     lightAnchor.addChild(directionalLightBack)
-    
+   
+   
     // Luz direccional desde los lados
     let directionalLightLeft = DirectionalLight()
     directionalLightLeft.light.intensity = 8000*factorLight
@@ -51,6 +52,7 @@ func setupLighting(arView: ARView) {
     directionalLightLeft.orientation = simd_quatf(angle: .pi / 2, axis: SIMD3<Float>(0, 1, 0))
     lightAnchor.addChild(directionalLightLeft)
     
+   
     let directionalLightRight = DirectionalLight()
     directionalLightRight.light.intensity = 8000*factorLight
     directionalLightRight.light.color = .white
