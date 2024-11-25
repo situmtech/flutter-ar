@@ -21,8 +21,8 @@
 		E7EF9D2E2CEFA6F800A73444 /* T-Rex.usdz in Resources */ = {isa = PBXBuildFile; fileRef = E7EF9D292CEFA6F700A73444 /* T-Rex.usdz */; };
 		E7EF9D302CEFA6F800A73444 /* Manta.usdz in Resources */ = {isa = PBXBuildFile; fileRef = E7EF9D2B2CEFA6F700A73444 /* Manta.usdz */; };
 		E7EF9D312CEFA6F800A73444 /* Sea_Turtle.usdz in Resources */ = {isa = PBXBuildFile; fileRef = E7EF9D2C2CEFA6F700A73444 /* Sea_Turtle.usdz */; };
-		E7EF9D332CF0A8DB00A73444 /* arrowSitum2.usdz in Resources */ = {isa = PBXBuildFile; fileRef = E7EF9D322CF0A8DB00A73444 /* arrowSitum2.usdz */; };
 		E7EF9D3F2CF0C29800A73444 /* Seagull.usdz in Resources */ = {isa = PBXBuildFile; fileRef = E7EF9D3E2CF0C29800A73444 /* Seagull.usdz */; };
+		E7EF9D4D2CF46F6700A73444 /* Mosasaurus.usdz in Resources */ = {isa = PBXBuildFile; fileRef = E7EF9D4C2CF46F6700A73444 /* Mosasaurus.usdz */; };
 		EBF16074E6C24148EBE9D51B /* libPods-Runner.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A146CE6BAA9FB4C141FCC572 /* libPods-Runner.a */; };
 /* End PBXBuildFile section */
 
@@ -77,8 +77,8 @@
 		E7EF9D292CEFA6F700A73444 /* T-Rex.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = "T-Rex.usdz"; sourceTree = "<group>"; };
 		E7EF9D2B2CEFA6F700A73444 /* Manta.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = Manta.usdz; sourceTree = "<group>"; };
 		E7EF9D2C2CEFA6F700A73444 /* Sea_Turtle.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = Sea_Turtle.usdz; sourceTree = "<group>"; };
-		E7EF9D322CF0A8DB00A73444 /* arrowSitum2.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = arrowSitum2.usdz; sourceTree = "<group>"; };
 		E7EF9D3E2CF0C29800A73444 /* Seagull.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = Seagull.usdz; sourceTree = "<group>"; };
+		E7EF9D4C2CF46F6700A73444 /* Mosasaurus.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = Mosasaurus.usdz; sourceTree = "<group>"; };
 		F1A76BDEB18FFE7784BD2CD8 /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
 		FB2111972F14D7422CFE5D42 /* libPods-RunnerTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-RunnerTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -190,7 +190,7 @@
 				E7EF9D3E2CF0C29800A73444 /* Seagull.usdz */,
 				E7EF9D2B2CEFA6F700A73444 /* Manta.usdz */,
 				E7EF9D2C2CEFA6F700A73444 /* Sea_Turtle.usdz */,
-				E7EF9D322CF0A8DB00A73444 /* arrowSitum2.usdz */,
+				E7EF9D4C2CF46F6700A73444 /* Mosasaurus.usdz */,
 				E7EF9D292CEFA6F700A73444 /* T-Rex.usdz */,
 			);
 			name = Assets;
@@ -296,12 +296,12 @@
 				E7EF9D3F2CF0C29800A73444 /* Seagull.usdz in Resources */,
 				3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */,
 				E7EF9D2D2CEFA6F800A73444 /* Animated_Dragon_Three_Motion_Loops.usdz 11-02-03-895.usdz in Resources */,
-				E7EF9D332CF0A8DB00A73444 /* arrowSitum2.usdz in Resources */,
 				97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */,
 				E7EF9D272CEFA32300A73444 /* cylinder.usdz in Resources */,
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
 				E7EF9D2E2CEFA6F800A73444 /* T-Rex.usdz in Resources */,
 				E7EF9D312CEFA6F800A73444 /* Sea_Turtle.usdz in Resources */,
+				E7EF9D4D2CF46F6700A73444 /* Mosasaurus.usdz in Resources */,
 				E7EF9D012CEF3ADB00A73444 /* arrowSitum.usdz in Resources */,
 				E7EF9D302CEFA6F800A73444 /* Manta.usdz in Resources */,
 			);

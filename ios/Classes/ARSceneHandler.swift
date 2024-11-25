@@ -18,7 +18,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     weak var delegate: ARSceneHandlerDelegate?
     
     var coordinator: Coordinator?
-    
+
     var arQuality: ARQuality?
     var configDebug: ConfigDebug?
     var refreshingTimer = 5
@@ -38,7 +38,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     var hasToResetChangeFloor = false
     
     var staticRoute: [[String: Any]] = []
-    
+    private var currentGeofences: [SITGeofence] = []
 
     var modelManager = DynamicModelManager()
     private var fenceCheckTimer: Timer?
@@ -385,22 +385,25 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     
     func didEnteredGeofences(_ geofences: [SITGeofence]!) {
         NSLog("ARSceneHandler - Entered geofences: \(geofences)")
-
+        
+        // Almacenar los geofences actuales
+        self.currentGeofences = geofences ?? []
+        
         if let arView = self.coordinator?.arView, let mainAnchor = mainAnchor {
             self.modelManager.loadDynamicsModels(geofences: geofences, arView: arView, mainAnchor: mainAnchor)
         }
-        if (self.modelManager.userInFence){
+        if self.modelManager.userInFence {
             startFenceTimer()
         }
         
         if coordinator?.isDebugEnabled == true {
-            // show toast
+            // Mostrar mensaje
             DispatchQueue.main.async {
-                       self.coordinator?.arView?.showToast(message: "Entered geofences: \(geofences.map { $0.name }.joined(separator: ", "))")
-                   }
+                self.coordinator?.arView?.showToast(message: "Entered geofences: \(geofences.map { $0.name }.joined(separator: ", "))")
+            }
         }
-
     }
+
 
 
     func didExitedGeofences(_ geofences: [SITGeofence]!) {
@@ -441,11 +444,16 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     private func performPeriodicTask() {
         DispatchQueue.main.async {
             print("Performing task every 5 seconds while user is in fence.")
-            if let arView = self.coordinator?.arView, let mainAnchor = self.mainAnchor {
-                self.modelManager.updateModelLocation(arView: arView, from: mainAnchor)
+           // if let arView = self.coordinator?.arView, let mainAnchor = self.mainAnchor {
+                //self.modelManager.updateModelLocation(arView: arView, from: mainAnchor)
+                
+             if let arView = self.coordinator?.arView, let mainAnchor = self.mainAnchor {
+                 self.modelManager.loadDynamicsModels(geofences: self.currentGeofences, arView: arView, mainAnchor: mainAnchor)
+                }
             }
-        }
+        
     }
+
 
 
 

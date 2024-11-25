@@ -11,21 +11,28 @@ class DynamicModelManager {
     
     /// Carga modelos dinámicos basados en los `geofences`.
     func loadDynamicsModels(geofences: [SITGeofence], arView: ARView, mainAnchor: AnchorEntity) {
-        
         for geofence in geofences {
             if let customFields = geofence.customFields as? [String: Any] {
                 for (key, value) in customFields {
                     if key == "ar_metadata" {
                         NSLog("\(key): \(value)")
-                        print("key value:    ", key,"     ", value)
+                        print("key value:    ", key, "     ", value)
+                        
                         let modelsString = String(describing: value)
                         let modelNames = modelsString.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
                         
                         userInFence = true
+                        
                         for model in modelNames {
-                            loadDynamicModel(model: model, arView: arView, mainAnchor: mainAnchor)
+                            // Buscar si el modelo ya está cargado
+                            if let existingModel = dynamicModels.first(where: { $0.name == "dynamic_\(model)" }) {
+                                // Si ya existe, actualizar posición
+                                updateModelLocation(for: existingModel, arView: arView)
+                            } else {
+                                // Si no existe, cargarlo como nuevo
+                                loadDynamicModel(model: model, arView: arView, mainAnchor: mainAnchor)
+                            }
                         }
-                  
                     }
                 }
             } else {
@@ -33,6 +40,7 @@ class DynamicModelManager {
             }
         }
     }
+
 
     /// Carga un modelo específico en la escena.
     func loadDynamicModel(model: String, arView: ARView, mainAnchor: AnchorEntity) {
@@ -177,32 +185,22 @@ class DynamicModelManager {
     }
 
     
-    func updateModelLocation( arView: ARView, from mainAnchor: AnchorEntity){
-        
-        
+    func updateModelLocation(for modelEntity: ModelEntity, arView: ARView) {
         let cameraPosition = arView.cameraTransform.translation
         
-        for modelEntity in mainAnchor.children {
-            if modelEntity.name.hasPrefix("dynamic_") {
-                modelEntity.position = SIMD3<Float>(
-                    cameraPosition.x - Float.random(in: -3.0...3.0),
-                    cameraPosition.y - 1.0,
-                    cameraPosition.z - Float.random(in: 5.0...20.0)
-                )
-              
-                // Reproducir la animación si está disponible
-                if let animation = modelEntity.availableAnimations.first(where: { $0.name == "global scene animation" }) {
-                    modelEntity.playAnimation(animation.repeat(), transitionDuration: 0.5, startsPaused: false)
-                }
-
-                // Añadir el modelo al anchor principal
-                //mainAnchor.addChild(modelEntity)
-                
-                print("Update model from mainAnchor with name: \(modelEntity.name)")
-            }
-        }
-
+        // Actualizar la posición del modelo específico
+        modelEntity.position = SIMD3<Float>(
+            cameraPosition.x - Float.random(in: -3.0...3.0),
+            cameraPosition.y - 1.0,
+            cameraPosition.z - Float.random(in: 5.0...20.0)
+        )
         
+        // Reproducir la animación si está disponible
+        if let animation = modelEntity.availableAnimations.first(where: { $0.name == "global scene animation" }) {
+            modelEntity.playAnimation(animation.repeat(), transitionDuration: 0.5, startsPaused: false)
+        }
+        
+        print("Updated position of model: \(modelEntity.name)")
     }
 
     /// Obtiene todos los modelos dinámicos cargados.
