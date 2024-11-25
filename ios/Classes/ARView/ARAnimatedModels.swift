@@ -62,8 +62,8 @@ class DynamicModelManager {
             modelEntity.scale = SIMD3<Float>(0.015, 0.015, 0.015)
             modelEntity.position = SIMD3<Float>(
                 cameraPosition.x - Float.random(in: -3.0...3.0),
-                cameraPosition.y - 1.0,
-                cameraPosition.z - Float.random(in: 5.0...20.0)
+                cameraPosition.y - 3.0,
+                cameraPosition.z - Float.random(in: 10.0...40.0)
             )
             modelEntity.name = "dynamic_" + model
 
@@ -191,8 +191,8 @@ class DynamicModelManager {
         // Actualizar la posición del modelo específico
         modelEntity.position = SIMD3<Float>(
             cameraPosition.x - Float.random(in: -3.0...3.0),
-            cameraPosition.y - 1.0,
-            cameraPosition.z - Float.random(in: 5.0...20.0)
+            cameraPosition.y - 3.0,
+            cameraPosition.z - Float.random(in: 10.0...40.0)
         )
         
         // Reproducir la animación si está disponible

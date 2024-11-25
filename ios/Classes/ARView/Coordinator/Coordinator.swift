@@ -172,7 +172,7 @@ class Coordinator: NSObject, ARSessionDelegate {
         let targetPosition = cameraPosition - forwardVector
         
         // Suavizado de posición4
-        var smoothingFactor: Float = 0.3 // Ajusta este valor para controlar el nivel de suavidad
+        var smoothingFactor: Float = 0.2 // Ajusta este valor para controlar el nivel de suavidad
         if (self.hasToRefresh){
             smoothingFactor = 0.20
         }

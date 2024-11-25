@@ -140,6 +140,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
      Called once per frame.
      */
     func session(_ session: ARSession, didUpdate frame: ARFrame) {
+        updateModelsBasedOnDistance()
         //self.coordinator.handlePointUpdate()
         //self.coordinator.handleLocationUpdate()
     }
@@ -392,9 +393,9 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         if let arView = self.coordinator?.arView, let mainAnchor = mainAnchor {
             self.modelManager.loadDynamicsModels(geofences: geofences, arView: arView, mainAnchor: mainAnchor)
         }
-        if self.modelManager.userInFence {
+      /*  if self.modelManager.userInFence {
             startFenceTimer()
-        }
+        }*/
         
         if coordinator?.isDebugEnabled == true {
             // Mostrar mensaje
@@ -416,7 +417,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     
     
     //Update dynamic models in fence
-    func startFenceTimer() {
+  /*  func startFenceTimer() {
         print("Starting fence timer.")
         fenceCheckTimer = Timer.scheduledTimer(withTimeInterval: 20.0, repeats: true) { [weak self] _ in
             print("Timer triggered.")
@@ -453,7 +454,25 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
             }
         
     }
+*/
 
+    private func updateModelsBasedOnDistance() {
+        guard let arView = coordinator?.arView, let mainAnchor = mainAnchor else { return }
+
+        let cameraPosition = arView.cameraTransform.translation
+        if self.modelManager.userInFence {
+            for model in modelManager.getDynamicModels() {
+                let modelPosition = model.position
+                let distance = simd_distance(cameraPosition, modelPosition)
+                
+                // Si la distancia es mayor a 20 metros, actualizamos la posición
+                if distance > 10.0 {
+                    print("Updating model \(model.name) as it's \(distance) meters away from the camera.")
+                    modelManager.updateModelLocation(for: model, arView: arView)
+                }
+            }
+        }
+    }
 
 
 

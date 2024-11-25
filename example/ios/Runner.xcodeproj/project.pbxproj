@@ -20,7 +20,8 @@
 		E7EF9D642CF47EF900A73444 /* Dragon.usdz in Resources */ = {isa = PBXBuildFile; fileRef = E7EF9D602CF47EF900A73444 /* Dragon.usdz */; };
 		E7EF9D652CF47EF900A73444 /* T-Rex.usdz in Resources */ = {isa = PBXBuildFile; fileRef = E7EF9D612CF47EF900A73444 /* T-Rex.usdz */; };
 		E7EF9D662CF47EF900A73444 /* cylinder.usdz in Resources */ = {isa = PBXBuildFile; fileRef = E7EF9D622CF47EF900A73444 /* cylinder.usdz */; };
-		E7EF9D682CF4911200A73444 /* arrowSitumMaterial.usdz in Resources */ = {isa = PBXBuildFile; fileRef = E7EF9D672CF4911200A73444 /* arrowSitumMaterial.usdz */; };
+		E7EF9D762CF4FE4800A73444 /* Sharks.usdz in Resources */ = {isa = PBXBuildFile; fileRef = E7EF9D752CF4FE4800A73444 /* Sharks.usdz */; };
+		E7EF9D782CF500A700A73444 /* Bee.usdz in Resources */ = {isa = PBXBuildFile; fileRef = E7EF9D772CF500A600A73444 /* Bee.usdz */; };
 		EBF16074E6C24148EBE9D51B /* libPods-Runner.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A146CE6BAA9FB4C141FCC572 /* libPods-Runner.a */; };
 /* End PBXBuildFile section */
 
@@ -74,7 +75,8 @@
 		E7EF9D602CF47EF900A73444 /* Dragon.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = Dragon.usdz; sourceTree = "<group>"; };
 		E7EF9D612CF47EF900A73444 /* T-Rex.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = "T-Rex.usdz"; sourceTree = "<group>"; };
 		E7EF9D622CF47EF900A73444 /* cylinder.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = cylinder.usdz; sourceTree = "<group>"; };
-		E7EF9D672CF4911200A73444 /* arrowSitumMaterial.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = arrowSitumMaterial.usdz; sourceTree = "<group>"; };
+		E7EF9D752CF4FE4800A73444 /* Sharks.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = Sharks.usdz; sourceTree = "<group>"; };
+		E7EF9D772CF500A600A73444 /* Bee.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = Bee.usdz; sourceTree = "<group>"; };
 		F1A76BDEB18FFE7784BD2CD8 /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
 		FB2111972F14D7422CFE5D42 /* libPods-RunnerTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-RunnerTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -183,7 +185,8 @@
 				E7EF9D5D2CF47EEC00A73444 /* arrowSitum.usdz */,
 				E7EF9D622CF47EF900A73444 /* cylinder.usdz */,
 				E7EF9D602CF47EF900A73444 /* Dragon.usdz */,
-				E7EF9D672CF4911200A73444 /* arrowSitumMaterial.usdz */,
+				E7EF9D772CF500A600A73444 /* Bee.usdz */,
+				E7EF9D752CF4FE4800A73444 /* Sharks.usdz */,
 				E7EF9D5F2CF47EF900A73444 /* Mosasaurus.usdz */,
 				E7EF9D612CF47EF900A73444 /* T-Rex.usdz */,
 			);
@@ -286,7 +289,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E7EF9D782CF500A700A73444 /* Bee.usdz in Resources */,
 				E7EF9D5E2CF47EEC00A73444 /* arrowSitum.usdz in Resources */,
+				E7EF9D762CF4FE4800A73444 /* Sharks.usdz in Resources */,
 				97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */,
 				E7EF9D642CF47EF900A73444 /* Dragon.usdz in Resources */,
 				E7EF9D662CF47EF900A73444 /* cylinder.usdz in Resources */,
@@ -295,7 +300,6 @@
 				E7EF9D632CF47EF900A73444 /* Mosasaurus.usdz in Resources */,
 				E7EF9D652CF47EF900A73444 /* T-Rex.usdz in Resources */,
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
-				E7EF9D682CF4911200A73444 /* arrowSitumMaterial.usdz in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
