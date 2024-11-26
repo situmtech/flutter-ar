@@ -427,7 +427,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
                 // Si la distancia es mayor a X metros, actualizamos la posición
                 if distance > 20.0 {
                     print("Updating model \(model.name) as it's \(distance) meters away from the camera.")
-                    modelManager.updateModelLocation(for: model, arView: arView)
+                    //modelManager.updateModelLocation(for: model, arView: arView)
                 }
             }
         }

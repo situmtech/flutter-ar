@@ -62,8 +62,7 @@ class ConfigDebug {
         debugButton?.layer.cornerRadius = 10
         debugButton?.frame = CGRect(x: 320, y: 30, width: 40, height: 40)
         debugButton?.layer.borderColor = UIColor.white.cgColor
-             
-        
+                
         if let debugButton = debugButton {
             view.addSubview(debugButton)
             
@@ -85,9 +84,10 @@ class ConfigDebug {
         // Add whitte border
         updateButton?.layer.borderColor = UIColor.white.cgColor
         updateButton?.layer.borderWidth = 2.0
+        
 
-        if let resetButton = updateButton {
-            view.addSubview(resetButton)
+        if let updateButton = updateButton {
+            view.addSubview(updateButton)
         }
 
         // Add a tap gesture to hide the keyboard
@@ -319,6 +319,7 @@ class ConfigDebug {
         guard let panel = infoPanel else { return }
         panel.isHidden.toggle()
         isInfoVisible.toggle()
+        updateButton?.isHidden = panel.isHidden
     }
     
     @objc func resetARWorld() {
