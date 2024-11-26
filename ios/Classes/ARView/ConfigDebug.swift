@@ -31,59 +31,58 @@ class ConfigDebug {
     var thresholdDecrease = 0.03
     var cameraDeph = 30
     var arrowDistance = 20
-    
     var configStackView: UIStackView?
     var infoStackView: UIStackView?
     var mainStackView: UIStackView?
-    
     let expandedSpacing: CGFloat = 20
     let collapsedSpacing: CGFloat = -180
-    
     var hasToReset = false
-    var tapCount = 0 // Contador de toques para infoDebug
+  
 
     init(arQuality: ARQuality?, hasToRefresh: Bool) {
         self.arQuality = arQuality
         self.hasToRefresh = hasToRefresh
     }
-
-    @objc func handleDebugButtonTap() {
-        tapCount += 1
-        if tapCount == 5 {
-            if let panel = infoPanel {
-                panel.isHidden = !panel.isHidden // Alternar visibilidad del panel
-                updateButton?.isHidden = panel.isHidden // Alternar visibilidad del botón de Reset
-            }
-            tapCount = 0 // Reiniciar el contador después de mostrar/ocultar
+    
+    
+    @objc func handleLongPress(_ gesture: UILongPressGestureRecognizer) {
+        // Execute action only when the gesture starts
+        if gesture.state == .began {
+            toggleInfoDebug()
         }
     }
     
-    // Función para crear el botón de Toggle Info
+    // Function to create the Toggle Info button
     func setupUpdateDebugInfo(view: UIView) {
         debugButton = UIButton(type: .system)
-        debugButton?.setImage(UIImage(systemName: "gear"), for: .normal) // Cambia a un ícono del sistema
+        debugButton?.setImage(UIImage(systemName: "gear"), for: .normal)
         debugButton?.tintColor = .clear
         debugButton?.backgroundColor = .clear
         debugButton?.setTitleColor(.white, for: .normal)
         debugButton?.layer.cornerRadius = 10
-        debugButton?.frame = CGRect(x: 320, y: 30, width: 40, height: 40) // Asegúrate de que el tamaño sea suficiente para ver el ícono
-        debugButton?.layer.borderColor = UIColor.white.cgColor // Establecer el color del borde
-        debugButton?.addTarget(self, action: #selector(handleDebugButtonTap), for: .touchUpInside)
-        
+        debugButton?.frame = CGRect(x: 320, y: 30, width: 40, height: 40)
+        debugButton?.layer.borderColor = UIColor.white.cgColor
+             
         
         if let debugButton = debugButton {
             view.addSubview(debugButton)
+            
+            // Añadir el gesto de presión prolongada
+            let longPressGesture = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress))
+            longPressGesture.minimumPressDuration = 1.0 //Minimum duration (1 second)
+            debugButton.addGestureRecognizer(longPressGesture)
         }
                 
         updateButton = UIButton(type: .custom)
         updateButton?.setImage(UIImage(systemName: "gobackward"), for: .normal)
-        updateButton?.tintColor = .white // Cambiar el color del ícono a blanco
+        updateButton?.tintColor = .white
         updateButton?.backgroundColor = .systemGray
         updateButton?.layer.cornerRadius = 10
         updateButton?.frame = CGRect(x: 270, y: 30, width: 40, height: 40)
         updateButton?.addTarget(self, action: #selector(resetARWorld), for: .touchUpInside)
         updateButton?.isHidden = true
-        // Añadir borde blanco
+        
+        // Add whitte border
         updateButton?.layer.borderColor = UIColor.white.cgColor
         updateButton?.layer.borderWidth = 2.0
 
@@ -91,7 +90,7 @@ class ConfigDebug {
             view.addSubview(resetButton)
         }
 
-        // Agregar un tap gesture para ocultar el teclado
+        // Add a tap gesture to hide the keyboard
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
         view.addGestureRecognizer(tapGesture)
     }
@@ -352,14 +351,17 @@ class ConfigDebug {
         let infoDebug = arQuality.getInfoParameters()
         
         if let globalQuality = infoDebug["globalQuality"] as? Double {
-            let roundedQuality = String(format: "%.15f", globalQuality)
+            let roundedQuality = String(format: "%.2f", globalQuality)
+            let odometriesDistanceConf = String(format: "%.2f",arQuality.odometriesDistanceConf)
+            let arDisplacementConf = String(format: "%.2f", arQuality.arDisplacementConf)
+            let situmDisplacementConf = String(format: "%.2f",arQuality.situmDisplacementConf)
 
             // Actualizar las etiquetas con los nuevos valores, desenvolviendo opcionales
             infoLabel1?.text = "HasToRefresh: \(arQuality.hasToResetWorld())"
             infoLabel2?.text = "Quality: \(roundedQuality)"
-            infoLabel6?.text = "OdometriesDistanceConf: \(arQuality.odometriesDistanceConf)"
-            infoLabel7?.text = "SitumDisplacementConf: \(arQuality.situmDisplacementConf)"
-            infoLabel8?.text = "ArDisplacementConf: \(arQuality.arDisplacementConf)"
+            infoLabel6?.text = "OdometriesDistanceConf: \(odometriesDistanceConf)"
+            infoLabel7?.text = "SitumDisplacementConf: \(situmDisplacementConf)"
+            infoLabel8?.text = "ArDisplacementConf: \(arDisplacementConf)"
             
             
             // Asegúrate de desenvolver correctamente las variables opcionales

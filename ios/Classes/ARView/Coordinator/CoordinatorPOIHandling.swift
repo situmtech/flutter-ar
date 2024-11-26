@@ -63,12 +63,17 @@ extension Coordinator {
                     
                         // Configurar el POI
                         poiEntity.position = SIMD3<Float>(0, 0, 0) // Centrado en el contenedor
+                    
                         poiEntity.name = "poi_\(index)"
                        
                         // Configurar el texto
                         let textEntity = createTextEntity(text: name, poiPosition: SIMD3<Float>(0, 0, 0), arView: arView) // Coloca el texto encima del POI
                         textEntity.name = "text_\(index)"
                        
+                    
+                    /*let rotationAngle = Float.pi // 180 grados en radianes
+                    poiEntity.orientation = simd_quatf(angle: rotationAngle, axis: SIMD3<Float>(0, 1, 0))*/
+
                         // Añadir POI y texto al contenedor
                         containerEntity.addChild(poiEntity)
                         containerEntity.addChild(textEntity)

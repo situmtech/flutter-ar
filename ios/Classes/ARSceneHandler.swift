@@ -393,12 +393,9 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         if let arView = self.coordinator?.arView, let mainAnchor = mainAnchor {
             self.modelManager.loadDynamicsModels(geofences: geofences, arView: arView, mainAnchor: mainAnchor)
         }
-      /*  if self.modelManager.userInFence {
-            startFenceTimer()
-        }*/
         
         if coordinator?.isDebugEnabled == true {
-            // Mostrar mensaje
+            // Show Message
             DispatchQueue.main.async {
                 self.coordinator?.arView?.showToast(message: "Entered geofences: \(geofences.map { $0.name }.joined(separator: ", "))")
             }
@@ -415,47 +412,6 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         }
     }
     
-    
-    //Update dynamic models in fence
-  /*  func startFenceTimer() {
-        print("Starting fence timer.")
-        fenceCheckTimer = Timer.scheduledTimer(withTimeInterval: 20.0, repeats: true) { [weak self] _ in
-            print("Timer triggered.")
-            self?.checkFenceStatus()
-        }
-    }
-
-    func stopFenceTimer() {
-        print("Stopping fence timer!!!!!!!!!!!!!!!!!!!!!!!!!.")
-        fenceCheckTimer?.invalidate()
-        fenceCheckTimer = nil
-    }
-
-    private func checkFenceStatus() {
-        print("Checking fence status. userInFence: \(modelManager.userInFence)")
-        if modelManager.userInFence {
-            print("User is in fence. Executing periodic task.!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-            performPeriodicTask()
-        } else {
-            print("User is not in fence. Stopping timer!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!.")
-            stopFenceTimer()
-        }
-    }
-
-    private func performPeriodicTask() {
-        DispatchQueue.main.async {
-            print("Performing task every 5 seconds while user is in fence.")
-           // if let arView = self.coordinator?.arView, let mainAnchor = self.mainAnchor {
-                //self.modelManager.updateModelLocation(arView: arView, from: mainAnchor)
-                
-             if let arView = self.coordinator?.arView, let mainAnchor = self.mainAnchor {
-                 self.modelManager.loadDynamicsModels(geofences: self.currentGeofences, arView: arView, mainAnchor: mainAnchor)
-                }
-            }
-        
-    }
-*/
-
     private func updateModelsBasedOnDistance() {
         guard let arView = coordinator?.arView, let mainAnchor = mainAnchor else { return }
 
@@ -465,8 +421,11 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
                 let modelPosition = model.position
                 let distance = simd_distance(cameraPosition, modelPosition)
                 
-                // Si la distancia es mayor a 20 metros, actualizamos la posición
-                if distance > 10.0 {
+                print("camera position:   ", cameraPosition.x, "   ", cameraPosition.z)
+                print("model position:   ", modelPosition.x, "   ", modelPosition.z)
+                
+                // Si la distancia es mayor a X metros, actualizamos la posición
+                if distance > 20.0 {
                     print("Updating model \(model.name) as it's \(distance) meters away from the camera.")
                     modelManager.updateModelLocation(for: model, arView: arView)
                 }

@@ -27,28 +27,29 @@ class Coordinator: NSObject, ARSessionDelegate {
     var storedTransformedPositions: [SIMD3<Float>] = []
     var poisStored: [String: Any] = [:]
     
+    var lastUpdateTime = 0.0
+    
     
     init(locationManager: LocationManager) {        
         self.locationManager = locationManager
     }
     
-    // Esta función se llama en cada actualización del frame de la cámara
+    // This function is called every time the camera frame is updated.
     func session(_ session: ARSession, didUpdate frame: ARFrame) {
        
         guard let arView = self.arView else {
             return
         }
         
-        // Obtener el yaw respecto al norte
-        if let yaw = getCameraYawRespectToNorth() {
+        // get the yaw with respect to the north
+       /* if let yaw = getCameraYawRespectToNorth() {
             let yawDegrees = yaw * (180.0 / .pi)
-        }
+        }*/
         
         updateArrowPositionAndDirection()
         showPointDebug()
-        updatePOIOrientationToCamera(arView: arView)
-        //rotateIconPoiAndText(arView: arView)
-        arSceneHandler?.handleFrameUpdate(frame: frame) // Reenviar al ARSceneHandler
+        updatePOIsOscillationAndOrientation(arView: arView)
+        arSceneHandler?.handleFrameUpdate(frame: frame)
         
     }
     
@@ -64,7 +65,7 @@ class Coordinator: NSObject, ARSessionDelegate {
             
             guard let arView = arView else { return }
             
-            // Buscar el ancla y crear si no existe
+            // Search anchor Buscar el ancla y crear si no existe
             let fixedPOIAnchor = arView.scene.anchors.first(where: { $0.name == "fixedPOIAnchor" }) as? AnchorEntity ?? {
                 let newAnchor = AnchorEntity(world: SIMD3<Float>(0, 0, 0))
                 newAnchor.name = "fixedPOIAnchor"

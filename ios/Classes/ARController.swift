@@ -64,7 +64,7 @@ class ARController: NSObject, ARSceneHandlerDelegate {
         self.arMethodCallSender.sendArGoneRequired()
     }
     
-    // Descargar AR
+    // Download AR
     func unload() {
         print("Situm> AR> L&U> CALLED UNLOAD")
         if isLoaded {
@@ -82,13 +82,13 @@ class ARController: NSObject, ARSceneHandlerDelegate {
         arSceneHandler.coordinator?.arView?.scene.anchors.removeAll()       
     }
     
-    // Retomar AR
+    // Restart AR
     func resume() {
         print("Situm> AR> L&U> CALLED RESUME")
         arView.load()
     }
     
-    // Pausar AR
+    // Stop AR
     func pause() {
         print("Situm> AR> L&U> CALLED PAUSE")
         arView.unload()

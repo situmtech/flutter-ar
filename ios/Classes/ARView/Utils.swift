@@ -7,6 +7,7 @@ import UIKit
 import CoreGraphics
 import SitumSDK
 
+
 class ImageCacheManager {
     static let shared = ImageCacheManager()
     
@@ -176,7 +177,7 @@ func createTexturedDisk(with image: UIImage, diameter: Float) -> ModelEntity? {
 @available(iOS 15.0, *)
 func replaceTextureOnCylinder(url: URL, completion: @escaping (Entity?) -> Void) {
     
-    let modelName = "cylinder.usdz"
+    let modelName = "cylinderNotRotated.usdz"
 
     do {
         // Cargar el modelo como una Entity
@@ -291,6 +292,65 @@ func createTextEntity(text: String, poiPosition: SIMD3<Float>, arView: ARView) -
 
     return containerEntity
 }
+
+func updatePOIsOscillationAndOrientation(arView: ARView) {
+    // Configuración de oscilación
+    let maxAngle: Float = 20.0 * (.pi / 180.0) // Límite de oscilación en radianes (±20 grados)
+    let oscillationSpeed: Float = 1.7 // Velocidad de oscilación (frecuencia en ciclos por segundo)
+
+    // Calcular el tiempo actual para la oscilación
+    let timeFactor = Float(CACurrentMediaTime()) * oscillationSpeed
+    let oscillationAngle = maxAngle * sin(timeFactor) // Ángulo de oscilación dinámico
+
+    // Buscar el ancla fija
+    guard let fixedPOIAnchor = arView.scene.anchors.first(where: { $0.name == "fixedPOIAnchor" }) as? AnchorEntity else {
+        return
+    }
+
+    // Obtener la posición de la cámara
+    let cameraPosition = arView.cameraTransform.translation
+
+    for child in fixedPOIAnchor.children {
+        guard child.name.starts(with: "poiContainer_") else { continue }
+
+        // Encontrar el POI dentro del contenedor
+        if let poiEntity = child.children.first(where: { $0.name.starts(with: "poi_") }) {
+            // Orientar el POI hacia la cámara
+            let poiPosition = poiEntity.position(relativeTo: nil)
+            poiEntity.look(at: cameraPosition, from: poiPosition, relativeTo: nil)
+
+            // Aplicar corrección para que la cara frontal del POI mire hacia la cámara
+            let frontRotationCorrection = simd_quatf(angle: .pi, axis: SIMD3<Float>(0, 1, 0))
+            poiEntity.orientation = simd_mul(poiEntity.orientation, frontRotationCorrection)
+
+            // Aplicar oscilación al final
+            let oscillationRotation = simd_quatf(angle: oscillationAngle, axis: SIMD3<Float>(0, 1, 0))
+            poiEntity.orientation = simd_mul(poiEntity.orientation, oscillationRotation)
+        }
+
+        // Texto orientado hacia la cámara
+        if let textEntity = child.children.first(where: { $0.name.starts(with: "text_") }) {
+            // Mantener el texto por encima del POI
+            textEntity.position = SIMD3<Float>(0, 1.05, 0)
+
+            // Centrar el texto respecto al POI
+            let bounds = textEntity.visualBounds(relativeTo: textEntity.parent)
+            let textWidth = bounds.extents.x
+            textEntity.position.x -= bounds.center.x // Centrar horizontalmente usando el centro del texto
+            textEntity.position.z -= bounds.center.z // Asegurar el centrado en profundidad
+
+            // Orientar el texto hacia la cámara
+            let textPosition = textEntity.position(relativeTo: nil)
+            textEntity.look(at: cameraPosition, from: textPosition, relativeTo: nil)
+
+            // Evitar que el texto se invierta
+            let textRotationCorrection = simd_quatf(angle: .pi, axis: SIMD3<Float>(0, 1, 0))
+            textEntity.orientation = simd_mul(textEntity.orientation, textRotationCorrection)
+        }
+    }
+}
+
+
 
 
 func rotateIconPoiAndText(arView: ARView) {
