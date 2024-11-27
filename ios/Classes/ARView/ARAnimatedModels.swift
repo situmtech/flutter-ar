@@ -62,12 +62,16 @@ class DynamicModelManager {
 
 
     /// Carga o actualiza los modelos dinámicos a partir de una lista de nombres
+    /// Carga o actualiza los modelos dinámicos a partir de una lista de características de forma aleatoria
     private func loadOrUpdateModels(
         featureCollection: ARFeatureCollection,
         arView: ARView,
         mainAnchor: AnchorEntity
     ) {
-        for (index, feature) in featureCollection.features.enumerated().map({ ($0 + 1, $1) }) {
+        // Barajar las características para cargarlas en orden aleatorio
+        let shuffledFeatures = featureCollection.features.shuffled()
+        
+        for (index, feature) in shuffledFeatures.enumerated().map({ ($0 + 1, $1) }) {
             guard feature.properties.type == "model" else {
                 print("Feature ignorado: no es un modelo.")
                 continue
@@ -78,8 +82,9 @@ class DynamicModelManager {
             let scale = feature.properties.scale
             let orientation = feature.properties.orientation
             let position = feature.geometry.coordinates
-             
-        print("Model name:   ", modelName, "   scale:   ", scale)
+
+            print("Model name:   ", modelName, "   scale:   ", scale)
+
             // Verificar si el modelo ya está cargado
             if let existingModel = dynamicModels.first(where: { $0.name == "dynamic_\(modelName)" }) {
                 // Actualizar la ubicación del modelo existente
@@ -99,6 +104,7 @@ class DynamicModelManager {
             }
         }
     }
+
 
 
     /// Carga un modelo específico en la escena.
@@ -133,7 +139,7 @@ class DynamicModelManager {
             modelEntity.position = SIMD3<Float>(
                 cameraPosition.x - Float.random(in: -3.0...3.0),
                 cameraPosition.y + Float(position[2]),
-                cameraPosition.z - Float.random(in: Float(index) * 2.0...Float(index) * 5.0)
+                cameraPosition.z - (Float(index) * 10.0)
             )
 
             // Aplicar orientación en los ejes X, Y, Z si está disponible
@@ -281,7 +287,7 @@ class DynamicModelManager {
         modelEntity.position = SIMD3<Float>(
             cameraPosition.x - Float.random(in: -3.0...3.0),
             cameraPosition.y + modelEntity.position.z,
-            cameraPosition.z - Float.random(in: Float(index)*2.0...Float(index)*5.0)
+            cameraPosition.z - (Float(index)*10.0)
         )
         
         // Reproducir la animación si está disponible
