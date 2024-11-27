@@ -12,76 +12,165 @@ class DynamicModelManager {
     /// Carga modelos dinámicos basados en los `geofences`.
     func loadDynamicsModels(geofences: [SITGeofence], arView: ARView, mainAnchor: AnchorEntity) {
         for geofence in geofences {
-            if let customFields = geofence.customFields as? [String: Any] {
-                for (key, value) in customFields {
-                    if key == "ar_metadata" {
-                        NSLog("\(key): \(value)")
-                        print("key value:    ", key, "     ", value)
-                        
-                        let modelsString = String(describing: value)
-                        let modelNames = modelsString.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
-                        
-                        userInFence = true
-                        
-                        for model in modelNames {
-                            // Buscar si el modelo ya está cargado
-                            if let existingModel = dynamicModels.first(where: { $0.name == "dynamic_\(model)" }) {
-                                // Si ya existe, actualizar posición
-                                updateModelLocation(for: existingModel, arView: arView)
-                            } else {
-                                // Si no existe, cargarlo como nuevo
-                                loadDynamicModel(model: model, arView: arView, mainAnchor: mainAnchor)
-                            }
-                        }
-                    }
-                }
-            } else {
+            guard let customFields = geofence.customFields as? [String: Any] else {
                 NSLog("DynamicModelManager - customFields no es del tipo esperado o está vacío")
+                continue
+            }
+
+            processGeofenceCustomFields(customFields, arView: arView, mainAnchor: mainAnchor)
+        }
+    }
+
+    /// Procesa los customFields de un geofence y carga modelos si hay metadatos AR
+    private func processGeofenceCustomFields(_ customFields: [String: Any], arView: ARView, mainAnchor: AnchorEntity) {
+        for (key, value) in customFields {
+            guard key == "ar_metadata" else { continue }
+            print("key value:    ", key, "     ", value)
+            // Intentar parsear el featureCollection desde el valor
+            if let featureCollection = parseARFeatureCollection(from: value) {
+                userInFence = true
+                // Procesar los features o cargar/actualizar modelos
+                loadOrUpdateModels(featureCollection:featureCollection, arView: arView, mainAnchor: mainAnchor)
+            } else {
+                print("Error: No se pudo parsear el ARFeatureCollection.")
+            }
+        }
+    }
+
+
+    /// Convierte el valor de `ar_metadata` en un objeto `ARFeatureCollection`
+    private func parseARFeatureCollection(from metadata: Any) -> ARFeatureCollection? {
+        guard let jsonString = metadata as? String else {
+            print("Error: El valor de metadata no es una cadena válida")
+            return nil
+        }
+        
+        guard let jsonData = jsonString.data(using: .utf8) else {
+            print("Error: No se pudo convertir la cadena a datos JSON")
+            return nil
+        }
+        
+        do {
+            let featureCollection = try JSONDecoder().decode(ARFeatureCollection.self, from: jsonData)
+            return featureCollection
+        } catch {
+            print("Error al parsear el JSON: \(error)")
+            return nil
+        }
+    }
+
+
+
+    /// Carga o actualiza los modelos dinámicos a partir de una lista de nombres
+    private func loadOrUpdateModels(
+        featureCollection: ARFeatureCollection,
+        arView: ARView,
+        mainAnchor: AnchorEntity
+    ) {
+        for (index, feature) in featureCollection.features.enumerated().map({ ($0 + 1, $1) }) {
+            guard feature.properties.type == "model" else {
+                print("Feature ignorado: no es un modelo.")
+                continue
+            }
+
+            let modelName = feature.properties.name
+            let modelURL = feature.properties.url
+            let scale = feature.properties.scale
+            let orientation = feature.properties.orientation
+            let position = feature.geometry.coordinates
+             
+        print("Model name:   ", modelName, "   scale:   ", scale)
+            // Verificar si el modelo ya está cargado
+            if let existingModel = dynamicModels.first(where: { $0.name == "dynamic_\(modelName)" }) {
+                // Actualizar la ubicación del modelo existente
+                updateModelLocation(for: existingModel, arView: arView, index: index)
+            } else {
+                // Cargar un nuevo modelo con los datos del feature
+                loadDynamicModel(
+                    model: modelName,
+                    modelURL: modelURL,
+                    scale: scale,
+                    orientation: orientation,
+                    position: position,
+                    arView: arView,
+                    mainAnchor: mainAnchor,
+                    index: index
+                )
             }
         }
     }
 
 
     /// Carga un modelo específico en la escena.
-    func loadDynamicModel(model: String, arView: ARView, mainAnchor: AnchorEntity) {
-        print("Model to load!:   ", model)
-        do {
-            let cameraPosition = arView.cameraTransform.translation
+    private func loadDynamicModel(
+        model: String,
+        modelURL: String,
+        scale: Float,
+        orientation: [Float],
+        position: [Double],
+        arView: ARView,
+        mainAnchor: AnchorEntity,
+        index: Int
+    ) {
+        print("Cargando modelo: \(model) desde URL: \(modelURL)")
 
-            // Cargar el modelo como Entity
+        do {
+            // Cargar el modelo como ModelEntity
             let entity = try Entity.load(named: model + ".usdz")
             print("Entidad cargada correctamente: \(entity)")
 
-            // Buscar el primer ModelEntity en la jerarquía
             guard let modelEntity = findFirstModelEntity(in: entity) else {
                 print("Error: No se encontró un ModelEntity en la jerarquía del modelo \(model).")
                 return
             }
 
-            // Configurar el ModelEntity
-            modelEntity.scale = SIMD3<Float>(0.015, 0.015, 0.015)
+            // Configurar el modelo
+            let cameraPosition = arView.cameraTransform.translation
+            print("SCALE:   ", scale)
+            modelEntity.scale = SIMD3<Float>(scale, scale, scale)
+
+            // Actualizar la posición del modelo específico
             modelEntity.position = SIMD3<Float>(
                 cameraPosition.x - Float.random(in: -3.0...3.0),
-                cameraPosition.y - 3.0,
-                cameraPosition.z - Float.random(in: 10.0...40.0)
+                cameraPosition.y + Float(position[2]),
+                cameraPosition.z - Float.random(in: Float(index) * 2.0...Float(index) * 5.0)
             )
-            modelEntity.name = "dynamic_" + model
 
-            // Reproducir la animación si está disponible
-            playAnimationIfAvailable(for: modelEntity)
+            // Aplicar orientación en los ejes X, Y, Z si está disponible
+            if orientation.count == 3 {
+                let rotationX = simd_quatf(angle: orientation[0] * (.pi / 180), axis: SIMD3<Float>(1, 0, 0))
+                let rotationY = simd_quatf(angle: orientation[1] * (.pi / 180), axis: SIMD3<Float>(0, 1, 0))
+                let rotationZ = simd_quatf(angle: orientation[2] * (.pi / 180), axis: SIMD3<Float>(0, 0, 1))
+                
+                // Combinar las rotaciones en X, Y, Z
+                modelEntity.orientation = simd_mul(simd_mul(rotationX, rotationY), rotationZ)
+            }
 
-            // Añadir el modelo al anchor principal
+            modelEntity.name = "dynamic_\(model)"
+
+            // Reproducir animación si está disponible
+            if let animation = modelEntity.availableAnimations.first {
+                print("Animación encontrada: \(animation.name)")
+                modelEntity.playAnimation(animation.repeat(), transitionDuration: 0.5, startsPaused: false)
+            } else {
+                print("No se encontraron animaciones disponibles para \(modelEntity.name).")
+            }
+
+            // Añadir al ancla principal
             mainAnchor.addChild(modelEntity)
 
-            // Agregar el modelo a la lista de modelos dinámicos
+            // Guardar en la lista de modelos dinámicos
             dynamicModels.append(modelEntity)
 
             print("Modelo cargado exitosamente: \(modelEntity.name)")
 
         } catch {
-            print("Error al cargar el modelo: \(error.localizedDescription)")
+            print("Error al cargar el modelo \(model): \(error.localizedDescription)")
         }
     }
+
+
+
 
     /// Función para buscar el primer ModelEntity en una jerarquía de Entity
     private func findFirstModelEntity(in entity: Entity) -> ModelEntity? {
@@ -111,7 +200,7 @@ class DynamicModelManager {
 
 
     /// Configura y devuelve un modelo estático predefinido en un `AnchorEntity`.
-    func setupDynamicModel() -> AnchorEntity {
+   /* func setupDynamicModel() -> AnchorEntity {
         let fixedAnchorModel = AnchorEntity(world: SIMD3<Float>(0.0, 0.0, 0.0))
         do {
             let robotEntity = try ModelEntity.load(named: "Animated_Dragon_Three_Motion_Loops.usdz")
@@ -142,7 +231,7 @@ class DynamicModelManager {
 
         return fixedAnchorModel
     }
-    
+    */
     func removeModels(geofences: [SITGeofence], from mainAnchor: AnchorEntity) {
         // Verifica y elimina modelos asociados a los geofences
         for geofence in geofences {
@@ -185,14 +274,14 @@ class DynamicModelManager {
     }
 
     
-    func updateModelLocation(for modelEntity: ModelEntity, arView: ARView) {
+    func updateModelLocation(for modelEntity: ModelEntity, arView: ARView, index: Int) {
         let cameraPosition = arView.cameraTransform.translation
         
         // Actualizar la posición del modelo específico
         modelEntity.position = SIMD3<Float>(
             cameraPosition.x - Float.random(in: -3.0...3.0),
-            cameraPosition.y - 3.0,
-            cameraPosition.z - Float.random(in: 10.0...40.0)
+            cameraPosition.y + modelEntity.position.z,
+            cameraPosition.z - Float.random(in: Float(index)*2.0...Float(index)*5.0)
         )
         
         // Reproducir la animación si está disponible
@@ -275,3 +364,32 @@ func applyColorToEntityAndChildren(entity: Entity, color: UIColor) {
 }
 
 
+struct ARFeature: Decodable {
+    struct Properties: Decodable {
+        let url: String
+        let scale: Float
+        let orientation: [Float]
+        let floorId: Int
+        let name: String
+        let type: String
+    }
+    
+    struct Geometry: Decodable {
+        struct Coordinates: Decodable {
+            let longitude: Double
+            let latitude: Double
+            let altitude: Double?
+        }
+        let type: String
+        let coordinates: [Double]
+    }
+    
+    let type: String
+    let properties: Properties
+    let geometry: Geometry
+}
+
+struct ARFeatureCollection: Decodable {
+    let type: String
+    let features: [ARFeature]
+}
