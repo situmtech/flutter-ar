@@ -6,7 +6,10 @@ import SitumSDK
 class DynamicModelManager {
     
     private var dynamicModels: [ModelEntity] = []
+    private var featureCollection: ARFeatureCollection?
+
     var userInFence = false
+    let distanceToUpdateModel = 20.0
     
     
     /// Carga modelos dinámicos basados en los `geofences`.
@@ -30,7 +33,7 @@ class DynamicModelManager {
             if let featureCollection = parseARFeatureCollection(from: value) {
                 userInFence = true
                 // Procesar los features o cargar/actualizar modelos
-                loadOrUpdateModels(featureCollection:featureCollection, arView: arView, mainAnchor: mainAnchor)
+                loadModels(featureCollection:featureCollection, arView: arView, mainAnchor: mainAnchor)
             } else {
                 print("Error: No se pudo parsear el ARFeatureCollection.")
             }
@@ -63,7 +66,7 @@ class DynamicModelManager {
 
     /// Carga o actualiza los modelos dinámicos a partir de una lista de nombres
     /// Carga o actualiza los modelos dinámicos a partir de una lista de características de forma aleatoria
-    private func loadOrUpdateModels(
+    private func loadModels(
         featureCollection: ARFeatureCollection,
         arView: ARView,
         mainAnchor: AnchorEntity
@@ -86,10 +89,10 @@ class DynamicModelManager {
             print("Model name:   ", modelName, "   scale:   ", scale)
 
             // Verificar si el modelo ya está cargado
-            if let existingModel = dynamicModels.first(where: { $0.name == "dynamic_\(modelName)" }) {
+            /*if let existingModel = dynamicModels.first(where: { $0.name == "dynamic_\(modelName)" }) {
                 // Actualizar la ubicación del modelo existente
-                updateModelLocation(for: existingModel, arView: arView, index: index)
-            } else {
+                updateModelLocation(for: existingModel, arView: arView)
+            } else {*/
                 // Cargar un nuevo modelo con los datos del feature
                 loadDynamicModel(
                     model: modelName,
@@ -101,7 +104,7 @@ class DynamicModelManager {
                     mainAnchor: mainAnchor,
                     index: index
                 )
-            }
+           // }
         }
     }
 
@@ -260,42 +263,73 @@ class DynamicModelManager {
         // Recorre los hijos de `mainAnchor` y elimina los que coincidan con el prefijo "dynamic_"
         for child in mainAnchor.children {
             if child.name.hasPrefix("dynamic_") {
-                // Verificar si el nombre coincide con algún geofence
-                let geofenceMatch = geofences.contains { geofence in
-                    if let customFields = geofence.customFields as? [String: Any],
-                       let modelName = customFields["ar_metadata"] as? String {
-                        return child.name == "dynamic_\(modelName)"
-                    }
-                    return false
-                }
-
-                if geofenceMatch {
-                    child.removeFromParent()
-                    print("Removed model from mainAnchor with name: \(child.name)")
-                }
+                child.removeFromParent()
+                print("Removed model from mainAnchor with name: \(child.name)")
             }
         }
 
-        print("All matching dynamic models have been removed.")
+        // Reinicia la variable featureCollection
+        featureCollection = nil
+        print("Feature collection has been cleared.")
+
+        print("All matching dynamic models and featureCollection have been removed.")
+    }
+
+    func updateModelsBasedOnDistance(arView: ARView) {
+        let cameraPosition = arView.cameraTransform.translation
+        
+        print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+        if self.userInFence {
+            for model in self.getDynamicModels() {
+                let modelPosition = model.position
+                let distance = simd_distance(cameraPosition, modelPosition)
+                
+                print("Camera position:   ", cameraPosition.x, "   ", cameraPosition.z)
+                print("Model position:   ", modelPosition.x, "   ", modelPosition.z)
+                print("DISTANCE: ", distance)
+                
+                // Si la distancia es mayor a X metros, actualizamos la posición
+                if distance > Float(distanceToUpdateModel) {
+                    print("Updating model \(model.name) as it's \(distance) meters away from the camera.")
+                    updateModelLocation(for: model, arView: arView)
+                }
+            }
+        }
     }
 
     
-    func updateModelLocation(for modelEntity: ModelEntity, arView: ARView, index: Int) {
-        let cameraPosition = arView.cameraTransform.translation
-        
-        // Actualizar la posición del modelo específico
-        modelEntity.position = SIMD3<Float>(
-            cameraPosition.x - Float.random(in: -3.0...3.0),
-            cameraPosition.y + modelEntity.position.z,
-            cameraPosition.z - (Float(index)*10.0)
-        )
-        
-        // Reproducir la animación si está disponible
-        if let animation = modelEntity.availableAnimations.first(where: { $0.name == "global scene animation" }) {
-            modelEntity.playAnimation(animation.repeat(), transitionDuration: 0.5, startsPaused: false)
+    func updateModelLocation(for modelEntity: ModelEntity, arView: ARView) {
+       
+        func updateModelLocation(for modelEntity: ModelEntity, arView: ARView, index: Int) {
+            let shuffledFeatures = featureCollection?.features.shuffled() ?? []
+
+            for (index, feature) in shuffledFeatures.enumerated().map({ ($0 + 1, $1) }) {
+                guard feature.properties.type == "model" else {
+                    print("Feature ignorado: no es un modelo.")
+                    continue
+                }
+
+                let modelName = feature.properties.name
+                let scale = feature.properties.scale
+                let orientation = feature.properties.orientation
+                let position = feature.geometry.coordinates
+
+                print("Model name:   ", modelName, "   scale:   ", scale)
+
+                // Actualiza la posición del modelo existente
+                let cameraPosition = arView.cameraTransform.translation
+     
+                // Actualizar la posición del modelo específico
+                modelEntity.position = SIMD3<Float>(
+                    cameraPosition.x - Float.random(in: -3.0...3.0),
+                    cameraPosition.y + Float(position[2]),
+                    cameraPosition.z - (Float(index) * 10.0)
+                )
+            }
         }
+
         
-        print("Updated position of model: \(modelEntity.name)")
+        
     }
 
     /// Obtiene todos los modelos dinámicos cargados.

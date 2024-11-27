@@ -40,8 +40,6 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     var staticRoute: [[String: Any]] = []
     private var currentGeofences: [SITGeofence] = []
 
-    var modelManager = DynamicModelManager()
-    private var fenceCheckTimer: Timer?
     
     
     func setupSceneView(arSceneView: CustomARSceneView) {
@@ -139,8 +137,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     /**
      Called once per frame.
      */
-    func session(_ session: ARSession, didUpdate frame: ARFrame) {
-        updateModelsBasedOnDistance()
+    func session(_ session: ARSession, didUpdate frame: ARFrame) {        
         //self.coordinator.handlePointUpdate()
         //self.coordinator.handleLocationUpdate()
     }
@@ -390,49 +387,37 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         // Almacenar los geofences actuales
         self.currentGeofences = geofences ?? []
         
-        if let arView = self.coordinator?.arView, let mainAnchor = mainAnchor {
-            self.modelManager.loadDynamicsModels(geofences: geofences, arView: arView, mainAnchor: mainAnchor)
+        guard let coordinator = self.coordinator,
+              let arView = coordinator.arView,
+              let mainAnchor = mainAnchor else {
+            NSLog("ARSceneHandler - Coordinator, ARView, or mainAnchor is nil.")
+            return
         }
+
+        // Cargar modelos dinámicos usando modelManager
+        coordinator.modelManager.loadDynamicsModels(geofences: geofences, arView: arView, mainAnchor: mainAnchor)
         
-        if coordinator?.isDebugEnabled == true {
-            // Show Message
+        if coordinator.isDebugEnabled {
+            // Mostrar un mensaje si está habilitado el modo de depuración
             DispatchQueue.main.async {
-                self.coordinator?.arView?.showToast(message: "Entered geofences: \(geofences.map { $0.name }.joined(separator: ", "))")
+                let geofenceNames = geofences.map { $0.name }.joined(separator: ", ")
+                arView.showToast(message: "Entered geofences: \(geofenceNames)")
             }
         }
     }
-
-
 
     func didExitedGeofences(_ geofences: [SITGeofence]!) {
         NSLog("ARSceneHandler - Exit from geofences: \(geofences)")
-       
-        if let mainAnchor = mainAnchor {
-            modelManager.removeModels(geofences: geofences, from: mainAnchor)
+        
+        guard let coordinator = self.coordinator,
+              let mainAnchor = mainAnchor else {
+            NSLog("ARSceneHandler - Coordinator or mainAnchor is nil.")
+            return
         }
-    }
-    
-    private func updateModelsBasedOnDistance() {
-        guard let arView = coordinator?.arView, let mainAnchor = mainAnchor else { return }
 
-        let cameraPosition = arView.cameraTransform.translation
-        if self.modelManager.userInFence {
-            for model in modelManager.getDynamicModels() {
-                let modelPosition = model.position
-                let distance = simd_distance(cameraPosition, modelPosition)
-                
-                print("camera position:   ", cameraPosition.x, "   ", cameraPosition.z)
-                print("model position:   ", modelPosition.x, "   ", modelPosition.z)
-                
-                // Si la distancia es mayor a X metros, actualizamos la posición
-                if distance > 20.0 {
-                    print("Updating model \(model.name) as it's \(distance) meters away from the camera.")
-                    //modelManager.updateModelLocation(for: model, arView: arView)
-                }
-            }
-        }
+        // Eliminar modelos dinámicos usando modelManager
+        coordinator.modelManager.removeModels(geofences: geofences, from: mainAnchor)
     }
-
 
 
 

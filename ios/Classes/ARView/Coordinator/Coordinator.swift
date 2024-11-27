@@ -29,6 +29,8 @@ class Coordinator: NSObject, ARSessionDelegate {
     
     var lastUpdateTime = 0.0
     
+    let modelManager = DynamicModelManager()
+    
     
     init(locationManager: LocationManager) {        
         self.locationManager = locationManager
@@ -49,6 +51,7 @@ class Coordinator: NSObject, ARSessionDelegate {
         updateArrowPositionAndDirection()
         showPointDebug()
         updatePOIsOscillationAndOrientation(arView: arView)
+        modelManager.updateModelsBasedOnDistance(arView: arView)
         arSceneHandler?.handleFrameUpdate(frame: frame)
         
     }
