@@ -29,7 +29,7 @@ class Coordinator: NSObject, ARSessionDelegate {
     
     var lastUpdateTime = 0.0
     
-    let modelManager = DynamicModelManager()
+    var modelManager = DynamicModelManager()
     
     
     init(locationManager: LocationManager) {        
@@ -38,22 +38,22 @@ class Coordinator: NSObject, ARSessionDelegate {
     
     // This function is called every time the camera frame is updated.
     func session(_ session: ARSession, didUpdate frame: ARFrame) {
-       
         guard let arView = self.arView else {
             return
         }
         
-        // get the yaw with respect to the north
-       /* if let yaw = getCameraYawRespectToNorth() {
-            let yawDegrees = yaw * (180.0 / .pi)
-        }*/
-        
         updateArrowPositionAndDirection()
         showPointDebug()
         updatePOIsOscillationAndOrientation(arView: arView)
-        modelManager.updateModelsBasedOnDistance(arView: arView)
+
+        // Desempaquetar cameraDeph de forma segura
+        guard let cameraDepth = self.arSceneHandler?.cameraDeph else {
+            print("Error: cameraDeph es nil.")
+            return
+        }
+
+        modelManager.updateModelsBasedOnDistance(arView: arView, cameraDepth: cameraDepth)
         arSceneHandler?.handleFrameUpdate(frame: frame)
-        
     }
     
     func setHasToReset(hasToRefresh: Bool){
