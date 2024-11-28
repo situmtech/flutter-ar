@@ -63,8 +63,6 @@ class DynamicModelManager {
     }
 
 
-
-    /// Carga o actualiza los modelos dinámicos a partir de una lista de nombres
     /// Carga o actualiza los modelos dinámicos a partir de una lista de características de forma aleatoria
     private func loadModels(
         featureCollection: ARFeatureCollection,
@@ -87,24 +85,19 @@ class DynamicModelManager {
             let position = feature.geometry.coordinates
 
             print("Model name:   ", modelName, "   scale:   ", scale)
-
-            // Verificar si el modelo ya está cargado
-            /*if let existingModel = dynamicModels.first(where: { $0.name == "dynamic_\(modelName)" }) {
-                // Actualizar la ubicación del modelo existente
-                updateModelLocation(for: existingModel, arView: arView)
-            } else {*/
-                // Cargar un nuevo modelo con los datos del feature
-                loadDynamicModel(
-                    model: modelName,
-                    modelURL: modelURL,
-                    scale: scale,
-                    orientation: orientation,
-                    position: position,
-                    arView: arView,
-                    mainAnchor: mainAnchor,
-                    index: index
-                )
-           // }
+            print("INDEX:    ", index)
+             // Cargar un nuevo modelo con los datos del feature
+            loadDynamicModel(
+                model: modelName,
+                modelURL: modelURL,
+                scale: scale,
+                orientation: orientation,
+                position: position,
+                arView: arView,
+                mainAnchor: mainAnchor,
+                index: index
+            )
+           
         }
     }
 
@@ -139,11 +132,7 @@ class DynamicModelManager {
             modelEntity.scale = SIMD3<Float>(scale, scale, scale)
 
             // Actualizar la posición del modelo específico
-            modelEntity.position = SIMD3<Float>(
-                cameraPosition.x - Float.random(in: -3.0...3.0),
-                cameraPosition.y + Float(position[2]),
-                cameraPosition.z - (Float(index) * 10.0)
-            )
+            self.setPosition(modelEntity:modelEntity, cameraPosition:cameraPosition, index:index, position: position)
 
             // Aplicar orientación en los ejes X, Y, Z si está disponible
             if orientation.count == 3 {
@@ -178,7 +167,35 @@ class DynamicModelManager {
         }
     }
 
+    private func setPosition(
+        modelEntity: Entity,
+        cameraPosition: SIMD3<Float>,
+        index: Int,
+        position: [Double]
+    ) {
+        // Verifica que la longitud de `position` sea suficiente para acceder al índice 2
+        guard position.count > 2 else {
+            print("Error: El array position no tiene suficientes elementos.")
+            return
+        }
+        
+        if index == 1 {
+            modelEntity.position = SIMD3<Float>(
+                cameraPosition.x - Float.random(in: -5.0...5.0),
+                cameraPosition.y + Float(position[2]),
+                cameraPosition.z - 5.0
+            )
+        } else {
+            modelEntity.position = SIMD3<Float>(
+                cameraPosition.x - Float.random(in: -5.0...5.0),
+                cameraPosition.y + Float(position[2]),
+                cameraPosition.z - 100.0
+            )
+        }
+    }
 
+
+    
 
 
     /// Función para buscar el primer ModelEntity en una jerarquía de Entity
@@ -277,25 +294,33 @@ class DynamicModelManager {
 
     func updateModelsBasedOnDistance(arView: ARView) {
         let cameraPosition = arView.cameraTransform.translation
-        
-        print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+        var minDistance: Float = 5000.0
+        var modelToUpdate: ModelEntity? // Variable para rastrear el modelo más lejano
+
         if self.userInFence {
-            for model in self.getDynamicModels() {
+            for model in self.dynamicModels {
                 let modelPosition = model.position
                 let distance = simd_distance(cameraPosition, modelPosition)
-                
-                print("Camera position:   ", cameraPosition.x, "   ", cameraPosition.z)
-                print("Model position:   ", modelPosition.x, "   ", modelPosition.z)
-                print("DISTANCE: ", distance)
-                
-                // Si la distancia es mayor a X metros, actualizamos la posición
-                if distance > Float(distanceToUpdateModel) {
-                    print("Updating model \(model.name) as it's \(distance) meters away from the camera.")
-                    updateModelLocation(for: model, arView: arView)
+
+                print("Camera position: \(cameraPosition.x), \(cameraPosition.z)")
+                print("Model position: \(modelPosition.x), \(modelPosition.z)")
+                print("DISTANCE: \(distance)")
+
+                // Actualiza la distancia mínima y almacena el modelo correspondiente
+                if distance < minDistance {
+                    minDistance = distance
+                    modelToUpdate = model
                 }
+            }
+
+            // Si la distancia mínima es mayor que el umbral, actualizamos el modelo
+            if minDistance > Float(distanceToUpdateModel), let modelToUpdate = modelToUpdate {
+                print("Updating model \(modelToUpdate.name) as it's \(minDistance) meters away from the camera.")
+                updateModelLocation(for: modelToUpdate, arView: arView)
             }
         }
     }
+
 
     
     func updateModelLocation(for modelEntity: ModelEntity, arView: ARView) {
@@ -318,13 +343,8 @@ class DynamicModelManager {
 
                 // Actualiza la posición del modelo existente
                 let cameraPosition = arView.cameraTransform.translation
-     
                 // Actualizar la posición del modelo específico
-                modelEntity.position = SIMD3<Float>(
-                    cameraPosition.x - Float.random(in: -3.0...3.0),
-                    cameraPosition.y + Float(position[2]),
-                    cameraPosition.z - (Float(index) * 10.0)
-                )
+                self.setPosition(modelEntity:modelEntity, cameraPosition:cameraPosition, index:index,position: position)
             }
         }
 
@@ -332,18 +352,7 @@ class DynamicModelManager {
         
     }
 
-    /// Obtiene todos los modelos dinámicos cargados.
-    func getDynamicModels() -> [ModelEntity] {
-        return dynamicModels
-    }
-
-    /// Limpia todos los modelos dinámicos cargados.
-    func clearDynamicModels() {
-        dynamicModels.removeAll()
-    }
 }
-
-
 
 
 //Create Situm Arrow
@@ -352,7 +361,7 @@ func createArrowAnchor() -> AnchorEntity {
     let anchor = AnchorEntity()
 
     do {
-        // Cargar el modelo como ModelEntity
+        // Load model as ModelEntity
         guard let arrowEntity = try? ModelEntity.load(named: "arrowSitum.usdz") else {
             print("Error: El modelo no se pudo cargar como ModelEntity.")
             return anchor
@@ -367,7 +376,6 @@ func createArrowAnchor() -> AnchorEntity {
 
         // Aplicar el color al modelo y sus subentidades
         applyColorToEntityAndChildren(entity: arrowEntity, color: customColor)
-
 
         // Añadir el modelo al ancla
         anchor.addChild(arrowEntity)
