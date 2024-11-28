@@ -416,7 +416,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         }
 
         // Eliminar modelos dinámicos usando modelManager
-        coordinator.modelManager.removeModels(geofences: geofences, from: mainAnchor)
+        coordinator.modelManager.removeDynamicModels()
     }
 
 

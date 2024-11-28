@@ -219,39 +219,18 @@ class DynamicModelManager {
         modelEntity.playAnimation(animation.repeat(), transitionDuration: 0.5, startsPaused: false)
     }
     
-    func removeModels(geofences: [SITGeofence], from mainAnchor: AnchorEntity) {
-        // Verifica y elimina modelos asociados a los geofences
-        for geofence in geofences {
-            if let customFields = geofence.customFields as? [String: Any] {
-                for (key, value) in customFields {
-                    if key == "ar_metadata", let modelName = value as? String {
-                        print("Processing geofence with metadata: \(modelName)")
-                        userInFence = false
-                        // Buscar el modelo dinámico correspondiente
-                        if let modelToRemove = dynamicModels.first(where: { $0.name == "dynamic_\(modelName)" }) {
-                            modelToRemove.removeFromParent()
-                            dynamicModels.removeAll { $0 == modelToRemove }
-                            print("Removed dynamic model associated with geofence: \(modelName)")
-                        }
-                    }
-                }
-            }
+    func removeDynamicModels() {
+        // Filtrar todos los modelos cuyo nombre comience con "dynamic_"
+        let modelsToRemove = dynamicModels.filter { $0.name.hasPrefix("dynamic_") }
+        
+        // Eliminar cada uno de los modelos encontrados
+        modelsToRemove.forEach { modelToRemove in
+            modelToRemove.removeFromParent() // Elimina el modelo de su entidad madre
+            dynamicModels.removeAll { $0 == modelToRemove } // Elimina del arreglo dynamicModels
+            print("Removed dynamic model: \(modelToRemove.name)")
         }
-        
-        // Recorre los hijos de `mainAnchor` y elimina los que coincidan con el prefijo "dynamic_"
-        for child in mainAnchor.children {
-            if child.name.hasPrefix("dynamic_") {
-                child.removeFromParent()
-                print("Removed model from mainAnchor with name: \(child.name)")
-            }
-        }
-        
-        // Reinicia la variable featureCollection
-        featureCollection = nil
-        print("Feature collection has been cleared.")
-        
-        print("All matching dynamic models and featureCollection have been removed.")
     }
+
     
     func updateModelsBasedOnDistance(arView: ARView, cameraDepth: Double) {
         let cameraPosition = arView.cameraTransform.translation
