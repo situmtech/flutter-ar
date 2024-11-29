@@ -62,4 +62,5 @@ func setupLighting(arView: ARView) {
     
     // Añadir el ancla con todas las luces al ARView
     arView.scene.anchors.append(lightAnchor)
+   
 }

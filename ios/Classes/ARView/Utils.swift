@@ -361,7 +361,7 @@ func handleDestinationPoi(arView: ARView, poiContainerName: String, deltaTime: F
 
     // Configuración de escala para zoom in y zoom out
     let minScale = SIMD3<Float>(repeating: 1.0)  // Escala mínima
-    let maxScale = SIMD3<Float>(repeating: 1.4)  // Escala máxima
+    let maxScale = SIMD3<Float>(repeating: 2.0)  // Escala máxima
 
     // Calcular el factor de oscilación utilizando una función seno
     let oscillationFactor = (sin(timeElapsed * oscillationSpeed) + 1) / 2 // Esto genera un valor entre 0 y 1

@@ -75,11 +75,6 @@ extension Coordinator {
                        
                         // Añadir el contenedor al ancla principal
                         fixedPOIAnchor.addChild(containerEntity)
-                       
-                    // Añadir partículas si el nombre del POI coincide
-                   /* if self.destinationPoiName == poi["name"] as? String {
-                        self.setupDynamicModel(to: containerEntity) // Mostrar el modelo de fuegos artificiales encima del POI
-                    }*/
                   
                     }
                 
@@ -89,32 +84,6 @@ extension Coordinator {
         self.updateArrowPositionAndDirection()
     }
     
-    /// Función para agregar el efecto de partículas al POI
-  /*  func setupDynamicModel(to entity: Entity) {
-        do {
-            let tRexEntity = try ModelEntity.load(named: "Fireworks.usdz")
-            tRexEntity.scale = SIMD3<Float>(0.015, 0.015, 0.015)
-
-            // Posicionar el modelo sobre el POI (basado en la posición del contenedor)
-            tRexEntity.position = entity.position
-            
-            // Verificar si el modelo tiene una animación y reproducirla
-            if let animation = tRexEntity.availableAnimations.first(where: { $0.name == "global scene animation" }) {
-                tRexEntity.playAnimation(animation.repeat(), transitionDuration: 0.5, startsPaused: false)
-            }
-
-            // Añadir el modelo a la escena
-            entity.addChild(tRexEntity)
-
-        } catch {
-            print("Error al cargar el modelo animado: \(error.localizedDescription)")
-        }
-    }
-*/
-
-
-
-
       
     /// Maneja la actualización de los POIs recibidos y los actualiza en la escena.
     func handlePoisUpdated(poisMap: [String: Any]) {
