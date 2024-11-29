@@ -388,7 +388,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
 
     
     func didEnteredGeofences(_ geofences: [SITGeofence]!) {
-        NSLog("ARSceneHandler - Entered geofences: \(geofences)")
+        print("ARSceneHandler - Entered geofences: \(geofences)")
         
         // Almacenar los geofences actuales
         self.currentGeofences = geofences ?? []
@@ -396,32 +396,24 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         guard let coordinator = self.coordinator,
               let arView = coordinator.arView,
               let mainAnchor = mainAnchor else {
-            NSLog("ARSceneHandler - Coordinator, ARView, or mainAnchor is nil.")
             return
         }
 
-        // Cargar modelos dinámicos usando modelManager
+        // Load dynamic models
         coordinator.modelManager.loadDynamicsModels(geofences: geofences, arView: arView, mainAnchor: mainAnchor)
-        
-        if coordinator.isDebugEnabled {
-            // Mostrar un mensaje si está habilitado el modo de depuración
-            DispatchQueue.main.async {
-                let geofenceNames = geofences.map { $0.name }.joined(separator: ", ")
-                arView.showToast(message: "Entered geofences: \(geofenceNames)")
-            }
-        }
+       
     }
 
     func didExitedGeofences(_ geofences: [SITGeofence]!) {
-        NSLog("ARSceneHandler - Exit from geofences: \(geofences)")
+        
+        print("ARSceneHandler - Exit from geofences: \(geofences)")
         
         guard let coordinator = self.coordinator,
               let mainAnchor = mainAnchor else {
-            NSLog("ARSceneHandler - Coordinator or mainAnchor is nil.")
             return
         }
 
-        // Eliminar modelos dinámicos usando modelManager
+        // Remove all models
         coordinator.modelManager.removeDynamicModels()
     }
 

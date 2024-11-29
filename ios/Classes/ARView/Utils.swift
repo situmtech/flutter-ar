@@ -321,9 +321,6 @@ func updateMovementPois(arView: ARView, destinationPoiName: String) {
                 }
                 
                 updatePOIsOscillationAndOrientation(arView: arView, poiContainerName: poiContainerName)
-
-               
-                
                
             }
         }
@@ -336,14 +333,6 @@ func handleDestinationPoi(arView: ARView, poiContainerName: String, deltaTime: F
         print("No se encontró el POI con el nombre: \(poiContainerName)")
         return
     }
-    
-    // Configuración de oscilación
-    let maxAngle: Float = 20.0 * (.pi / 180.0) // Límite de oscilación en radianes (±20 grados)
-    let oscillationSpeed: Float = 1.7 // Velocidad de oscilación (frecuencia en ciclos por segundo)
-
-    // Calcular el tiempo actual para la oscilación
-    let timeFactor = Float(CACurrentMediaTime()) * oscillationSpeed
-    let oscillationAngle = maxAngle * sin(timeFactor) // Ángulo de oscilación dinámico
 
     // Obtener la posición de la cámara
     let cameraPosition = arView.cameraTransform.translation
@@ -364,7 +353,7 @@ func handleDestinationPoi(arView: ARView, poiContainerName: String, deltaTime: F
     let maxScale = SIMD3<Float>(repeating: 2.0)  // Escala máxima
 
     // Calcular el factor de oscilación utilizando una función seno
-    let oscillationFactor = (sin(timeElapsed * oscillationSpeed) + 1) / 2 // Esto genera un valor entre 0 y 1
+    let oscillationFactor = (sin(timeElapsed * 1.7) + 1) / 2 // Esto genera un valor entre 0 y 1
 
     // Interpolar entre minScale y maxScale usando el factor de oscilación
     let newScale = minScale + (maxScale - minScale) * oscillationFactor

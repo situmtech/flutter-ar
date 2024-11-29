@@ -50,9 +50,7 @@ class Coordinator: NSObject, ARSessionDelegate {
         updateArrowPositionAndDirection()
         showPointDebug()
         updateMovementPois(arView: arView, destinationPoiName: destinationPoiName)
-        //updatePOIsOscillationAndOrientation(arView: arView, destinationPoiName: destinationPoiName)
-
-        // Desempaquetar cameraDeph de forma segura
+   
         guard let cameraDepth = self.arSceneHandler?.cameraDeph else {
             print("Error: cameraDeph es nil.")
             return

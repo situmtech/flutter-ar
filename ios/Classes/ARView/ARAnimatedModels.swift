@@ -17,7 +17,7 @@ class DynamicModelManager {
     func loadDynamicsModels(geofences: [SITGeofence], arView: ARView, mainAnchor: AnchorEntity) {
         for geofence in geofences {
             guard let customFields = geofence.customFields as? [String: Any] else {
-                NSLog("DynamicModelManager - customFields no es del tipo esperado o está vacío")
+                print("DynamicModelManager - customFields invalid or empty")
                 continue
             }
             
@@ -29,14 +29,12 @@ class DynamicModelManager {
     private func processGeofenceCustomFields(_ customFields: [String: Any], arView: ARView, mainAnchor: AnchorEntity) {
         for (key, value) in customFields {
             guard key == "ar_metadata" else { continue }
-            print("key value:    ", key, "     ", value)
-            // Intentar parsear el featureCollection desde el valor
+            // Parse featureCollection
             if let featureCollection = parseARFeatureCollection(from: value) {
                 userInFence = true
-                // Procesar los features o cargar/actualizar modelos
                 loadModels(featureCollection:featureCollection, arView: arView, mainAnchor: mainAnchor)
             } else {
-                print("Error: No se pudo parsear el ARFeatureCollection.")
+                print("Error: Can not parse ARFeatureCollection.")
             }
         }
     }
@@ -85,8 +83,7 @@ class DynamicModelManager {
             let orientation = feature.properties.orientation
             let position = feature.geometry.coordinates
             
-            print("Model name:   ", modelName, "   scale:   ", scale)
-            print("INDEX:    ", index)
+
             // Cargar un nuevo modelo con los datos del feature
             loadDynamicModel(
                 model: modelName,
@@ -115,7 +112,7 @@ class DynamicModelManager {
         mainAnchor: AnchorEntity,
         index: Int
     ) {
-        print("Cargando modelo: \(model) desde URL: \(modelURL)")
+        print("Loading model: \(model) desde URL: \(modelURL)")
         
         do {
             // Cargar el modelo como ModelEntity
@@ -129,7 +126,6 @@ class DynamicModelManager {
             
             // Configurar el modelo
             let cameraPosition = arView.cameraTransform.translation
-            print("SCALE:   ", scale)
             modelEntity.scale = SIMD3<Float>(scale, scale, scale)
             
             // Actualizar la posición del modelo específico
@@ -149,22 +145,16 @@ class DynamicModelManager {
             
             // Reproducir animación si está disponible
             if let animation = modelEntity.availableAnimations.first {
-                print("Animación encontrada: \(animation.name)")
                 modelEntity.playAnimation(animation.repeat(), transitionDuration: 0.5, startsPaused: false)
-            } else {
-                print("No se encontraron animaciones disponibles para \(modelEntity.name).")
             }
             
-            // Añadir al ancla principal
             mainAnchor.addChild(modelEntity)
-            
-            // Guardar en la lista de modelos dinámicos
             dynamicModels.append(modelEntity)
             
-            print("Modelo cargado exitosamente: \(modelEntity.name)")
+            print("Model loaded correctly: \(modelEntity.name)")
             
         } catch {
-            print("Error al cargar el modelo \(model): \(error.localizedDescription)")
+            print("Error while loading model \(model): \(error.localizedDescription)")
         }
     }
     
@@ -237,23 +227,19 @@ class DynamicModelManager {
     func updateModelsBasedOnDistance(arView: ARView, cameraDepth: Double) {
         let cameraPosition = arView.cameraTransform.translation
         var minDistance: Float = 5000.0
-        //var modelToUpdate: ModelEntity? // Variable para rastrear el modelo más lejano
         
         if self.userInFence {
             for model in self.dynamicModels {
                 let modelPosition = model.position
-                print("Model position   ", model.name, "     ", model.position.y, "  , ",  model.position.z)
                 let distance = simd_distance(cameraPosition, modelPosition)
-                // Actualiza la distancia mínima y almacena el modelo correspondiente
                 if distance < minDistance {
                     minDistance = distance
                 }
             }
             
-            // Si la distancia mínima es mayor que el umbral, actualizamos el modelo
-            print("Min distance:  ", minDistance)
+            // If min distance is minor that cameraDepth, update model position
             if abs(minDistance) > Float(cameraDepth) {
-                print("Updating model. it's \(minDistance) meters away from the camera!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!.")
+                print("Updating model. it's \(minDistance) meters away from the camera.")
                 updateModelLocation(arView: arView)
             }
         }
