@@ -28,7 +28,7 @@ class Coordinator: NSObject, ARSessionDelegate {
     var poisStored: [String: Any] = [:]
     
     var lastUpdateTime = 0.0
-    
+    var destinationPoiName: String? = nil
     var modelManager = DynamicModelManager()
     
     
@@ -42,16 +42,22 @@ class Coordinator: NSObject, ARSessionDelegate {
             return
         }
         
+        guard let destinationPoiName = self.destinationPoiName else {
+            print("Error: destinationPoiName es nil.")
+            return
+        }
+        
         updateArrowPositionAndDirection()
         showPointDebug()
-        updatePOIsOscillationAndOrientation(arView: arView)
+        updateMovementPois(arView: arView, destinationPoiName: destinationPoiName)
+        //updatePOIsOscillationAndOrientation(arView: arView, destinationPoiName: destinationPoiName)
 
         // Desempaquetar cameraDeph de forma segura
         guard let cameraDepth = self.arSceneHandler?.cameraDeph else {
             print("Error: cameraDeph es nil.")
             return
         }
-
+ 
         modelManager.updateModelsBasedOnDistance(arView: arView, cameraDepth: cameraDepth)
         arSceneHandler?.handleFrameUpdate(frame: frame)
     }
@@ -119,6 +125,12 @@ class Coordinator: NSObject, ARSessionDelegate {
     
     func setArrowDistance(arrowDistance: Double){
         self.arrowDistance = arrowDistance
+    }
+    
+    func setDestinationPoi(destinationPoiName: String){
+        print("SELF POINAME :   ", destinationPoiName)
+        self.destinationPoiName = destinationPoiName
+        print("SELF POINAME :   ", self.destinationPoiName)
     }
      
     func initArrowToRoute(_ points: Any?){

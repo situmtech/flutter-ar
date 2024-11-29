@@ -8,6 +8,10 @@ import CoreGraphics
 import SitumSDK
 
 
+// Variable global para mantener el tiempo transcurrido
+var timeElapsed: Float = 0.0
+
+
 class ImageCacheManager {
     static let shared = ImageCacheManager()
     
@@ -91,6 +95,7 @@ func parsePois(pois: [SITPOI]) -> [[String: Any]] {
         // Desenrolla el cartesianCoordinate de forma segura
         if let cartesianCoordinate = position.cartesianCoordinate {
             let name = poi.name
+            print("NAMEASFADFASDFAS:    ", name)
             let floorIdentifier = position.floorIdentifier
 
             let poiDict: [String: Any] = [
@@ -102,7 +107,8 @@ func parsePois(pois: [SITPOI]) -> [[String: Any]] {
                     ],
                     "floorIdentifier": floorIdentifier
                 ],
-                "iconUrl": "https://dashboard.situm.com" + icon.direction
+                "iconUrl": "https://dashboard.situm.com" + icon.direction,
+                "poiDestination": false
             ]
             poisMap.append(poiDict)
         } else {
@@ -293,7 +299,44 @@ func createTextEntity(text: String, poiPosition: SIMD3<Float>, arView: ARView) -
     return containerEntity
 }
 
-func updatePOIsOscillationAndOrientation(arView: ARView) {
+func updateMovementPois(arView: ARView, destinationPoiName: String) {
+    // Buscar el ancla que contiene los POIs
+    guard let fixedPOIAnchor = arView.scene.anchors.first(where: { $0.name == "fixedPOIAnchor" }) else {
+        print("Error: No se encontró el ancla 'fixedPOIAnchor'")
+        return
+    }
+
+    let poiContainerNameDestination = "poiContainer_\(destinationPoiName)"
+    
+    // Recorrer los hijos del ancla (POIs)
+    for child in fixedPOIAnchor.children {
+        if child.name.starts(with: "poiContainer_") {
+            // Obtener el nombre del POI desde su contenedor
+            if let poiName = child.name.split(separator: "_").last {
+                // Generar el nombre completo del contenedor del POI
+                let poiContainerName = "poiContainer_\(poiName)"
+                  
+                if poiContainerName == poiContainerNameDestination {
+                    handleDestinationPoi(arView: arView, poiContainerName: poiContainerName, deltaTime: 0.01)
+                }
+                
+                updatePOIsOscillationAndOrientation(arView: arView, poiContainerName: poiContainerName)
+
+               
+                
+               
+            }
+        }
+    }
+}
+
+// Función para manejar el POI destino de manera especial
+func handleDestinationPoi(arView: ARView, poiContainerName: String, deltaTime: Float) {
+    guard let poiContainerEntity = arView.scene.findEntity(named: poiContainerName) else {
+        print("No se encontró el POI con el nombre: \(poiContainerName)")
+        return
+    }
+    
     // Configuración de oscilación
     let maxAngle: Float = 20.0 * (.pi / 180.0) // Límite de oscilación en radianes (±20 grados)
     let oscillationSpeed: Float = 1.7 // Velocidad de oscilación (frecuencia en ciclos por segundo)
@@ -302,54 +345,90 @@ func updatePOIsOscillationAndOrientation(arView: ARView) {
     let timeFactor = Float(CACurrentMediaTime()) * oscillationSpeed
     let oscillationAngle = maxAngle * sin(timeFactor) // Ángulo de oscilación dinámico
 
-    // Buscar el ancla fija
-    guard let fixedPOIAnchor = arView.scene.anchors.first(where: { $0.name == "fixedPOIAnchor" }) as? AnchorEntity else {
+    // Obtener la posición de la cámara
+    let cameraPosition = arView.cameraTransform.translation
+
+    // Orientar el POI hacia la cámara
+    let poiPosition = poiContainerEntity.position(relativeTo: nil)
+    poiContainerEntity.look(at: cameraPosition, from: poiPosition, relativeTo: nil)
+
+    // Aplicar corrección para que la cara frontal del POI mire hacia la cámara
+    let frontRotationCorrection = simd_quatf(angle: .pi, axis: SIMD3<Float>(0, 1, 0))
+    poiContainerEntity.orientation = simd_mul(poiContainerEntity.orientation, frontRotationCorrection)
+
+    // Incrementar el tiempo transcurrido
+    timeElapsed += deltaTime
+
+    // Configuración de escala para zoom in y zoom out
+    let minScale = SIMD3<Float>(repeating: 1.0)  // Escala mínima
+    let maxScale = SIMD3<Float>(repeating: 1.4)  // Escala máxima
+
+    // Calcular el factor de oscilación utilizando una función seno
+    let oscillationFactor = (sin(timeElapsed * oscillationSpeed) + 1) / 2 // Esto genera un valor entre 0 y 1
+
+    // Interpolar entre minScale y maxScale usando el factor de oscilación
+    let newScale = minScale + (maxScale - minScale) * oscillationFactor
+    
+    // Aplicar la nueva escala al POI
+    poiContainerEntity.scale = newScale
+   
+}
+
+
+
+// Función para aplicar la oscilación y orientación a un POI específico
+func updatePOIsOscillationAndOrientation(arView: ARView, poiContainerName: String) {
+    guard let poiContainerEntity = arView.scene.findEntity(named: poiContainerName) else {
+        print("No se encontró el POI con el nombre: \(poiContainerName)")
         return
     }
+    
+    // Configuración de oscilación
+    let maxAngle: Float = 20.0 * (.pi / 180.0) // Límite de oscilación en radianes (±20 grados)
+    let oscillationSpeed: Float = 1.7 // Velocidad de oscilación (frecuencia en ciclos por segundo)
+
+    // Calcular el tiempo actual para la oscilación
+    let timeFactor = Float(CACurrentMediaTime()) * oscillationSpeed
+    let oscillationAngle = maxAngle * sin(timeFactor) // Ángulo de oscilación dinámico
 
     // Obtener la posición de la cámara
     let cameraPosition = arView.cameraTransform.translation
 
-    for child in fixedPOIAnchor.children {
-        guard child.name.starts(with: "poiContainer_") else { continue }
+    // Encontrar el POI dentro del contenedor
+    if let poiEntity = poiContainerEntity.children.first(where: { $0.name.starts(with: "poi_") }) {
+        // Orientar el POI hacia la cámara
+        let poiPosition = poiEntity.position(relativeTo: nil)
+        poiEntity.look(at: cameraPosition, from: poiPosition, relativeTo: nil)
 
-        // Encontrar el POI dentro del contenedor
-        if let poiEntity = child.children.first(where: { $0.name.starts(with: "poi_") }) {
-            // Orientar el POI hacia la cámara
-            let poiPosition = poiEntity.position(relativeTo: nil)
-            poiEntity.look(at: cameraPosition, from: poiPosition, relativeTo: nil)
+        // Aplicar corrección para que la cara frontal del POI mire hacia la cámara
+        let frontRotationCorrection = simd_quatf(angle: .pi, axis: SIMD3<Float>(0, 1, 0))
+        poiEntity.orientation = simd_mul(poiEntity.orientation, frontRotationCorrection)
 
-            // Aplicar corrección para que la cara frontal del POI mire hacia la cámara
-            let frontRotationCorrection = simd_quatf(angle: .pi, axis: SIMD3<Float>(0, 1, 0))
-            poiEntity.orientation = simd_mul(poiEntity.orientation, frontRotationCorrection)
+        // Aplicar oscilación al final
+        let oscillationRotation = simd_quatf(angle: oscillationAngle, axis: SIMD3<Float>(0, 1, 0))
+        poiEntity.orientation = simd_mul(poiEntity.orientation, oscillationRotation)
+    }
 
-            // Aplicar oscilación al final
-            let oscillationRotation = simd_quatf(angle: oscillationAngle, axis: SIMD3<Float>(0, 1, 0))
-            poiEntity.orientation = simd_mul(poiEntity.orientation, oscillationRotation)
-        }
+    // Texto orientado hacia la cámara
+    if let textEntity = poiContainerEntity.children.first(where: { $0.name.starts(with: "text_") }) {
+        // Mantener el texto por encima del POI
+        textEntity.position = SIMD3<Float>(0, 1.05, 0)
 
-        // Texto orientado hacia la cámara
-        if let textEntity = child.children.first(where: { $0.name.starts(with: "text_") }) {
-            // Mantener el texto por encima del POI
-            textEntity.position = SIMD3<Float>(0, 1.05, 0)
+        // Centrar el texto respecto al POI
+        let bounds = textEntity.visualBounds(relativeTo: textEntity.parent)
+        let textWidth = bounds.extents.x
+        textEntity.position.x -= bounds.center.x // Centrar horizontalmente usando el centro del texto
+        textEntity.position.z -= bounds.center.z // Asegurar el centrado en profundidad
 
-            // Centrar el texto respecto al POI
-            let bounds = textEntity.visualBounds(relativeTo: textEntity.parent)
-            let textWidth = bounds.extents.x
-            textEntity.position.x -= bounds.center.x // Centrar horizontalmente usando el centro del texto
-            textEntity.position.z -= bounds.center.z // Asegurar el centrado en profundidad
+        // Orientar el texto hacia la cámara
+        let textPosition = textEntity.position(relativeTo: nil)
+        textEntity.look(at: cameraPosition, from: textPosition, relativeTo: nil)
 
-            // Orientar el texto hacia la cámara
-            let textPosition = textEntity.position(relativeTo: nil)
-            textEntity.look(at: cameraPosition, from: textPosition, relativeTo: nil)
-
-            // Evitar que el texto se invierta
-            let textRotationCorrection = simd_quatf(angle: .pi, axis: SIMD3<Float>(0, 1, 0))
-            textEntity.orientation = simd_mul(textEntity.orientation, textRotationCorrection)
-        }
+        // Evitar que el texto se invierta
+        let textRotationCorrection = simd_quatf(angle: .pi, axis: SIMD3<Float>(0, 1, 0))
+        textEntity.orientation = simd_mul(textEntity.orientation, textRotationCorrection)
     }
 }
-
 
 
 

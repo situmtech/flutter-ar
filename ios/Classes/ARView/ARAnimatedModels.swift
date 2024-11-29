@@ -1,6 +1,8 @@
 import Foundation
 import RealityKit
 import SitumSDK
+import Combine
+import SceneKit
 
 
 class DynamicModelManager {
@@ -292,7 +294,48 @@ class DynamicModelManager {
             print("Modelo actualizado: \(modelEntity.name) a posición: \(modelEntity.position)")
         }
     }
+    
+    
+   /* func highlightPoiDestination(arView: ARView, destinationPoiName: String) {
+        // Buscar el POI por su nombre en la escena
+        let poiContainerName = "poiContainer_\(destinationPoiName)"
+        guard let poiContainerEntity = arView.scene.findEntity(named: poiContainerName) else {
+            print("No se encontró el POI con el nombre: \(poiContainerName)")
+            return
+        }
 
+        // Crear las transformaciones de escala
+        let scaleUp = SIMD3<Float>(1.5, 1.5, 1.5) // Aumenta el tamaño
+        let scaleDown = SIMD3<Float>(1.0, 1.0, 1.0) // Vuelve al tamaño original
+        
+        // Usamos el método `move(to:)` o `scale(to:)` con animación
+        // Animación de escala: aumentar el tamaño
+        let scaleUpTransform = Transform(scale: scaleUp)
+        let scaleDownTransform = Transform(scale: scaleDown)
+        
+        // Aplicar la animación de escala en un bloque de animación
+        poiContainerEntity.move(to: scaleUpTransform, relativeTo: poiContainerEntity.parent, duration: 1.0, timingFunction: .easeInOut)
+
+        // Después de 1 segundo, disminuir el tamaño
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            poiContainerEntity.move(to: scaleDownTransform, relativeTo: poiContainerEntity.parent, duration: 1.0, timingFunction: .easeInOut)
+        }
+
+        // Repetir la animación para crear el efecto de pulsación
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            self.highlightPoiDestination(arView: arView, destinationPoiName: destinationPoiName)
+        }
+    }
+*/
+
+
+
+
+
+    
+    
+    
+    
     
 }
     

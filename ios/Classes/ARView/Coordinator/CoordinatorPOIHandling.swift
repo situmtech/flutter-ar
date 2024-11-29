@@ -28,7 +28,7 @@ extension Coordinator {
             print("Error: No se encontró la clave 'pois' en el mapa de POIs")
             return
         }
-               
+        
         // Añadir los nuevos POIs
         for (index, poi) in poisList.enumerated() {
             if let position = poi["position"] as? [String: Any],
@@ -59,21 +59,16 @@ extension Coordinator {
                     
                         let containerEntity = Entity()
                         containerEntity.position = transformedPosition
-                        containerEntity.name = "poiContainer_\(index)"
+                        containerEntity.name = "poiContainer_\(name)"
                     
                         // Configurar el POI
-                        poiEntity.position = SIMD3<Float>(0, 0, 0) // Centrado en el contenedor
-                    
-                        poiEntity.name = "poi_\(index)"
+                        poiEntity.position = SIMD3<Float>(0, 0, 0)
+                        poiEntity.name = "poi_\(name)"
                        
                         // Configurar el texto
                         let textEntity = createTextEntity(text: name, poiPosition: SIMD3<Float>(0, 0, 0), arView: arView) // Coloca el texto encima del POI
-                        textEntity.name = "text_\(index)"
-                       
-                    
-                    /*let rotationAngle = Float.pi // 180 grados en radianes
-                    poiEntity.orientation = simd_quatf(angle: rotationAngle, axis: SIMD3<Float>(0, 1, 0))*/
-
+                        textEntity.name = "text_\(name)"
+       
                         // Añadir POI y texto al contenedor
                         containerEntity.addChild(poiEntity)
                         containerEntity.addChild(textEntity)
@@ -81,7 +76,10 @@ extension Coordinator {
                         // Añadir el contenedor al ancla principal
                         fixedPOIAnchor.addChild(containerEntity)
                        
-                       // addPointLightToScene(at: transformedPosition, arView: arView)
+                    // Añadir partículas si el nombre del POI coincide
+                   /* if self.destinationPoiName == poi["name"] as? String {
+                        self.setupDynamicModel(to: containerEntity) // Mostrar el modelo de fuegos artificiales encima del POI
+                    }*/
                   
                     }
                 
@@ -91,6 +89,33 @@ extension Coordinator {
         self.updateArrowPositionAndDirection()
     }
     
+    /// Función para agregar el efecto de partículas al POI
+  /*  func setupDynamicModel(to entity: Entity) {
+        do {
+            let tRexEntity = try ModelEntity.load(named: "Fireworks.usdz")
+            tRexEntity.scale = SIMD3<Float>(0.015, 0.015, 0.015)
+
+            // Posicionar el modelo sobre el POI (basado en la posición del contenedor)
+            tRexEntity.position = entity.position
+            
+            // Verificar si el modelo tiene una animación y reproducirla
+            if let animation = tRexEntity.availableAnimations.first(where: { $0.name == "global scene animation" }) {
+                tRexEntity.playAnimation(animation.repeat(), transitionDuration: 0.5, startsPaused: false)
+            }
+
+            // Añadir el modelo a la escena
+            entity.addChild(tRexEntity)
+
+        } catch {
+            print("Error al cargar el modelo animado: \(error.localizedDescription)")
+        }
+    }
+*/
+
+
+
+
+      
     /// Maneja la actualización de los POIs recibidos y los actualiza en la escena.
     func handlePoisUpdated(poisMap: [String: Any]) {
         poisStored = poisMap

@@ -39,7 +39,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     
     var staticRoute: [[String: Any]] = []
     private var currentGeofences: [SITGeofence] = []
-
+    var destinationPoiName:String? = nil
     
     
     func setupSceneView(arSceneView: CustomARSceneView) {
@@ -267,6 +267,10 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
             let poisMapArray = parsePois(pois: indoorPois)
             // Envuelve el array en un diccionario antes de pasarlo a updatePOIs
             let poisMap: [String: Any] = ["pois": poisMapArray]
+            
+            let destinationPoiName = self.destinationPoiName ?? ""
+            self.coordinator?.setDestinationPoi(destinationPoiName: destinationPoiName)
+            
             // Llama a updatePOIs con el diccionario
             coordinator.handlePoisUpdated(poisMap: poisMap)
         } else {
@@ -303,6 +307,8 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     func navigationManager(_ navigationManager: SITNavigationInterface, didStartOn route: SITRoute) {
         print("Situm> Navigation started on route: \(route.toDictionary()["points"])")
         staticRoute = route.toDictionary()["points"] as? [[String: Any]] ?? []
+        self.destinationPoiName = route.poiTo.name
+        
     }
     
     func navigationManager(_ navigationManager: SITNavigationInterface, didFailWithError error: Error) {
