@@ -8,7 +8,6 @@ import CoreGraphics
 import SitumSDK
 
 
-// Variable global para mantener el tiempo transcurrido
 var timeElapsed: Float = 0.0
 
 
@@ -20,16 +19,16 @@ class ImageCacheManager {
     private init() {}
     
     func loadImage(from url: URL, completion: @escaping (UIImage?) -> Void) {
-        // Verificar si la imagen ya está en caché
+        // Check if image is cached
         if let cachedImage = cache.object(forKey: url.absoluteString as NSString) {
             completion(cachedImage)
             return
         }
         
-        // Iniciar la tarea de descarga
+        // Start download
         let task = URLSession.shared.dataTask(with: url) { data, response, error in
             if let error = error {
-                print("Error al descargar la imagen: \(error.localizedDescription)")
+                print("Download error for image: \(error.localizedDescription)")
                 DispatchQueue.main.async {
                     completion(nil)
                 }
@@ -37,7 +36,7 @@ class ImageCacheManager {
             }
             
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-                print("Error: Respuesta HTTP no válida")
+                print("Error: invalid HTTP")
                 DispatchQueue.main.async {
                     completion(nil)
                 }
@@ -52,7 +51,7 @@ class ImageCacheManager {
                 return
             }
             
-            // Almacenar la imagen en caché
+            // Save image in cache
             self.cache.setObject(image, forKey: url.absoluteString as NSString)
             
             DispatchQueue.main.async {
@@ -88,14 +87,12 @@ func parsePois(pois: [SITPOI]) -> [[String: Any]] {
                     }
                 }
 
-        // Llamar a la función position() para obtener el valor de SITPoint
+     
         let position = poi.position()
         let icon = poi.category.iconURL
-           
-        // Desenrolla el cartesianCoordinate de forma segura
+       
         if let cartesianCoordinate = position.cartesianCoordinate {
             let name = poi.name
-            print("NAMEASFADFASDFAS:    ", name)
             let floorIdentifier = position.floorIdentifier
 
             let poiDict: [String: Any] = [
@@ -115,20 +112,20 @@ func parsePois(pois: [SITPOI]) -> [[String: Any]] {
             print("Situm> Cartesian coordinate not available for POI: \(poi.name)")
         }
         
-        // Preparar la URL completa
+        // Prepare the full URL
         let baseURL = "https://dashboard.situm.com"
-        let iconPath = icon.direction // Asegúrate de que `icon` contenga solo la parte de la ruta
+        let iconPath = icon.direction
         let urlString = baseURL + iconPath
      
-        // Validar la URL
+        // Check URL
         if let url = URL(string: urlString) {
             ImageCacheManager.shared.loadImage(from: url) { image in
                 if let image = image {
-                    print("Imagen descargada y almacenada en caché para: \(poi.name)")
+                    print("Download image and save in cache to: \(poi.name)")
                 }
             }
         } else {
-            print("Error: URL no válida para el icono del POI: \(poi.name)")
+            print("Error: invalid URL for POI icon: \(poi.name)")
         }
     }
 
@@ -156,24 +153,24 @@ func createSphereEntity(radius: Float, color: UIColor, transparency: Float) -> M
 
 @available(iOS 15.0, *)
 func createTexturedDisk(with image: UIImage, diameter: Float) -> ModelEntity? {
-    // Crear el disco en RealityKit con el diámetro especificado
+    // Create the disk in RealityKit with the specified diameter
     let diskMesh = MeshResource.generatePlane(width: diameter, depth: diameter)
     let diskEntity = ModelEntity(mesh: diskMesh)
     
-    // Crear la textura desde la imagen circular
+    // Create the texture from the circular image
     guard let cgImage = image.cgImage,
           let texture = try? TextureResource.generate(from: cgImage, options: .init(semantic: .color)) else {
-        print("Error: No se pudo generar la textura desde la imagen.")
+        print("Error: Can not generate texture from image .")
         return nil
     }
     
-    // Crear un material para aplicar la textura en el disco
+    // Create a material to apply the texture on the disk
     var texturedMaterial = UnlitMaterial()
      texturedMaterial.baseColor = .texture(texture)
      texturedMaterial.opacityThreshold = 0.5
 
     
-    // Asignar el material texturizado al disco
+    // Assign the textured material to the disk
     diskEntity.model?.materials = [texturedMaterial]
     
     return diskEntity
@@ -186,44 +183,44 @@ func replaceTextureOnCylinder(url: URL, completion: @escaping (Entity?) -> Void)
     let modelName = "cylinderNotRotated.usdz"
 
     do {
-        // Cargar el modelo como una Entity
+        // Load the model as an Entity
         let entity = try Entity.load(named: modelName)
 
-        // Cargar la nueva textura desde la URL
+        // Load new texture from URL
         ImageCacheManager.shared.loadImage(from: url) { image in
             guard let image = image else {
-                print("Error al cargar la imagen para la textura.")
+                print("Error loading image for texture.")
                 completion(nil)
                 return
             }
 
-            // Convertir la UIImage a CGImage
+            //Convert UIImage to CGImage
             guard let cgImage = image.cgImage else {
-                print("Error al convertir UIImage a CGImage.")
+                print("Error converting UIImage to CGImage.")
                 completion(nil)
                 return
             }
 
-            // Generar la textura desde el CGImage
+            // Generate the texture from the CGImage
             let options = TextureResource.CreateOptions(semantic: .color)
             guard let texture = try? TextureResource.generate(from: cgImage, options: options) else {
-                print("Error al generar la textura desde CGImage.")
+                print("Error generating texture from CGImage.")
                 completion(nil)
                 return
             }
-            // Aplicar la textura a todos los nodos ModelEntity
+            // Apply texture to all ModelEntity nodes
             applyTextureToModelEntities(in: entity, texture: texture)
 
             completion(entity)
         }
     } catch {
-        print("Error al cargar el modelo: \(error.localizedDescription)")
+        print("Error loading model: \(error.localizedDescription)")
         completion(nil)
     }
 }
 @available(iOS 15.0, *)
 func applyTextureToModelEntities(in entity: Entity, texture: TextureResource) {
-    // Si la entidad es un ModelEntity, aplicar la textura
+   
     if var modelEntity = entity as? ModelEntity,
        var modelComponent = modelEntity.components[ModelComponent.self] as? ModelComponent {
         for index in modelComponent.materials.indices {
@@ -235,28 +232,16 @@ func applyTextureToModelEntities(in entity: Entity, texture: TextureResource) {
         modelEntity.components[ModelComponent.self] = modelComponent
     }
 
-    // Buscar recursivamente en los hijos
+    // Recursively search in children
     for child in entity.children {
         applyTextureToModelEntities(in: child, texture: texture)
     }
 }
 
 
-
-/*@available(iOS 15.0, *)
-func addPointLightToScene(at position: SIMD3<Float>, arView: ARView) {
-    let lightEntity = PointLight()
-    lightEntity.light.intensity = 15000  // Ajusta según el nivel de brillo que desees
-    lightEntity.light.color = .white
-    
-    let lightAnchor = AnchorEntity(world: position)
-    lightAnchor.addChild(lightEntity)
-    arView.scene.addAnchor(lightAnchor)
-}*/
-
 @available(iOS 15.0, *)
 func createTextEntity(text: String, poiPosition: SIMD3<Float>, arView: ARView) -> ModelEntity {
-    // Generar el texto principal
+    //Generate the main text
     let mainMesh = MeshResource.generateText(
         text,
         extrusionDepth: 0.02,
@@ -269,10 +254,10 @@ func createTextEntity(text: String, poiPosition: SIMD3<Float>, arView: ARView) -
     let mainTextEntity = ModelEntity(mesh: mainMesh, materials: [mainMaterial])
     mainTextEntity.scale = SIMD3<Float>(0.35, 0.35, 0.35)
 
-    // Generar el texto para el borde
+    // Generate the text for the border
     let borderMesh = MeshResource.generateText(
         text,
-        extrusionDepth: 0.025, // Extrusión ligeramente mayor
+        extrusionDepth: 0.025, // Slightly larger extrusion
         font: .systemFont(ofSize: 1.2),
         containerFrame: .zero,
         alignment: .center,
@@ -280,18 +265,18 @@ func createTextEntity(text: String, poiPosition: SIMD3<Float>, arView: ARView) -
     )
     let borderMaterial = SimpleMaterial(color: .black, isMetallic: false)
     let borderTextEntity = ModelEntity(mesh: borderMesh, materials: [borderMaterial])
-    borderTextEntity.scale = SIMD3<Float>(0.355, 0.355, 0.355) // Misma escala que el texto principal
-    borderTextEntity.position = SIMD3<Float>(0, 0, -0.002) // Ajustar ligeramente hacia atrás
+    borderTextEntity.scale = SIMD3<Float>(0.355, 0.355, 0.355) // Same scale as the main text
+    borderTextEntity.position = SIMD3<Float>(0, 0, -0.002) // Adjust slightly backwards
 
-    // Contenedor para mantener ambos textos juntos
+    // Container to keep both texts together
     let containerEntity = ModelEntity()
-    containerEntity.addChild(borderTextEntity) // Añadir el texto del borde primero
-    containerEntity.addChild(mainTextEntity)  // Añadir el texto principal
+    containerEntity.addChild(borderTextEntity) // Add border text first
+    containerEntity.addChild(mainTextEntity)  // Add main text
 
-    // Posicionar el contenedor directamente encima del POI
+    // Position the container directly above the POI
     containerEntity.position = SIMD3<Float>(poiPosition.x, poiPosition.y + 1.05, poiPosition.z)
 
-    // Centrar el texto en el eje X
+    // Center text on X axis
     let bounds = containerEntity.visualBounds(relativeTo: nil)
     let textWidth = bounds.extents.x
     containerEntity.position.x -= textWidth / 2.0
@@ -300,7 +285,7 @@ func createTextEntity(text: String, poiPosition: SIMD3<Float>, arView: ARView) -
 }
 
 func updateMovementPois(arView: ARView, destinationPoiName: String) {
-    // Buscar el ancla que contiene los POIs
+    // Find the anchor that contains the POIs
     guard let fixedPOIAnchor = arView.scene.anchors.first(where: { $0.name == "fixedPOIAnchor" }) else {
         print("Error: No se encontró el ancla 'fixedPOIAnchor'")
         return
@@ -308,12 +293,10 @@ func updateMovementPois(arView: ARView, destinationPoiName: String) {
 
     let poiContainerNameDestination = "poiContainer_\(destinationPoiName)"
     
-    // Recorrer los hijos del ancla (POIs)
+    //Loop through anchor children (POIs)
     for child in fixedPOIAnchor.children {
         if child.name.starts(with: "poiContainer_") {
-            // Obtener el nombre del POI desde su contenedor
             if let poiName = child.name.split(separator: "_").last {
-                // Generar el nombre completo del contenedor del POI
                 let poiContainerName = "poiContainer_\(poiName)"
                   
                 if poiContainerName == poiContainerNameDestination {
@@ -327,93 +310,88 @@ func updateMovementPois(arView: ARView, destinationPoiName: String) {
     }
 }
 
-// Función para manejar el POI destino de manera especial
+// Function to handle the destination POI in a special way
 func handleDestinationPoi(arView: ARView, poiContainerName: String, deltaTime: Float) {
     guard let poiContainerEntity = arView.scene.findEntity(named: poiContainerName) else {
         print("No se encontró el POI con el nombre: \(poiContainerName)")
         return
     }
 
-    // Obtener la posición de la cámara
     let cameraPosition = arView.cameraTransform.translation
 
-    // Orientar el POI hacia la cámara
+    // Orient the POI towards the camera
     let poiPosition = poiContainerEntity.position(relativeTo: nil)
     poiContainerEntity.look(at: cameraPosition, from: poiPosition, relativeTo: nil)
 
-    // Aplicar corrección para que la cara frontal del POI mire hacia la cámara
+    // Apply correction so that the front face of the POI faces the camera
     let frontRotationCorrection = simd_quatf(angle: .pi, axis: SIMD3<Float>(0, 1, 0))
     poiContainerEntity.orientation = simd_mul(poiContainerEntity.orientation, frontRotationCorrection)
 
-    // Incrementar el tiempo transcurrido
+    // Increase elapsed time
     timeElapsed += deltaTime
 
-    // Configuración de escala para zoom in y zoom out
-    let minScale = SIMD3<Float>(repeating: 1.0)  // Escala mínima
-    let maxScale = SIMD3<Float>(repeating: 2.0)  // Escala máxima
+    // Scale settings for zoom in and zoom out
+    let minScale = SIMD3<Float>(repeating: 1.0)  // Min scale
+    let maxScale = SIMD3<Float>(repeating: 2.0)  // Max scale
 
-    // Calcular el factor de oscilación utilizando una función seno
-    let oscillationFactor = (sin(timeElapsed * 1.7) + 1) / 2 // Esto genera un valor entre 0 y 1
+    // oscillation factor
+    let oscillationFactor = (sin(timeElapsed * 1.7) + 1) / 2
 
-    // Interpolar entre minScale y maxScale usando el factor de oscilación
+    // Interpolate between minScale and maxScale using the oscillation factor
     let newScale = minScale + (maxScale - minScale) * oscillationFactor
     
-    // Aplicar la nueva escala al POI
+    // Apply the new scale to the POI
     poiContainerEntity.scale = newScale
    
 }
 
 
-
-// Función para aplicar la oscilación y orientación a un POI específico
+// Function to apply swing and yaw to a specific POI
 func updatePOIsOscillationAndOrientation(arView: ARView, poiContainerName: String) {
     guard let poiContainerEntity = arView.scene.findEntity(named: poiContainerName) else {
         print("No se encontró el POI con el nombre: \(poiContainerName)")
         return
     }
     
-    // Configuración de oscilación
-    let maxAngle: Float = 20.0 * (.pi / 180.0) // Límite de oscilación en radianes (±20 grados)
-    let oscillationSpeed: Float = 1.7 // Velocidad de oscilación (frecuencia en ciclos por segundo)
+    // Configuration oscilation
+    let maxAngle: Float = 20.0 * (.pi / 180.0) // Oscillation limit in radians (±20 degrees)
+    let oscillationSpeed: Float = 1.7 // veloticy oscilation
 
-    // Calcular el tiempo actual para la oscilación
+    // Oscilation time
     let timeFactor = Float(CACurrentMediaTime()) * oscillationSpeed
-    let oscillationAngle = maxAngle * sin(timeFactor) // Ángulo de oscilación dinámico
-
-    // Obtener la posición de la cámara
+    let oscillationAngle = maxAngle * sin(timeFactor)
+ 
     let cameraPosition = arView.cameraTransform.translation
 
-    // Encontrar el POI dentro del contenedor
+    // Find POI and orientation to camera
     if let poiEntity = poiContainerEntity.children.first(where: { $0.name.starts(with: "poi_") }) {
-        // Orientar el POI hacia la cámara
+     
         let poiPosition = poiEntity.position(relativeTo: nil)
         poiEntity.look(at: cameraPosition, from: poiPosition, relativeTo: nil)
 
-        // Aplicar corrección para que la cara frontal del POI mire hacia la cámara
         let frontRotationCorrection = simd_quatf(angle: .pi, axis: SIMD3<Float>(0, 1, 0))
         poiEntity.orientation = simd_mul(poiEntity.orientation, frontRotationCorrection)
 
-        // Aplicar oscilación al final
         let oscillationRotation = simd_quatf(angle: oscillationAngle, axis: SIMD3<Float>(0, 1, 0))
         poiEntity.orientation = simd_mul(poiEntity.orientation, oscillationRotation)
     }
 
-    // Texto orientado hacia la cámara
+    // Orientation text to camera
     if let textEntity = poiContainerEntity.children.first(where: { $0.name.starts(with: "text_") }) {
-        // Mantener el texto por encima del POI
+        // Text over POI
         textEntity.position = SIMD3<Float>(0, 1.05, 0)
 
-        // Centrar el texto respecto al POI
+        // Center the text relative to the POI
         let bounds = textEntity.visualBounds(relativeTo: textEntity.parent)
         let textWidth = bounds.extents.x
-        textEntity.position.x -= bounds.center.x // Centrar horizontalmente usando el centro del texto
-        textEntity.position.z -= bounds.center.z // Asegurar el centrado en profundidad
+        textEntity.position.x -= bounds.center.x // Center horizontally using the center of the text
+        textEntity.position.z -= bounds.center.z // Ensuring depth centering
 
-        // Orientar el texto hacia la cámara
+        // Orient text towards the camera
         let textPosition = textEntity.position(relativeTo: nil)
         textEntity.look(at: cameraPosition, from: textPosition, relativeTo: nil)
 
-        // Evitar que el texto se invierta
+        // Prevent text from being reversed
         let textRotationCorrection = simd_quatf(angle: .pi, axis: SIMD3<Float>(0, 1, 0))
         textEntity.orientation = simd_mul(textEntity.orientation, textRotationCorrection)
     }
@@ -423,8 +401,8 @@ func updatePOIsOscillationAndOrientation(arView: ARView, poiContainerName: Strin
 
 func rotateIconPoiAndText(arView: ARView) {
     if let fixedPOIAnchor = arView.scene.anchors.first(where: { $0.name == "fixedPOIAnchor" }) as? AnchorEntity {
-        // Definir una rotación incremental en el eje Y (continua)
-        let rotationAngle: Float = .pi / 360 // Un pequeño ángulo en cada actualización (1 grado)
+        // Rotate on Y axes
+        let rotationAngle: Float = .pi / 360 // Update 1 degree
         let rotationIncrement = simd_quatf(angle: rotationAngle, axis: SIMD3<Float>(0, 1, 0))
         
         for child in fixedPOIAnchor.children {
@@ -441,35 +419,34 @@ func updatePOIOrientationToCamera(arView: ARView) {
         return
     }
 
-    // Obtener la posición de la cámara
     let cameraPosition = arView.cameraTransform.translation
 
     for child in fixedPOIAnchor.children {
-        // Verificar si la entidad es un contenedor de POI
+        // Verify if the entity is a POI container
         if child.name.starts(with: "poiContainer_") {
-            // Calcular la posición del POI
+            // Calculate POI position
             let poiPosition = child.position(relativeTo: nil)
 
-            // Orientar el POI hacia la cámara
+            // Orient the POI towards the camera
             if let poiEntity = child.children.first(where: { $0.name.starts(with: "poi_") }) {
                 poiEntity.look(at: cameraPosition, from: poiPosition, relativeTo: nil)
             }
 
-            // Ajustar y centrar el texto
+            // Adjust and center text
             if let textEntity = child.children.first(where: { $0.name.starts(with: "text_") }) {
-                // Mantener el texto por encima del POI
+                //Keep text above POI
                 textEntity.position = SIMD3<Float>(0, 1.05, 0)
 
-                // Centrar el texto respecto al POI
+                // Center the text relative to the POI
                 let bounds = textEntity.visualBounds(relativeTo: textEntity.parent)
                 let textWidth = bounds.extents.x
-                textEntity.position.x -= bounds.center.x // Centrar horizontalmente usando el centro del texto
-                textEntity.position.z -= bounds.center.z // Asegurar el centrado en profundidad
+                textEntity.position.x -= bounds.center.x //Center horizontally using the center of the text
+                textEntity.position.z -= bounds.center.z // Ensuring depth centering
 
-                // Orientar el texto hacia la cámara
+                // Orient text towards the camera
                 textEntity.look(at: cameraPosition, from: textEntity.position(relativeTo: nil), relativeTo: nil)
 
-                // Evitar que el texto se invierta
+                // Prevent text from being reversed
                 let textRotationCorrection = simd_quatf(angle: .pi, axis: SIMD3<Float>(0, 1, 0))
                 textEntity.orientation = simd_mul(textEntity.orientation, textRotationCorrection)
             }
@@ -477,16 +454,13 @@ func updatePOIOrientationToCamera(arView: ARView) {
     }
 }
 
-
-
-
 func areLastThreeValuesDistinct(locationBuffer: [String?], currentIndex: Int) -> Bool {
-    // Asegurarse de que el buffer tenga al menos 3 valores para comparar
+    // Make sure the buffer has at least 3 values ​​to compare
     guard locationBuffer.count >= 3 else {
         return false
     }
 
-    // Obtiene los últimos tres valores guardados en el buffer de forma circular
+    // Gets the last three values ​​stored in the buffer in a circular fashion
     let lastIndex1 = (currentIndex - 1 + locationBuffer.count) % locationBuffer.count
     let lastIndex2 = (currentIndex - 2 + locationBuffer.count) % locationBuffer.count
     let lastIndex3 = (currentIndex - 3 + locationBuffer.count) % locationBuffer.count
@@ -494,14 +468,14 @@ func areLastThreeValuesDistinct(locationBuffer: [String?], currentIndex: Int) ->
     guard let lastValue1 = locationBuffer[lastIndex1],
           let lastValue2 = locationBuffer[lastIndex2],
           let lastValue3 = locationBuffer[lastIndex3] else {
-        // Retorna false si alguno de los tres últimos valores es nil
+        // Returns false if any of the last three values ​​is nil
         return false
     }
     
-    // Crea un conjunto con los tres últimos valores
+    // Create a set with the last three values
     let lastThreeValues: Set<String> = [lastValue1, lastValue2, lastValue3]
 
-    // Recorre el resto del buffer y verifica si alguno coincide con los últimos tres valores
+    // Iterate through the rest of the buffer and check if any of them match the last three values.
     for i in 0..<locationBuffer.count {
         if i != lastIndex1 && i != lastIndex2 && i != lastIndex3 {
             if let location = locationBuffer[i], lastThreeValues.contains(location) {
@@ -516,7 +490,7 @@ func areLastThreeValuesDistinct(locationBuffer: [String?], currentIndex: Int) ->
 func resfreshByChangeFloor(location: SITLocation, currentIndex: inout Int, hasToResetChangeFloor: inout Bool, locationBuffer: inout [String?]) {
        hasToResetChangeFloor = false
        locationBuffer[currentIndex] = location.position.floorIdentifier
-       currentIndex = (currentIndex + 1) % locationBuffer.count // Actualizar el índice de manera circular
+       currentIndex = (currentIndex + 1) % locationBuffer.count // Update index
        
        if areLastThreeValuesDistinct(locationBuffer: locationBuffer, currentIndex: currentIndex) {
            print("Los últimos tres valores son distintos del resto de la lista.")

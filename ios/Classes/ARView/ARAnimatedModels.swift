@@ -11,44 +11,49 @@ class DynamicModelManager {
     private var featureCollection: ARFeatureCollection?
     
     var userInFence = false
+    var geofenceName: String?
     
     
-    /// Carga modelos dinámicos basados en los `geofences`.
+    /// Loads dynamic models based on `geofences`.
     func loadDynamicsModels(geofences: [SITGeofence], arView: ARView, mainAnchor: AnchorEntity) {
         for geofence in geofences {
             guard let customFields = geofence.customFields as? [String: Any] else {
                 print("DynamicModelManager - customFields invalid or empty")
                 continue
             }
-            
-            processGeofenceCustomFields(customFields, arView: arView, mainAnchor: mainAnchor)
+            let geofenceName = geofence.name
+            processGeofenceCustomFields(customFields:customFields, arView: arView, mainAnchor: mainAnchor, geofenceName: geofenceName)
         }
     }
     
-    /// Procesa los customFields de un geofence y carga modelos si hay metadatos AR
-    private func processGeofenceCustomFields(_ customFields: [String: Any], arView: ARView, mainAnchor: AnchorEntity) {
+    /// Processes customFields of a geofence and loads models if AR metadata is present
+    private func processGeofenceCustomFields(customFields: [String: Any], arView: ARView, mainAnchor: AnchorEntity, geofenceName: String) {
         for (key, value) in customFields {
             guard key == "ar_metadata" else { continue }
             // Parse featureCollection
-            if let featureCollection = parseARFeatureCollection(from: value) {
-                userInFence = true
-                loadModels(featureCollection:featureCollection, arView: arView, mainAnchor: mainAnchor)
-            } else {
-                print("Error: Can not parse ARFeatureCollection.")
+            guard let parsedFeatureCollection = parseARFeatureCollection(from: value) else {
+                print("Error: Failed to parse feature collection from the provided data.")
+                continue
             }
+            self.featureCollection = parsedFeatureCollection
+            userInFence = true
+            self.geofenceName = geofenceName
+            print("Geofence Name:   ", geofenceName)
+            loadModels(arView: arView, mainAnchor: mainAnchor)
+           
         }
     }
     
     
-    /// Convierte el valor de `ar_metadata` en un objeto `ARFeatureCollection`
+    /// Converts the value of `ar_metadata` to an `ARFeatureCollection` object
     private func parseARFeatureCollection(from metadata: Any) -> ARFeatureCollection? {
         guard let jsonString = metadata as? String else {
-            print("Error: El valor de metadata no es una cadena válida")
+            print("Error: The metadata value is not a valid string")
             return nil
         }
         
         guard let jsonData = jsonString.data(using: .utf8) else {
-            print("Error: No se pudo convertir la cadena a datos JSON")
+            print("Error: Failed to convert string to JSON data")
             return nil
         }
         
@@ -56,24 +61,28 @@ class DynamicModelManager {
             let featureCollection = try JSONDecoder().decode(ARFeatureCollection.self, from: jsonData)
             return featureCollection
         } catch {
-            print("Error al parsear el JSON: \(error)")
+            print("Error parsing JSON: \(error)")
             return nil
         }
     }
     
     
-    /// Carga o actualiza los modelos dinámicos a partir de una lista de características de forma aleatoria
+    /// Load or update dynamic models from a list of features at random
     private func loadModels(
-        featureCollection: ARFeatureCollection,
         arView: ARView,
         mainAnchor: AnchorEntity
     ) {
-        // Barajar las características para cargarlas en orden aleatorio
+        
+        guard let featureCollection = self.featureCollection else {
+            print("Error: featureCollection es nil.")
+            return
+        }
+        // Shuffle features to load them in random order
         let shuffledFeatures = featureCollection.features.shuffled()
         
         for (index, feature) in shuffledFeatures.enumerated().map({ ($0 + 1, $1) }) {
             guard feature.properties.type == "model" else {
-                print("Feature ignorado: no es un modelo.")
+                print("Feature ignored: It is not a model.")
                 continue
             }
             
@@ -84,7 +93,7 @@ class DynamicModelManager {
             let position = feature.geometry.coordinates
             
 
-            // Cargar un nuevo modelo con los datos del feature
+            // Load a new model with the feature data
             loadDynamicModel(
                 model: modelName,
                 modelURL: modelURL,
@@ -101,7 +110,7 @@ class DynamicModelManager {
     
     
     
-    /// Carga un modelo específico en la escena.
+    /// Load a specific model into the scene.
     private func loadDynamicModel(
         model: String,
         modelURL: String,
@@ -112,38 +121,30 @@ class DynamicModelManager {
         mainAnchor: AnchorEntity,
         index: Int
     ) {
-        print("Loading model: \(model) desde URL: \(modelURL)")
+        print("Loading model: \(model) from URL: \(modelURL)")
         
         do {
             // Cargar el modelo como ModelEntity
             let entity = try Entity.load(named: model + ".usdz")
-            print("Entidad cargada correctamente: \(entity)")
+            print("Entity loaded correctly: \(entity)")
             
             guard let modelEntity = findFirstModelEntity(in: entity) else {
-                print("Error: No se encontró un ModelEntity en la jerarquía del modelo \(model).")
+                print("Error:A ModelEntity was not found in the model hierarchy\(model).")
                 return
             }
-            
-            // Configurar el modelo
-            let cameraPosition = arView.cameraTransform.translation
-            modelEntity.scale = SIMD3<Float>(scale, scale, scale)
-            
-            // Actualizar la posición del modelo específico
-            self.setPosition(modelEntity:modelEntity, cameraPosition:cameraPosition, index:index, position: position)
-            
-            // Aplicar orientación en los ejes X, Y, Z si está disponible
-            if orientation.count == 3 {
-                let rotationX = simd_quatf(angle: orientation[0] * (.pi / 180), axis: SIMD3<Float>(1, 0, 0))
-                let rotationY = simd_quatf(angle: orientation[1] * (.pi / 180), axis: SIMD3<Float>(0, 1, 0))
-                let rotationZ = simd_quatf(angle: orientation[2] * (.pi / 180), axis: SIMD3<Float>(0, 0, 1))
-                
-                // Combinar las rotaciones en X, Y, Z
-                modelEntity.orientation = simd_mul(simd_mul(rotationX, rotationY), rotationZ)
-            }
-            
             modelEntity.name = "dynamic_\(model)"
+            if(index == 1){
+                // Configure model
+                let cameraPosition = arView.cameraTransform.translation
+                modelEntity.scale = SIMD3<Float>(scale, scale, scale)
+                
+                // Update model position
+                self.setPositionAndOrientation(modelEntity:modelEntity, cameraPosition:cameraPosition, index:index, position: position, orientation: orientation)
+                            
+            }
+         
             
-            // Reproducir animación si está disponible
+            // Play animation if available
             if let animation = modelEntity.availableAnimations.first {
                 modelEntity.playAnimation(animation.repeat(), transitionDuration: 0.5, startsPaused: false)
             }
@@ -158,36 +159,41 @@ class DynamicModelManager {
         }
     }
     
-    private func setPosition(
+    private func setPositionAndOrientation(
         modelEntity: Entity,
         cameraPosition: SIMD3<Float>,
         index: Int,
-        position: [Double]
+        position: [Double],
+        orientation: [Float]
     ) {
-        // Verifica que la longitud de `position` sea suficiente para acceder al índice 2
+        // Check that the length of `position` is sufficient to access index 2
         guard position.count > 2 else {
-            print("Error: El array position no tiene suficientes elementos.")
+            print("Error: The array position does not have enough elements.")
             return
         }
         
-        if index == 1 {
-            modelEntity.position = SIMD3<Float>(
-                cameraPosition.x - Float.random(in: -5.0...5.0),
-                cameraPosition.y + Float(position[2]),
-                cameraPosition.z - 5.0
-            )
+     
+        modelEntity.position = SIMD3<Float>(
+            cameraPosition.x - Float.random(in: -5.0...5.0),
+            cameraPosition.y + Float(position[2]),
+            cameraPosition.z - 10.0
+        )
+        
+        
+        // Apply orientation on X, Y, Z axes if available
+        if orientation.count == 3 {
+            let rotationX = simd_quatf(angle: orientation[0] * (.pi / 180), axis: SIMD3<Float>(1, 0, 0))
+            let rotationY = simd_quatf(angle: orientation[1] * (.pi / 180), axis: SIMD3<Float>(0, 1, 0))
+            let rotationZ = simd_quatf(angle: orientation[2] * (.pi / 180), axis: SIMD3<Float>(0, 0, 1))
             
-            print("MODEL POSE:   ",modelEntity.name, "     ", modelEntity.position.y, "   ", modelEntity.position.z)
-        } else {
-            modelEntity.position = SIMD3<Float>(
-                cameraPosition.x - Float.random(in: -5.0...5.0),
-                cameraPosition.y + Float(position[2]),
-                cameraPosition.z - 100.0
-            )
+            // Combine rotations in X, Y, Z
+            modelEntity.orientation = simd_mul(simd_mul(rotationX, rotationY), rotationZ)
         }
+        print("Model loaded :   ",modelEntity.name, "  in pose: ", modelEntity.position.y, "   ", modelEntity.position.z)
+      
     }
         
-    /// Función para buscar el primer ModelEntity en una jerarquía de Entity
+    /// Function to find the first ModelEntity in an Entity hierarchy
     private func findFirstModelEntity(in entity: Entity) -> ModelEntity? {
         if let modelEntity = entity as? ModelEntity {
             return modelEntity
@@ -203,24 +209,36 @@ class DynamicModelManager {
     /// Función para reproducir animación si está disponible
     private func playAnimationIfAvailable(for modelEntity: ModelEntity) {
         guard let animation = modelEntity.availableAnimations.first else {
-            print("No se encontraron animaciones disponibles para \(modelEntity.name).")
+            print("No animations available for this \(modelEntity.name).")
             return
         }
         
-        print("Animación encontrada: \(animation.name)")
+        print("Found animation: \(animation.name)")
         modelEntity.playAnimation(animation.repeat(), transitionDuration: 0.5, startsPaused: false)
     }
     
-    func removeDynamicModels() {
-        // Filtrar todos los modelos cuyo nombre comience con "dynamic_"
-        let modelsToRemove = dynamicModels.filter { $0.name.hasPrefix("dynamic_") }
+    func removeDynamicModels(geofences: [SITGeofence]) {
         
-        // Eliminar cada uno de los modelos encontrados
-        modelsToRemove.forEach { modelToRemove in
-            modelToRemove.removeFromParent() // Elimina el modelo de su entidad madre
-            dynamicModels.removeAll { $0 == modelToRemove } // Elimina del arreglo dynamicModels
-            print("Removed dynamic model: \(modelToRemove.name)")
+        for geofence in geofences {
+            guard let customFields = geofence.customFields as? [String: Any] else {
+                print("DynamicModelManager - customFields invalid or empty")
+                continue
+            }
+            
+
+            if(self.geofenceName == geofence.name){
+                // Filter all models that start with dynamic_
+                let modelsToRemove = dynamicModels.filter { $0.name.hasPrefix("dynamic_") }
+                
+                // Delete each of the found models
+                modelsToRemove.forEach { modelToRemove in
+                    modelToRemove.removeFromParent()
+                    dynamicModels.removeAll { $0 == modelToRemove }
+                    print("Removed dynamic model: \(modelToRemove.name)")
+                }
+            }
         }
+        
     }
 
     
@@ -246,33 +264,56 @@ class DynamicModelManager {
     }
     
     func updateModelLocation(arView: ARView) {
-        // Filtrar modelos que tienen el prefijo "dynamic_" y barajarlos para iteración aleatoria
+        guard let featureCollection = self.featureCollection else {
+            print("Error: featureCollection es nil.")
+            return
+        }
+
+        // Filter dynamic models that have the prefix "dynamic_" and shuffle them
         let dynamicModels = self.dynamicModels.filter { $0.name.hasPrefix("dynamic_") }.shuffled()
+        let shuffledFeatures = featureCollection.features.shuffled()
 
-        // Iterar sobre los modelos dinámicos filtrados y barajados
-        for (index, modelEntity) in dynamicModels.enumerated() {
-            // Remover el modelo del ancla para evitar duplicados
+        // Remove all dynamic models from their current anchors
+        for modelEntity in dynamicModels {
             modelEntity.removeFromParent()
+        }
 
-            // Obtener la posición de la cámara
-            let cameraPosition = arView.cameraTransform.translation
-
-            // Actualizar la posición del modelo específico
-            if index == 1 {
-                modelEntity.position = SIMD3<Float>(
-                    cameraPosition.x - Float.random(in: -5.0...5.0),
-                    cameraPosition.y,
-                    cameraPosition.z - 5.0
-                )
-            } else {
-                modelEntity.position = SIMD3<Float>(
-                    cameraPosition.x - Float.random(in: -5.0...5.0),
-                    cameraPosition.y,
-                    cameraPosition.z - 100.0
-                )
+        // Iterate over shuffled features and remap dynamic models
+        for (index, feature) in shuffledFeatures.enumerated().map({ ($0 + 1, $1) }) {
+            guard feature.properties.type == "model" else {
+                print("Feature ignorado: no es un modelo.")
+                continue
             }
 
-            // Reagregar el modelo al ancla principal
+            guard index < dynamicModels.count else {
+                print("No hay suficientes modelos dinámicos para mapear las características.")
+                break
+            }
+
+            let modelEntity = dynamicModels[index]
+            let modelName = feature.properties.name
+            modelEntity.name = "dynamic_\(modelName)"
+
+            // Configure scale and orientation
+            modelEntity.scale = SIMD3<Float>(
+                feature.properties.scale,
+                feature.properties.scale,
+                feature.properties.scale
+            )
+            let orientation = feature.properties.orientation
+            let position = feature.geometry.coordinates
+
+            // Update model position and orientation
+            let cameraPosition = arView.cameraTransform.translation
+            setPositionAndOrientation(
+                modelEntity: modelEntity,
+                cameraPosition: cameraPosition,
+                index: index,
+                position: position,
+                orientation: orientation
+            )
+
+            // Re-add the model to the main anchor
             if let mainAnchor = arView.scene.anchors.first(where: { $0 is AnchorEntity }) {
                 mainAnchor.addChild(modelEntity)
             }
@@ -280,47 +321,7 @@ class DynamicModelManager {
             print("Modelo actualizado: \(modelEntity.name) a posición: \(modelEntity.position)")
         }
     }
-    
-    
-   /* func highlightPoiDestination(arView: ARView, destinationPoiName: String) {
-        // Buscar el POI por su nombre en la escena
-        let poiContainerName = "poiContainer_\(destinationPoiName)"
-        guard let poiContainerEntity = arView.scene.findEntity(named: poiContainerName) else {
-            print("No se encontró el POI con el nombre: \(poiContainerName)")
-            return
-        }
 
-        // Crear las transformaciones de escala
-        let scaleUp = SIMD3<Float>(1.5, 1.5, 1.5) // Aumenta el tamaño
-        let scaleDown = SIMD3<Float>(1.0, 1.0, 1.0) // Vuelve al tamaño original
-        
-        // Usamos el método `move(to:)` o `scale(to:)` con animación
-        // Animación de escala: aumentar el tamaño
-        let scaleUpTransform = Transform(scale: scaleUp)
-        let scaleDownTransform = Transform(scale: scaleDown)
-        
-        // Aplicar la animación de escala en un bloque de animación
-        poiContainerEntity.move(to: scaleUpTransform, relativeTo: poiContainerEntity.parent, duration: 1.0, timingFunction: .easeInOut)
-
-        // Después de 1 segundo, disminuir el tamaño
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            poiContainerEntity.move(to: scaleDownTransform, relativeTo: poiContainerEntity.parent, duration: 1.0, timingFunction: .easeInOut)
-        }
-
-        // Repetir la animación para crear el efecto de pulsación
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            self.highlightPoiDestination(arView: arView, destinationPoiName: destinationPoiName)
-        }
-    }
-*/
-
-
-
-
-
-    
-    
-    
     
     
 }
@@ -337,45 +338,44 @@ class DynamicModelManager {
                 return anchor
             }
             
-            // Configurar escala, orientación y posición
+            // Configure scale, orientation and position
             arrowEntity.scale = SIMD3<Float>(0.025, 0.025, 0.025)
             arrowEntity.position = SIMD3<Float>(0.0, 0.0, 0.0)
             
-            // Definir el color personalizado con R=40, G=51, B=128
+            // Set Situm color
             let customColor = UIColor(red: 40.0 / 255.0, green: 51.0 / 255.0, blue: 128.0 / 255.0, alpha: 1.0)
             
-            // Aplicar el color al modelo y sus subentidades
+            // Apply color to model
             applyColorToEntityAndChildren(entity: arrowEntity, color: customColor)
             
-            // Añadir el modelo al ancla
+            // Add model to anchor
             anchor.addChild(arrowEntity)
             
         } catch {
-            print("Error al cargar el modelo de la flecha: \(error.localizedDescription)")
+            print("Error loading arrow model: \(error.localizedDescription)")
         }
         
         return anchor
     }
     
-    // Función recursiva para aplicar un color a todas las subentidades
     @available(iOS 15.0, *)
     func applyColorToEntityAndChildren(entity: Entity, color: UIColor) {
         if let modelEntity = entity as? ModelEntity {
-            // Crear un material completamente mate
+            // create a completely matte material
             var material = PhysicallyBasedMaterial()
-            // Configurar color base
+            // Configure base color
             material.baseColor = .init(tint: color)
-            // Configurar rugosidad máxima para eliminar brillos
-            material.roughness = .init(floatLiteral: 1.0) // Rugosidad máxima (completamente mate)
-            // Configurar metalicidad mínima
-            material.metallic = .init(floatLiteral: 0.0) // Sin efecto metálico
-            // Configurar reflectividad especular mínima
-            material.specular = .init(floatLiteral: 0.0) // Sin reflectividad
-            // Asignar el material al modelo
+            // Configure max roughness to to eliminate shine
+            material.roughness = .init(floatLiteral: 1.0)
+            // Configure min metallic
+            material.metallic = .init(floatLiteral: 0.0)
+            // Configure min specular
+            material.specular = .init(floatLiteral: 0.0)
+            // Assign the material to the model
             modelEntity.model?.materials = [material]
         }
         
-        // Aplicar el material a las subentidades recursivamente
+        // Apply material to subentities recursively
         for child in entity.children {
             applyColorToEntityAndChildren(entity: child, color: color)
         }

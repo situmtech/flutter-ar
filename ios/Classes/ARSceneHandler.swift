@@ -389,7 +389,6 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     
     func didEnteredGeofences(_ geofences: [SITGeofence]!) {
         print("ARSceneHandler - Entered geofences: \(geofences)")
-        
         // Almacenar los geofences actuales
         self.currentGeofences = geofences ?? []
         
@@ -406,7 +405,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
 
     func didExitedGeofences(_ geofences: [SITGeofence]!) {
         
-        print("ARSceneHandler - Exit from geofences: \(geofences)")
+        print("ARSceneHandler - Exit from geofences!!!!!!!!!!!!!!!: \(geofences)")
         
         guard let coordinator = self.coordinator,
               let mainAnchor = mainAnchor else {
@@ -414,7 +413,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         }
 
         // Remove all models
-        coordinator.modelManager.removeDynamicModels()
+        coordinator.modelManager.removeDynamicModels(geofences: geofences)
     }
 
 
