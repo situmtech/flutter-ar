@@ -25,7 +25,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     var timestampLastRefresh = 0
     var hasToRefresh = true
        
-    var mainAnchor: AnchorEntity? // Declara mainAnchor como propiedad de la clase
+    var mainAnchor: AnchorEntity?
     var updateTimer: Timer?
     var cameraDeph = 25.0
     
@@ -55,7 +55,6 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         arQuality = ARQuality()
         sitArData = SITArData()
         sitExternalSensorManager = SITExternalSensorManager()
-        //Fija un ancla en el origen de coordenadas
         setupFixedAnchor(arSceneView: arSceneView)
 
         //Lights
@@ -64,23 +63,22 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         //Debug panel
         configDebug = ConfigDebug(arQuality: arQuality, hasToRefresh: hasToRefresh)
         
-        
-        // Inicializa el temporizador para ajustar la visibilidad de los objetos en función de la distancia
+        // Initializes the timer to adjust the visibility of objects based on distance
         updateTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
             guard let self = self, let mainAnchor = self.mainAnchor else { return }
             self.adjustVisibilityBasedOnDistance(arSceneView: arSceneView, mainAnchor: mainAnchor, nearDistance: 2.0, farDistance: Float(cameraDeph))
         }
             
        
-        // Instancia el Coordinator
+        // Instance of the Coordinator
         self.coordinator = makeCoordinator()
-        self.coordinator?.arView = arSceneView // Asigna la vista AR
+        self.coordinator?.arView = arSceneView
         
         //Arrow
         self.coordinator?.initArrowToRoute(staticRoute) 
         let arrowAnchor = createArrowAnchor()
         arSceneView.scene.anchors.append(arrowAnchor)
-        self.coordinator?.arrowAnchor = arrowAnchor // Asigna el ancla de la flecha
+        self.coordinator?.arrowAnchor = arrowAnchor
         arSceneView.session.delegate = self.coordinator
                 
         
@@ -90,11 +88,9 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         }
                 
         setupAndUpdateConfigDebug(arSceneView: arSceneView)
-        
         let destinationPoiName = self.destinationPoiName ?? ""
         self.coordinator?.setDestinationPoi(destinationPoiName: destinationPoiName)
-        
-        
+                
                
     }    
  
@@ -102,14 +98,14 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         let cameraPosition = arSceneView.cameraTransform.translation
 
         for child in mainAnchor.children {
-            // Calcula la distancia entre la cámara y cada hijo del ancla principal
+            // Calculate the distance between the camera and each child of the main anchor
             let distance = simd_distance(cameraPosition, child.transform.translation)
             
-            // Filtrar la visibilidad basada en la distancia
+            // Filter visibility based on distance
             if distance < nearDistance || distance > farDistance {
-                child.isEnabled = false // Desactivar la visibilidad del objeto
+                child.isEnabled = false // Turn off object visibility
             } else {
-                child.isEnabled = true // Activar la visibilidad del objeto
+                child.isEnabled = true // Turn on object visibility
             }
         }
     }
@@ -132,7 +128,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     func makeCoordinator() -> Coordinator {
         let locationManager = LocationManager()
         let coordinator = Coordinator(locationManager: locationManager)
-        coordinator.arSceneHandler = self // Asigna el ARSceneHandler al Coordinator
+        coordinator.arSceneHandler = self // Assign the ARSceneHandler to the Coordinator
         return coordinator
     }
 
@@ -146,17 +142,16 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     }
     
     func handleFrameUpdate(frame: ARFrame) {
-        //print("Actualiza en cada frame desde el Coordinator")
+      
         guard let configParameters = configDebug?.getConfigParameters(),
               let arrowDistance = configParameters["arrowDistance"],
               let cameraDepth = configParameters["cameraDeph"] else {
-            print("Error: No se pudo obtener arrowDistance o cameraDeph de los parámetros de configuración")
+            print("Error: Could not get arrowDistance or cameraDeph from configuration parameters")
             return
         }
         
-        coordinator?.setArrowDistance(arrowDistance: arrowDistance) // Asegúrate de que el tipo sea correcto
-        self.cameraDeph = Double(cameraDepth) // Asegúrate de que cameraDepth esté en el tipo correcto
-        //print("camera deph  a", self.cameraDeph)
+        coordinator?.setArrowDistance(arrowDistance: arrowDistance)
+        self.cameraDeph = Double(cameraDepth)
 
         let hasToReset = configDebug?.hasToReset ?? false
 
@@ -202,7 +197,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     }
     
     func refresh() {
-        let currentTimestamp = Int(Date().timeIntervalSince1970 * 1000) // Obtener el timestamp en milisegundos
+        let currentTimestamp = Int(Date().timeIntervalSince1970 * 1000) // Time in miliseconds
         if currentTimestamp > timestampLastRefresh + 5000 {
             if let coordinator = self.coordinator {                
                 coordinator.updatePOIs()
@@ -219,8 +214,8 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         }
         
         configDebug.setupUpdateDebugInfo(view: arSceneView)
-        configDebug.setupInfoPanel(view: arSceneView) // Crear el panel de información
-        configDebug.startRefreshingInfo() 
+        configDebug.setupInfoPanel(view: arSceneView) // Setting information panel
+        configDebug.startRefreshingInfo()
     }
 
     func startRefreshing(_ numRefresh: Int) {
@@ -239,11 +234,10 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         updateRefreshing()
         arQuality?.updateSitumLocation(location: location)
         
-        // Desempaquetar los valores opcionales de coordenadas de cámara
+        // Unpacking optional camera coordinate values
         if let worldPosition = coordinator?.arView?.cameraTransform.translation,
            let worldRotation = coordinator?.arView?.cameraTransform.rotation {
-            
-            // Asegurar que los tipos están correctos: SCNVector3 y SCNQuaternion
+  
             let position: SCNVector3 = SCNVector3(worldPosition.x, worldPosition.y, worldPosition.z)
             let rotation = SCNQuaternion(worldRotation.axis.x,
                                          worldRotation.axis.y,
@@ -263,15 +257,12 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     // MARK: Communication Manager callbacks:
     
     func onBuildingInfoReceived(_ buildingInfo: SITBuildingInfo?, withError error: Error?) {
-       // print("Situm> Got \(buildingInfo?.indoorPois.count ?? 0) POIs: \(String(describing: buildingInfo?.indoorPois))")
         if let coordinator = self.coordinator, let indoorPois = buildingInfo?.indoorPois {
-            // Parsea los POIs
+            // Pois parse
             let poisMapArray = parsePois(pois: indoorPois)
-            // Envuelve el array en un diccionario antes de pasarlo a updatePOIs
+            // Wrap the array in a dictionary before passing it to updatePOIs
             let poisMap: [String: Any] = ["pois": poisMapArray]
-
-            
-            // Llama a updatePOIs con el diccionario
+            // Call to updatePOIs to update pois position
             coordinator.handlePoisUpdated(poisMap: poisMap)
         } else {
             print("Coordinator is nil or no POIs available")
@@ -316,7 +307,6 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     }
     
     func navigationManager(_ navigationManager: SITNavigationInterface, didUpdate progress: SITNavigationProgress, on route: SITRoute) {
-        //print("Situm> Progress updated on route: \(route.toDictionary()["points"]), progress: \(progress)")
         if let coordinator = self.coordinator {
             coordinator.handlePointUpdate(route.toDictionary()["points"])
         } else {
@@ -343,44 +333,41 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     
     func setSitArData() {
         guard let worldPosition = coordinator?.arView?.cameraTransform.translation else {
-            print("Error: No se pudo obtener la posición de la cámara.")
+            print("Error: Failed to get camera position.")
             return
         }
 
         let currentTimestamp = Int(Date().timeIntervalSince1970 * 1000)
         
         if lastTimestamp != 0 {
-            // Asegúrate de que sitArData no sea nil
-            guard var sitArData = self.sitArData else {
-                print("Error: sitArData no está inicializado.")
+            guard let sitArData = self.sitArData else {
+                print("Error: sitArData is not initialized.")
                 return
             }
 
             sitArData.dt = Float(currentTimestamp - lastTimestamp)
-            print("delta dt:   ", sitArData.dt)
             sitArData.x = Float(worldPosition.x)
             sitArData.y = Float(worldPosition.y)
             sitArData.z = -1.0*Float(worldPosition.z)
             sitArData.timestamp = Double(currentTimestamp)
 
-            // Obtener el frame actual
+            // Get the current frame
             guard let frame = coordinator?.arView?.session.currentFrame else {
                 print("Error: No se pudo obtener el frame actual de la sesión.")
                 return
             }
 
-            // Obtener la matriz de transformación de la cámara
+            // Get the camera transformation matrix
             let cameraTransform = frame.camera.transform
 
-            // Calcular los ángulos de Euler a partir de la matriz de transformación
+            // Calculate Euler angles from the transformation matrix
             let eulerAngles = cameraTransform.eulerAngles()
             
             sitArData.xEuler = Float(eulerAngles.x) // Roll
             sitArData.yEuler = Float(eulerAngles.y) // Pitch
             sitArData.zEuler = Float(eulerAngles.z) // Yaw
 
-            // Llama a setArData sin la etiqueta
-            sitExternalSensorManager?.setArData(sitArData) // Aquí se pasa sitArData directamente
+            sitExternalSensorManager?.setArData(sitArData)
         }
         
         lastTimestamp = currentTimestamp
@@ -389,7 +376,6 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     
     func didEnteredGeofences(_ geofences: [SITGeofence]!) {
         print("ARSceneHandler - Entered geofences: \(geofences)")
-        // Almacenar los geofences actuales
         self.currentGeofences = geofences ?? []
         
         guard let coordinator = self.coordinator,
@@ -404,8 +390,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     }
 
     func didExitedGeofences(_ geofences: [SITGeofence]!) {
-        
-        print("ARSceneHandler - Exit from geofences!!!!!!!!!!!!!!!: \(geofences)")
+        print("ARSceneHandler - Exit from geofences: \(geofences)")
         
         guard let coordinator = self.coordinator,
               let arView = coordinator.arView,
