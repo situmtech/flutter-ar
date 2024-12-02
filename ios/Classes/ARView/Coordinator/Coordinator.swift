@@ -72,7 +72,7 @@ class Coordinator: NSObject, ARSessionDelegate {
             
             guard let arView = arView else { return }
             
-            // Search anchor Buscar el ancla y crear si no existe
+            // Search anchor
             let fixedPOIAnchor = arView.scene.anchors.first(where: { $0.name == "fixedPOIAnchor" }) as? AnchorEntity ?? {
                 let newAnchor = AnchorEntity(world: SIMD3<Float>(0, 0, 0))
                 newAnchor.name = "fixedPOIAnchor"
@@ -110,7 +110,7 @@ class Coordinator: NSObject, ARSessionDelegate {
     func handlePointUpdate(_ points: Any?) {
         if let newPointsList = points as? [[String: Any]] {
             
-            // Verificar si la nueva lista de puntos es diferente a la actual
+            // Check if the new list of points is different from the current one
             if arePointsDifferent(self.pointsList, newPointsList) {
                 self.pointsList = newPointsList
             }
@@ -140,29 +140,29 @@ class Coordinator: NSObject, ARSessionDelegate {
     func calculateAndSetTargetPoint() {
         guard let arView = arView else { return }
 
-        // Obtener la posición actual de la cámara
+        // Get the current camera position
         let cameraPosition = SIMD2<Float>(arView.cameraTransform.translation.x, arView.cameraTransform.translation.z)
 
-        // Usamos un bucle while para eliminar puntos sin saltar ningún índice
+        // We use a while loop to remove points without skipping any index
         var i = 0
         while i < storedTransformedPositions.count {
             
-            // Calcular la distancia entre la cámara y el punto
+            // Calculate the distance between the camera and the point
             let distanceToCamera = simd_distance(cameraPosition, SIMD2<Float>(self.storedTransformedPositions[i].x, self.storedTransformedPositions[i].z))
             
-            // Si la distancia es menor que el umbral
+            // If the distance is less than the threshold
             if distanceToCamera < Float(arrowDistance) {
                 print("Eliminando punto en índice \(i) con distancia \(distanceToCamera)")
                 
-                // Llamar a setTargetCoordinates antes de eliminar el punto
+                // Call setTarget Coordinates before removing the point
                 if i + 1 < storedTransformedPositions.count {
                     setTargetCoordinates(x: storedTransformedPositions[i + 1].x, z: storedTransformedPositions[i + 1].z)
                 }
 
-                // Eliminar el punto
+                // Reomve point
                 storedTransformedPositions.remove(at: i)
             } else {
-                // Solo incrementamos el índice si no eliminamos el punto
+                // We only increment the index if we do not remove the point
                 i += 1
             }
         }
@@ -173,18 +173,18 @@ class Coordinator: NSObject, ARSessionDelegate {
     func updateArrowPositionAndDirection() {
         guard let arView = arView, let arrowAnchor = arrowAnchor else { return }
 
-        // Obtener la posición de la cámara
+        // Get camera position
         let cameraTransform = arView.cameraTransform
         let cameraPosition = cameraTransform.translation
 
-        // Calcular una posición fija en frente de la cámara
+        // Calculate a fixed position in front of the camera
         let distanceInFrontOfCamera: Float = 0.5
         let forwardDirection = cameraTransform.matrix.columns.2
         let forwardVector = SIMD3<Float>(forwardDirection.x, forwardDirection.y, forwardDirection.z) * distanceInFrontOfCamera
         let targetPosition = cameraPosition - forwardVector
         
-        // Suavizado de posición4
-        var smoothingFactor: Float = 0.2 // Ajusta este valor para controlar el nivel de suavidad
+        // Position smoothing
+        var smoothingFactor: Float = 0.2 // Adjust this value to control the level of smoothness
         if (self.hasToRefresh){
             smoothingFactor = 0.20
         }
@@ -197,17 +197,16 @@ class Coordinator: NSObject, ARSessionDelegate {
         }
 
         if targetX != 0 && targetZ != 0 {
-                // Calcular el ángulo hacia el objetivo
+                // Calculate the angle to the target
                 let arrowPosition = arrowAnchor.position
                 let targetVector = SIMD2<Float>(Float(targetX) - arrowPosition.x, Float(targetZ) - arrowPosition.z)
                 var angleToTarget = atan2(-targetVector.y, targetVector.x)
 
                 angleToTarget -= .pi / 2
                 if let arrowEntity = arrowAnchor.children.first {
-                    // Crear la rotación necesaria
-                    let targetRotation = simd_quatf(angle: angleToTarget, axis: SIMD3<Float>(0, 1, 0))
-                    
-                    // Suavizado de rotación
+                    // Create the necessary rotation
+                    let targetRotation = simd_quatf(angle: angleToTarget, axis: SIMD3<Float>(0, 1, 0))                    
+                    //Rotational smoothing
                     arrowEntity.orientation = simd_slerp(arrowEntity.orientation, targetRotation, smoothingFactor)
                 }
             }
