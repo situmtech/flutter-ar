@@ -209,7 +209,7 @@ class DynamicModelManager {
         return nil
     }
     
-    /// Función para reproducir animación si está disponible
+    /// Function to play animation if available
     private func playAnimationIfAvailable(for modelEntity: ModelEntity) {
         guard let animation = modelEntity.availableAnimations.first else {
             print("No animations available for this \(modelEntity.name).")
@@ -303,7 +303,7 @@ class DynamicModelManager {
         do {
             // Load model as ModelEntity
             guard let arrowEntity = try? ModelEntity.load(named: "arrowSitum.usdz") else {
-                print("Error: El modelo no se pudo cargar como ModelEntity.")
+                print("Error: The model could not be loaded as a ModelEntity.")
                 return anchor
             }
             

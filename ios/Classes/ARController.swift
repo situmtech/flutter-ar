@@ -28,7 +28,7 @@ class ARController: NSObject, ARSceneHandlerDelegate {
 
     }
     
-    // Cargar AR
+    // Load AR
     func load(buildingIdentifier: String) {
         print("Situm> AR> L&U> CALLED LOAD for building \(buildingIdentifier)")
         if isLoaded || isLoading {
@@ -78,7 +78,7 @@ class ARController: NSObject, ARSceneHandlerDelegate {
     }
     
     private func clearScene() {
-        // Asegúrate de limpiar todos los elementos de la escena antes de recargar
+        // Make sure to clean all elements of the scene before reloading
         arSceneHandler.coordinator?.arView?.scene.anchors.removeAll()       
     }
     

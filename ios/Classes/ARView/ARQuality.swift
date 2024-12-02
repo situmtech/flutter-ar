@@ -61,7 +61,6 @@ class ARQuality {
             // TODO: RESET Threshold
         }
         
-        // Desempaquetar de forma segura los valores opcionales
         if let cartesianCoordinate = location.position.cartesianCoordinate {
             let currentTime = Date().timeIntervalSince1970 * 1000
             
@@ -113,8 +112,7 @@ class ARQuality {
     private func estimateOdometriesMatch(arLocationBuffer: [LocationCoordinates], situmLocationBuffer: [LocationCoordinates]) -> Double {
         let transformedARTrajectory = transformTrajectory(trajectory: arLocationBuffer)
         let transformedSitumTrajectory = transformTrajectory(trajectory: situmLocationBuffer)
-        
-        // Llamada a distanceTo sin el label `other`
+
         return transformedARTrajectory.last!.distanceTo(transformedSitumTrajectory.last!)
     }
 
@@ -130,8 +128,7 @@ class ARQuality {
         // Find minimum displacement
         var distance = 0.0
         var index = 1
-        while index < translatedTrajectory.count {
-            // Llamada sin 'other:'
+        while index < translatedTrajectory.count {            
             distance = translatedTrajectory[0].distanceTo(translatedTrajectory[index])
             if distance > 2 { break }
             index += 1

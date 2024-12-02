@@ -66,7 +66,7 @@ class ConfigDebug {
         if let debugButton = debugButton {
             view.addSubview(debugButton)
             
-            // Añadir el gesto de presión prolongada
+            // Add the long press gesture
             let longPressGesture = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress))
             longPressGesture.minimumPressDuration = 1.0 //Minimum duration (1 second)
             debugButton.addGestureRecognizer(longPressGesture)
@@ -95,7 +95,7 @@ class ConfigDebug {
         view.addGestureRecognizer(tapGesture)
     }
 
-    // Función para ocultar el teclado
+    // Function to hide the keyboard
     @objc func dismissKeyboard() {
         configTextField1?.resignFirstResponder()
         configTextField2?.resignFirstResponder()
@@ -103,7 +103,7 @@ class ConfigDebug {
         configTextField4?.resignFirstResponder()
     }
 
-    // Crear el panel de información y configuración
+    // Create the information and configuration panel
     func setupInfoPanel(view: UIView) {
         infoPanel = UIView()
         infoPanel?.translatesAutoresizingMaskIntoConstraints = false
@@ -113,25 +113,25 @@ class ConfigDebug {
         infoPanel?.layer.borderColor = UIColor.lightGray.cgColor
         infoPanel?.isHidden = true
 
-        // Crear la vista de configuración con etiquetas informativas
+        // Create the configuration view with informational labels
         let qualityDecreaseField = createLabeledTextField(labelText: "Quality Decrease:", placeholder: "Decrease in quality", value: String(qualityDecrease))
         let thresholdDecreaseField = createLabeledTextField(labelText: "Threshold Decrease:", placeholder: "Decrease in threshold", value: String(thresholdDecrease))
         let cameraDepthField = createLabeledTextField(labelText: "Camera Depth:", placeholder: "Max camera depth", value: String(cameraDeph))
         let arrowDistanceField = createLabeledTextField(labelText: "Arrow Distance:", placeholder: "Distance for arrow", value: String(arrowDistance))
 
-        // Extraer los UITextFields de los UIStackViews
+        // Extract UITextFields from UIStackViews
         configTextField1 = qualityDecreaseField.arrangedSubviews[1] as? UITextField
         configTextField2 = thresholdDecreaseField.arrangedSubviews[1] as? UITextField
         configTextField3 = cameraDepthField.arrangedSubviews[1] as? UITextField
         configTextField4 = arrowDistanceField.arrangedSubviews[1] as? UITextField
 
-        // Organizar los campos de configuración en un UIStackView
+        // Arranging configuration fields in a UIStackView
         configStackView = UIStackView(arrangedSubviews: [qualityDecreaseField, thresholdDecreaseField, cameraDepthField, arrowDistanceField])
         configStackView?.axis = .vertical
         configStackView?.spacing = 10
         configStackView?.alignment = .fill
 
-        // Crear la parte superior de configuración con un switch
+        // Create the configuration top with a switch
         let configView = UIView()
         let configLabel = UILabel()
         configLabel.text = "Activar Configuración:"
@@ -146,11 +146,11 @@ class ConfigDebug {
         configHeaderStackView.spacing = 10
         configHeaderStackView.alignment = .center
 
-        // Agregar la cabecera y campos de configuración al configView
+        // Adding the header and configuration fields to the configView
         configView.addSubview(configHeaderStackView)
         configView.addSubview(configStackView!)
 
-        // Ajustar el layout con Auto Layout
+        // Adjusting the layout with Auto Layout
         configHeaderStackView.translatesAutoresizingMaskIntoConstraints = false
         configStackView?.translatesAutoresizingMaskIntoConstraints = false
 
@@ -165,10 +165,10 @@ class ConfigDebug {
             configStackView!.bottomAnchor.constraint(equalTo: configView.bottomAnchor, constant: -10)
         ])
 
-        // Ocultar configuración inicialmente
+        // Hide settings initially
         configStackView?.isHidden = true
 
-        // Crear las etiquetas de información
+        // Create the information labels
         infoLabel1 = UILabel()
         infoLabel2 = UILabel()
         infoLabel3 = UILabel()
@@ -179,28 +179,28 @@ class ConfigDebug {
         infoLabel8 = UILabel()
         
 
-        // Configurar las etiquetas
+        // Setting up labels
         [infoLabel1, infoLabel2, infoLabel3, infoLabel4, infoLabel5, infoLabel6, infoLabel7, infoLabel8].forEach { label in
             label?.textAlignment = .left
             label?.textColor = .white
         }
 
-        // Organizar las etiquetas de información en un UIStackView
+        // Organizing information labels in a UIStackView
         infoStackView = UIStackView(arrangedSubviews: [infoLabel2!, infoLabel3!, infoLabel6!, infoLabel5!, infoLabel7!, infoLabel7!, infoLabel8!, infoLabel1!])
         infoStackView?.axis = .vertical
         infoStackView?.spacing = 5
         infoStackView?.alignment = .fill
 
-        // Crear el StackView principal que contiene la configuración y la información
+        // Create the main StackView that contains the configuration and information
         mainStackView = UIStackView(arrangedSubviews: [configView, infoStackView!])
         mainStackView?.axis = .vertical
-        mainStackView?.spacing = collapsedSpacing // Espaciado inicial cuando la configuración está oculta
+        mainStackView?.spacing = collapsedSpacing // Leading spacing when settings are hidden
         mainStackView?.translatesAutoresizingMaskIntoConstraints = false
 
-        // Agregar el StackView principal a la vista infoPanel
+        // Adding the main StackView to the infoPanel view
         infoPanel?.addSubview(mainStackView!)
 
-        // Configurar restricciones para el mainStackView
+        // Setting constraints for the mainStackView
         NSLayoutConstraint.activate([
             mainStackView!.leadingAnchor.constraint(equalTo: infoPanel!.leadingAnchor, constant: 10),
             mainStackView!.trailingAnchor.constraint(equalTo: infoPanel!.trailingAnchor, constant: -10),
@@ -208,11 +208,11 @@ class ConfigDebug {
             mainStackView!.bottomAnchor.constraint(equalTo: infoPanel!.bottomAnchor, constant: -10)
         ])
 
-        // Agregar infoPanel a la vista principal
+        // Add InfoPanel to Main View
         if let panel = infoPanel {
             view.addSubview(panel)
 
-            // Configurar restricciones para infoPanel
+            // Setting up restrictions for infoPanel
             NSLayoutConstraint.activate([
                 panel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
                 panel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
@@ -222,7 +222,7 @@ class ConfigDebug {
         }
     }
 
-    // Método para crear un campo de texto etiquetado
+    // Method to create a labeled text field
     private func createLabeledTextField(labelText: String, placeholder: String, value: String) -> UIStackView {
         let label = UILabel()
         label.text = labelText
@@ -280,7 +280,7 @@ class ConfigDebug {
             if let text = textField.text, let value = Double(text) {
                 qualityDecrease = value
             } else {
-                print("Error: el valor de qualityDecrease no es un número válido")
+                print("Error: the value of qualityDecrease is not a valid number")
             }
             
         } else if textField == configTextField2 {
@@ -288,7 +288,7 @@ class ConfigDebug {
             if let text = textField.text, let value = Double(text) {
                 thresholdDecrease = value
             } else {
-                print("Error: el valor de thresholdDecrease no es un número válido")
+                print("Error: the value of thresholdDecrease is not a valida number")
             }
             
         } else if textField == configTextField3 {
@@ -296,7 +296,7 @@ class ConfigDebug {
             if let text = textField.text, let value = Int(text) {
                 cameraDeph = value
             } else {
-                print("Error: el valor de cameraDeph no es un número válido")
+                print("Error: the value of cameraDeph is not a valida number")
             }
             
         } else if textField == configTextField4 {
@@ -304,7 +304,7 @@ class ConfigDebug {
             if let text = textField.text, let value = Int(text) {
                 arrowDistance = value
             } else {
-                print("Error: el valor de arrowDistance no es un número válido")
+                print("Error: the value of arrowDistance is not a valida number")
             }
         }
     }
@@ -314,7 +314,7 @@ class ConfigDebug {
         mainStackView?.spacing = sender.isOn ? expandedSpacing : collapsedSpacing
     }
 
-    // Función que se llama cuando se cambia el valor del switch de configuración
+    // Function that is called when the configuration switch value is changed
     @objc func toggleInfoDebug() {
         guard let panel = infoPanel else { return }
         panel.isHidden.toggle()
@@ -330,7 +330,7 @@ class ConfigDebug {
         self.hasToReset = false
     }
 
-    // Función para iniciar el refresco de la información en tiempo real
+    // Function to start refreshing information in real time
     func startRefreshingInfo() {
         refreshTimer?.invalidate()
         refreshTimer = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(updateAll), userInfo: nil, repeats: true)
@@ -341,14 +341,14 @@ class ConfigDebug {
         updateInfoPanel()
     }
 
-    // Función que actualiza la información mostrada en el panel
+    // Function that updates the information displayed on the panel
     @objc func updateInfoPanel() {
         guard let arQuality = arQuality else {
             print("Error: arQuality es nil")
             return
         }
         
-        // Obtener la información actualizada de arQuality
+        // Get the latest information on arQuality
         let infoDebug = arQuality.getInfoParameters()
         
         if let globalQuality = infoDebug["globalQuality"] as? Double {
@@ -357,7 +357,7 @@ class ConfigDebug {
             let arDisplacementConf = String(format: "%.2f", arQuality.arDisplacementConf)
             let situmDisplacementConf = String(format: "%.2f",arQuality.situmDisplacementConf)
 
-            // Actualizar las etiquetas con los nuevos valores, desenvolviendo opcionales
+            // Update labels with new values, unwrapping optionals
             infoLabel1?.text = "HasToRefresh: \(arQuality.hasToResetWorld())"
             infoLabel2?.text = "Quality: \(roundedQuality)"
             infoLabel6?.text = "OdometriesDistanceConf: \(odometriesDistanceConf)"
@@ -365,7 +365,7 @@ class ConfigDebug {
             infoLabel8?.text = "ArDisplacementConf: \(arDisplacementConf)"
             
             
-            // Asegúrate de desenvolver correctamente las variables opcionales
+            // Make sure you unwrap optional variables correctly
             if let dynamicRefreshThreshold = infoDebug["DynamicRefreshThreshold"] {
                 infoLabel3?.text = "DynamicRefreshThreshold: \(dynamicRefreshThreshold)"
             } else {
@@ -389,7 +389,7 @@ class ConfigDebug {
         
     }
 
-    // Detener el refresco cuando no sea necesario
+    // Stop soda when not needed
     func stopRefreshingInfo() {
         refreshTimer?.invalidate()
         refreshTimer = nil
