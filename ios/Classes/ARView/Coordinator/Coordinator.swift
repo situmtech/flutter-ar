@@ -126,9 +126,7 @@ class Coordinator: NSObject, ARSessionDelegate {
     }
     
     func setDestinationPoi(destinationPoiName: String){
-        print("SELF POINAME :   ", destinationPoiName)
-        self.destinationPoiName = destinationPoiName
-        print("SELF POINAME :   ", self.destinationPoiName)
+        self.destinationPoiName = destinationPoiName       
     }
      
     func initArrowToRoute(_ points: Any?){

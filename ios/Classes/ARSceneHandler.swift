@@ -91,6 +91,9 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
                 
         setupAndUpdateConfigDebug(arSceneView: arSceneView)
         
+        let destinationPoiName = self.destinationPoiName ?? ""
+        self.coordinator?.setDestinationPoi(destinationPoiName: destinationPoiName)
+        
         
                
     }    
@@ -165,7 +168,6 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         if let hiddenPanelInfo = configParameters["HiddenPanelInfo"] {
             self.coordinator?.isDebugEnabled = hiddenPanelInfo == 1.0
         }
-       
 
     }
     
@@ -267,9 +269,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
             let poisMapArray = parsePois(pois: indoorPois)
             // Envuelve el array en un diccionario antes de pasarlo a updatePOIs
             let poisMap: [String: Any] = ["pois": poisMapArray]
-            
-            let destinationPoiName = self.destinationPoiName ?? ""
-            self.coordinator?.setDestinationPoi(destinationPoiName: destinationPoiName)
+
             
             // Llama a updatePOIs con el diccionario
             coordinator.handlePoisUpdated(poisMap: poisMap)
@@ -380,7 +380,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
             sitArData.zEuler = Float(eulerAngles.z) // Yaw
 
             // Llama a setArData sin la etiqueta
-            //sitExternalSensorManager?.setArData(sitArData) // Aquí se pasa sitArData directamente
+            sitExternalSensorManager?.setArData(sitArData) // Aquí se pasa sitArData directamente
         }
         
         lastTimestamp = currentTimestamp
@@ -408,12 +408,13 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         print("ARSceneHandler - Exit from geofences!!!!!!!!!!!!!!!: \(geofences)")
         
         guard let coordinator = self.coordinator,
+              let arView = coordinator.arView,
               let mainAnchor = mainAnchor else {
             return
         }
 
         // Remove all models
-        coordinator.modelManager.removeDynamicModels(geofences: geofences)
+        coordinator.modelManager.removeDynamicModels( arView: arView, geofences: geofences)
     }
 
 

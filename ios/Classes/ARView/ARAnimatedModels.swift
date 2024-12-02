@@ -7,9 +7,8 @@ import SceneKit
 
 class DynamicModelManager {
     
-    private var dynamicModels: [ModelEntity] = []
+
     private var featureCollection: ARFeatureCollection?
-    
     var userInFence = false
     var geofenceName: String?
     
@@ -133,16 +132,14 @@ class DynamicModelManager {
                 return
             }
             modelEntity.name = "dynamic_\(model)"
-            if(index == 1){
-                // Configure model
-                let cameraPosition = arView.cameraTransform.translation
-                modelEntity.scale = SIMD3<Float>(scale, scale, scale)
+            
+            // Configure model
+            let cameraPosition = arView.cameraTransform.translation
+            modelEntity.scale = SIMD3<Float>(scale, scale, scale)
                 
-                // Update model position
-                self.setPositionAndOrientation(modelEntity:modelEntity, cameraPosition:cameraPosition, index:index, position: position, orientation: orientation)
-                            
-            }
-         
+            // Update model position
+            self.setPositionAndOrientation(modelEntity:modelEntity, cameraPosition:cameraPosition, position: position, orientation: orientation, index:index)
+             
             
             // Play animation if available
             if let animation = modelEntity.availableAnimations.first {
@@ -150,7 +147,6 @@ class DynamicModelManager {
             }
             
             mainAnchor.addChild(modelEntity)
-            dynamicModels.append(modelEntity)
             
             print("Model loaded correctly: \(modelEntity.name)")
             
@@ -162,9 +158,9 @@ class DynamicModelManager {
     private func setPositionAndOrientation(
         modelEntity: Entity,
         cameraPosition: SIMD3<Float>,
-        index: Int,
         position: [Double],
-        orientation: [Float]
+        orientation: [Float],
+        index: Int
     ) {
         // Check that the length of `position` is sufficient to access index 2
         guard position.count > 2 else {
@@ -172,12 +168,19 @@ class DynamicModelManager {
             return
         }
         
-     
-        modelEntity.position = SIMD3<Float>(
-            cameraPosition.x - Float.random(in: -5.0...5.0),
-            cameraPosition.y + Float(position[2]),
-            cameraPosition.z - 10.0
-        )
+        if(index == 1){
+            modelEntity.position = SIMD3<Float>(
+                cameraPosition.x - Float.random(in: -5.0...5.0),
+                cameraPosition.y + Float(position[2]),
+                cameraPosition.z - 10.0
+            )
+        }else{
+            modelEntity.position = SIMD3<Float>(
+                cameraPosition.x - Float.random(in: -5.0...5.0),
+                cameraPosition.y + Float(position[2]),
+                cameraPosition.z - 1000.0
+            )
+        }
         
         
         // Apply orientation on X, Y, Z axes if available
@@ -217,7 +220,8 @@ class DynamicModelManager {
         modelEntity.playAnimation(animation.repeat(), transitionDuration: 0.5, startsPaused: false)
     }
     
-    func removeDynamicModels(geofences: [SITGeofence]) {
+    
+    func removeDynamicModels(arView: ARView, geofences: [SITGeofence]) {
         
         for geofence in geofences {
             guard let customFields = geofence.customFields as? [String: Any] else {
@@ -225,102 +229,67 @@ class DynamicModelManager {
                 continue
             }
             
-
+            
             if(self.geofenceName == geofence.name){
-                // Filter all models that start with dynamic_
-                let modelsToRemove = dynamicModels.filter { $0.name.hasPrefix("dynamic_") }
                 
-                // Delete each of the found models
-                modelsToRemove.forEach { modelToRemove in
-                    modelToRemove.removeFromParent()
-                    dynamicModels.removeAll { $0 == modelToRemove }
-                    print("Removed dynamic model: \(modelToRemove.name)")
+                
+                arView.scene.anchors.forEach { anchor in
+                    anchor.children.filter { $0.name.hasPrefix("dynamic_") }.forEach {
+                        $0.removeFromParent()
+                        print("Removed dynamic model: \($0.name)")
+                    }
                 }
             }
         }
-        
     }
 
     
     func updateModelsBasedOnDistance(arView: ARView, cameraDepth: Double) {
         let cameraPosition = arView.cameraTransform.translation
         var minDistance: Float = 5000.0
-        
-        if self.userInFence {
-            for model in self.dynamicModels {
-                let modelPosition = model.position
-                let distance = simd_distance(cameraPosition, modelPosition)
+        arView.scene.anchors.forEach { anchor in
+            for model in anchor.children.filter({ $0.name.hasPrefix("dynamic_") }) {
+                let distance = simd_distance(cameraPosition, model.position(relativeTo: nil))
                 if distance < minDistance {
                     minDistance = distance
                 }
             }
-            
-            // If min distance is minor that cameraDepth, update model position
-            if abs(minDistance) > Float(cameraDepth) {
-                print("Updating model. it's \(minDistance) meters away from the camera.")
-                updateModelLocation(arView: arView)
-            }
+        }
+        if abs(minDistance) > Float(cameraDepth) {
+            print("Updating models. Nearest model is \(minDistance) meters away.")
+            updateModelLocations(arView: arView)
         }
     }
     
-    func updateModelLocation(arView: ARView) {
-        guard let featureCollection = self.featureCollection else {
-            print("Error: featureCollection es nil.")
-            return
-        }
-
-        // Filter dynamic models that have the prefix "dynamic_" and shuffle them
-        let dynamicModels = self.dynamicModels.filter { $0.name.hasPrefix("dynamic_") }.shuffled()
-        let shuffledFeatures = featureCollection.features.shuffled()
-
-        // Remove all dynamic models from their current anchors
-        for modelEntity in dynamicModels {
-            modelEntity.removeFromParent()
-        }
-
-        // Iterate over shuffled features and remap dynamic models
-        for (index, feature) in shuffledFeatures.enumerated().map({ ($0 + 1, $1) }) {
-            guard feature.properties.type == "model" else {
-                print("Feature ignorado: no es un modelo.")
-                continue
+    private func updateModelLocations(arView: ARView) {
+            guard let featureCollection = self.featureCollection else {
+                print("Error: featureCollection is nil.")
+                return
             }
-
-            guard index < dynamicModels.count else {
-                print("No hay suficientes modelos dinámicos para mapear las características.")
-                break
+            let shuffledFeatures = featureCollection.features.shuffled()
+            arView.scene.anchors.forEach { anchor in
+                var dynamicModels = anchor.children.filter { $0.name.hasPrefix("dynamic_") }.shuffled()
+                dynamicModels.forEach { $0.removeFromParent() }
+                for (index, feature) in shuffledFeatures.enumerated() {
+                    guard index < dynamicModels.count else { break }
+                    let modelEntity = dynamicModels[index]
+                    modelEntity.scale = SIMD3<Float>(
+                        feature.properties.scale,
+                        feature.properties.scale,
+                        feature.properties.scale
+                    )
+                    setPositionAndOrientation(
+                        modelEntity: modelEntity,
+                        cameraPosition: arView.cameraTransform.translation,
+                        position: feature.geometry.coordinates,
+                        orientation: feature.properties.orientation,
+                        index: index
+                    )
+                    anchor.addChild(modelEntity)
+                    print("Updated model: \(modelEntity.name) at position: \(modelEntity.position)")
+                }
             }
-
-            let modelEntity = dynamicModels[index]
-            let modelName = feature.properties.name
-            modelEntity.name = "dynamic_\(modelName)"
-
-            // Configure scale and orientation
-            modelEntity.scale = SIMD3<Float>(
-                feature.properties.scale,
-                feature.properties.scale,
-                feature.properties.scale
-            )
-            let orientation = feature.properties.orientation
-            let position = feature.geometry.coordinates
-
-            // Update model position and orientation
-            let cameraPosition = arView.cameraTransform.translation
-            setPositionAndOrientation(
-                modelEntity: modelEntity,
-                cameraPosition: cameraPosition,
-                index: index,
-                position: position,
-                orientation: orientation
-            )
-
-            // Re-add the model to the main anchor
-            if let mainAnchor = arView.scene.anchors.first(where: { $0 is AnchorEntity }) {
-                mainAnchor.addChild(modelEntity)
-            }
-
-            print("Modelo actualizado: \(modelEntity.name) a posición: \(modelEntity.position)")
         }
-    }
 
     
     
