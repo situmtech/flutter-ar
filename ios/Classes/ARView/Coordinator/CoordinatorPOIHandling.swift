@@ -6,12 +6,12 @@ import SitumSDK
 @available(iOS 15.0, *)
 extension Coordinator {
     
-    /// Actualiza la lista de POIs y la muestra en la escena.
+    /// Updates the list of POIs and displays it in the scene.
     func updatePOIs() {
       
         guard let arView = arView, let initialLocation = locationManager.initialLocation else { return }
         
-        // Buscar o crear el ancla 'fixedPOIAnchor'
+        // Find or create the anchor 'fixedPOIAnchor'.
         let fixedPOIAnchor = arView.scene.anchors.first(where: { $0.name == "fixedPOIAnchor" }) as? AnchorEntity ?? {
             let newAnchor = AnchorEntity(world: SIMD3<Float>(0, 0, 0))
             newAnchor.name = "fixedPOIAnchor"
@@ -19,17 +19,17 @@ extension Coordinator {
             return newAnchor
         }()
                
-        // Eliminar todos los POIs y textos anteriores
+        //Delete all previous POIs and texts
         fixedPOIAnchor.children.filter { $0.name.starts(with: "poiContainer_") }
                 .forEach { $0.removeFromParent() }
         
-        // Obtener lista de POIs
+        // Get list of POIs
         guard let poisList = self.poisStored["pois"] as? [[String: Any]] else {
             print("Error: No se encontró la clave 'pois' en el mapa de POIs")
             return
         }
         
-        // Añadir los nuevos POIs
+        // Adding new POIs
         for (index, poi) in poisList.enumerated() {
             if let position = poi["position"] as? [String: Any],
                let cartesianCoordinate = position["cartesianCoordinate"] as? [String: Double],
@@ -41,10 +41,10 @@ extension Coordinator {
                 
                 let transformedPosition = generateARKitPosition(x: Float(x), y: Float(y), currentLocation: initialLocation, arView: arView)
                 
-                // Crear POI y texto
+                // Create POI and text
                 let iconUrlString = poi["iconUrl"] as? String ?? ""
                 
-                // Asegúrate de usar la URL correcta
+                // Check if URL is correct
                 guard let iconUrl = URL(string: iconUrlString) else {
                     print("Error: URL no válida para el icono del POI: \(name)")
                     continue
@@ -61,19 +61,19 @@ extension Coordinator {
                         containerEntity.position = transformedPosition
                         containerEntity.name = "poiContainer_\(name)"
                     
-                        // Configurar el POI
+                        // Configure POI
                         poiEntity.position = SIMD3<Float>(0, 0, 0)
                         poiEntity.name = "poi_\(name)"
                        
-                        // Configurar el texto
+                        // Configure text
                         let textEntity = createTextEntity(text: name, poiPosition: SIMD3<Float>(0, 0, 0), arView: arView) // Coloca el texto encima del POI
                         textEntity.name = "text_\(name)"
        
-                        // Añadir POI y texto al contenedor
+                        // Add POI and text to container
                         containerEntity.addChild(poiEntity)
                         containerEntity.addChild(textEntity)
                        
-                        // Añadir el contenedor al ancla principal
+                        // Add container to main anchor
                         fixedPOIAnchor.addChild(containerEntity)
                   
                     }
@@ -85,17 +85,17 @@ extension Coordinator {
     }
     
       
-    /// Maneja la actualización de los POIs recibidos y los actualiza en la escena.
+    /// Handles the updating of received POIs and updates them in the scene.
     func handlePoisUpdated(poisMap: [String: Any]) {
         poisStored = poisMap
         self.updatePOIs()
     }
     
-    /// Actualiza la lista de puntos en la escena.
+    /// Updates the list of points in the scene.
     func updatePointsList() {
         guard let arView = arView, let initialLocation = locationManager.initialLocation else { return }
         
-        // Buscar o crear el ancla 'fixedPOIAnchor'
+        // Find or create the anchor 'fixedPOIAnchor'
         let fixedPOIAnchor = arView.scene.anchors.first(where: { $0.name == "fixedPOIAnchor" }) as? AnchorEntity ?? {
             let newAnchor = AnchorEntity(world: SIMD3<Float>(0, 0, 0))
             newAnchor.name = "fixedPOIAnchor"
@@ -103,13 +103,13 @@ extension Coordinator {
             return newAnchor
         }()
         
-        // Eliminar todos los puntos de la ruta
+        // Delete all points from the route
         fixedPOIAnchor.children.filter { $0.name.starts(with: "point_")}
             .forEach { $0.removeFromParent() }
         
         self.storedTransformedPositions.removeAll()
         
-        // Aplico la transformación a todos los puntos de la ruta
+        // I apply the transformation to all points of the route
         for (index, point) in self.pointsList.enumerated() {
             if let cartesianCoordinate = point["cartesianCoordinate"] as? [String: Double],
                let xPoint = cartesianCoordinate["x"],
@@ -131,12 +131,12 @@ extension Coordinator {
         }
     }
     
-    /// Muestra el punto objetivo en la escena.
+    /// Displays the target point in the scene.
     func showPointTarget() {
         
         guard let arView = arView else { return }
         
-        // Buscar el ancla y crear si no existe
+        // Find the anchor and create if it doesn't exist
         let fixedPOIAnchor = arView.scene.anchors.first(where: { $0.name == "fixedPOIAnchor" }) as? AnchorEntity ?? {
             let newAnchor = AnchorEntity(world: SIMD3<Float>(0, 0, 0))
             newAnchor.name = "fixedPOIAnchor"
@@ -144,21 +144,21 @@ extension Coordinator {
             return newAnchor
         }()
         
-        // Eliminar el punto de la ruta existente
+        // Delete point from existing route
         fixedPOIAnchor.children.filter { $0.name.starts(with: "point_") }
             .forEach { $0.removeFromParent() }
         
-        // Crear la entidad de la esfera para marcar el punto objetivo
+        // Create the sphere entity to mark the target point
         let poiEntity = createSphereEntity(radius: 0.35, color: .blue, transparency: 0.75)
-        let targetPosition = SIMD3<Float>(Float(self.targetX), -0.5, Float(self.targetZ))  // Establecer y como -0.5 o cualquier valor apropiado
+        let targetPosition = SIMD3<Float>(Float(self.targetX), -0.5, Float(self.targetZ))
         poiEntity.position = targetPosition
-        poiEntity.name = "point_" // Dar un nombre único a la esfera
+        poiEntity.name = "point_"
         
-        // Agregar la esfera al ancla
+        // Add to the anchor
         fixedPOIAnchor.addChild(poiEntity)
     }
     
-    /// Establece las coordenadas del objetivo.
+    /// Sets the target coordinates.
     func setTargetCoordinates(x: Float, z: Float) {
         self.targetX = Double(x)
         self.targetZ = Double(z)
