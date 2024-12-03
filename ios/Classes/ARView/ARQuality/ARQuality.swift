@@ -15,6 +15,7 @@ struct RefreshThreshold {
 
 class ARQuality {
 
+
     private var currentRefreshThreshold = RefreshThreshold(value: 0.2, timestamp: 0)
     private var dynamicRefreshThreshold = RefreshThreshold(value: 0.2, timestamp: 0)
 
@@ -31,6 +32,24 @@ class ARQuality {
     
     var CONSTANT_QUALITY_DECREASE_RATE = 0.005
     var QUALITY_THRESHOLD_DECREASE_RATE = 0.03
+    
+    var hasToRefresh = true
+    var refreshingTimer = 5
+    var timestampLastRefresh = 0
+    
+
+    lazy private var handlerARQuality: HandlerARQuality = {
+        return HandlerARQuality(arQuality: self)
+    }()
+    
+    init() {
+        // Initialization for other properties happens here
+    }
+    
+    @available(iOS 15.0, *)
+    func updateArQuality(location: SITLocation, coordinator: Coordinator?, hasToResetChangeFloor: Bool) {
+        handlerARQuality.updateArQuality(location: location, coordinator: coordinator, hasToResetChangeFloor: hasToResetChangeFloor)
+    }
 
     func updateARLocation(worldPosition: SCNVector3, worldRotation: SCNQuaternion) {
         let currentTime = Date().timeIntervalSince1970 * 1000 // Esto ya es Double (TimeInterval)
@@ -243,8 +262,6 @@ class ARQuality {
         return infoDebug
         
     }
-    
-    
-    
+       
 }
 

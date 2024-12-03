@@ -262,34 +262,39 @@ class DynamicModelManager {
     }
     
     private func updateModelLocations(arView: ARView) {
-            guard let featureCollection = self.featureCollection else {
-                print("Error: featureCollection is nil.")
-                return
-            }
-            let shuffledFeatures = featureCollection.features.shuffled()
-            arView.scene.anchors.forEach { anchor in
-                var dynamicModels = anchor.children.filter { $0.name.hasPrefix("dynamic_") }.shuffled()
-                dynamicModels.forEach { $0.removeFromParent() }
-                for (index, feature) in shuffledFeatures.enumerated() {
-                    guard index < dynamicModels.count else { break }
-                    let modelEntity = dynamicModels[index]
-                    modelEntity.scale = SIMD3<Float>(
-                        feature.properties.scale,
-                        feature.properties.scale,
-                        feature.properties.scale
-                    )
-                    setPositionAndOrientation(
-                        modelEntity: modelEntity,
-                        cameraPosition: arView.cameraTransform.translation,
-                        position: feature.geometry.coordinates,
-                        orientation: feature.properties.orientation,
-                        index: index
-                    )
-                    anchor.addChild(modelEntity)
-                    print("Updated model: \(modelEntity.name) at position: \(modelEntity.position)")
-                }
-            }
+        guard let featureCollection = self.featureCollection else {
+            print("Error: featureCollection is nil.")
+            return
         }
+        var dynamicModels = arView.scene.anchors.flatMap { $0.children.filter { $0.name.hasPrefix("dynamic_") } }
+        
+        guard featureCollection.features.count == dynamicModels.count else {
+            print("Error: The number of dynamic models does not match the number of features.")
+            return
+        }
+
+        // Shuffled feature pairs and dynamic models
+        zip(featureCollection.features, dynamicModels)
+            .shuffled()
+            .enumerated()
+            .forEach { (index, pair) in
+                let (feature, modelEntity) = pair
+
+                // Update scale, position and orientation
+                modelEntity.scale = SIMD3<Float>(feature.properties.scale, feature.properties.scale, feature.properties.scale)
+                setPositionAndOrientation(
+                    modelEntity: modelEntity,
+                    cameraPosition: arView.cameraTransform.translation,
+                    position: feature.geometry.coordinates,
+                    orientation: feature.properties.orientation,
+                    index: index
+                )
+
+                // Add model updated to anchor
+                modelEntity.parent?.addChild(modelEntity)
+                print("Updated model: \(modelEntity.name) at position: \(modelEntity.position)")
+            }
+    }
 
     
     

@@ -21,10 +21,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     var coordinator: Coordinator?
 
     var arQuality: ARQuality?
-    var configDebug: ConfigDebug?
-    var refreshingTimer = 5
-    var timestampLastRefresh = 0
-    var hasToRefresh = true
+    var configDebug: ConfigDebug? 
        
     var mainAnchor: AnchorEntity?
     var updateTimer: Timer?
@@ -62,7 +59,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         setupLighting(arView: arSceneView)
         
         //Debug panel
-        configDebug = ConfigDebug(arQuality: arQuality, hasToRefresh: hasToRefresh)
+        configDebug = ConfigDebug(arQuality: arQuality)
         
         // Initializes the timer to adjust the visibility of objects based on distance
         updateTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
@@ -167,94 +164,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
 
     }
     
-    //Update AR
-    
-    func updateRefreshing() {
         
-        hasToRefresh = true
-        
-        if let arQuality = arQuality {
-            hasToRefresh = arQuality.hasToResetWorld()
-        } else {
-            hasToRefresh = false
-        }
-        
-        if hasToResetChangeFloor{
-            hasToRefresh = true
-        }
-        
-        if hasToRefresh {
-            let numRefresh = 1
-            startRefreshing(numRefresh)
-        } else if refreshingTimer > 0 {
-            refresh()
-            refreshingTimer -= 1
-            if refreshingTimer == 0 {
-                stopRefreshing()
-            }
-        }
-        
-        coordinator?.setHasToReset(hasToRefresh: hasToRefresh)
-    }
-    
-    func refresh() {
-        let currentTimestamp = Int(Date().timeIntervalSince1970 * 1000) // Time in miliseconds
-        if currentTimestamp > timestampLastRefresh + Constants.Refresh.extraRefreshTime {
-            if let coordinator = self.coordinator {
-                coordinator.updatePOIs()
-            }
-            timestampLastRefresh = currentTimestamp
-        }
-    }
-
-    func setupAndUpdateConfigDebug(arSceneView: CustomARSceneView){
-        
-        guard let configDebug = configDebug else {
-            print("Error: configDebug es nil")
-            return
-        }
-        
-        configDebug.setupUpdateDebugInfo(view: arSceneView)
-        configDebug.setupInfoPanel(view: arSceneView) // Setting information panel
-        configDebug.startRefreshingInfo()
-    }
-
-    func startRefreshing(_ numRefresh: Int) {
-        refresh()
-        refreshingTimer = numRefresh
-    }
-    
-    func stopRefreshing() {
-        /*ARModeDebugValues.refresh.value = false
-        _unityViewController?.send("MessageManager", methodName: "SendRefressData", message: "1000000")*/
-    }
-
-
-    func updateArQuality(location: SITLocation) {
-        
-        updateRefreshing()
-        arQuality?.updateSitumLocation(location: location)
-        
-        // Unpacking optional camera coordinate values
-        if let worldPosition = coordinator?.arView?.cameraTransform.translation,
-           let worldRotation = coordinator?.arView?.cameraTransform.rotation {
-  
-            let position: SCNVector3 = SCNVector3(worldPosition.x, worldPosition.y, worldPosition.z)
-            let rotation = SCNQuaternion(worldRotation.axis.x,
-                                         worldRotation.axis.y,
-                                         worldRotation.axis.z,
-                                         worldRotation.angle)
-            arQuality?.updateARLocation(worldPosition: position, worldRotation: rotation)
-            self.setSitArData()
-            
-        } else {
-            print("Error: no se pudieron obtener los valores de la cámara")
-        }
-    }
-
-    
-    // Finish update AR
-    
     // MARK: Communication Manager callbacks:
     
     func onBuildingInfoReceived(_ buildingInfo: SITBuildingInfo?, withError error: Error?) {
@@ -278,7 +188,8 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         if let coordinator = self.coordinator {
             print("Situm> Location received!! and send to AR: \(location)")
             coordinator.handleLocationUpdate(location: location)
-            updateArQuality(location: location)
+            arQuality!.updateArQuality(location: location, coordinator: coordinator, hasToResetChangeFloor: hasToResetChangeFloor)
+            self.setSitArData()
             resfreshByChangeFloor(location: location, currentIndex: &currentIndex, hasToResetChangeFloor: &hasToResetChangeFloor, locationBuffer: &locationsBuffer)
 
         } else {
@@ -332,6 +243,17 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         print("Situm> Navigation cancelled on route: \(route)")
     }
     
+    func setupAndUpdateConfigDebug(arSceneView: CustomARSceneView){
+        
+        guard let configDebug = configDebug else {
+            print("Error: configDebug es nil")
+            return
+        }
+        
+        configDebug.setupUpdateDebugInfo(view: arSceneView)
+        configDebug.setupInfoPanel(view: arSceneView) // Setting information panel
+        configDebug.startRefreshingInfo()
+    }
     
     func setSitArData() {
         guard let worldPosition = coordinator?.arView?.cameraTransform.translation else {
@@ -369,9 +291,9 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
             sitArData.zEuler = Float(eulerAngles.y) // Yaw
             sitArData.yEuler = Float(eulerAngles.z) // Pitch
             
-            print("Euler angles:  Roll:  ", sitArData.xEuler,"  ,Pitch:   ",  sitArData.yEuler, "  , Yaw:  ", sitArData.zEuler)
+            //print("Euler angles:  Roll:  ", sitArData.xEuler,"  ,Pitch:   ",  sitArData.yEuler, "  , Yaw:  ", sitArData.zEuler)
 
-            sitExternalSensorManager?.setArData(sitArData)
+            //sitExternalSensorManager?.setArData(sitArData)
         }
         
         lastTimestamp = currentTimestamp

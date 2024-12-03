@@ -39,9 +39,9 @@ class ConfigDebug {
     var hasToReset = false
   
 
-    init(arQuality: ARQuality?, hasToRefresh: Bool) {
+    init(arQuality: ARQuality?) {
         self.arQuality = arQuality
-        self.hasToRefresh = hasToRefresh
+        self.hasToRefresh = arQuality!.hasToRefresh
     }
     
     
