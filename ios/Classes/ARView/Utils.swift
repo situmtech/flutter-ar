@@ -554,10 +554,10 @@ extension UIView {
             toastContainer.widthAnchor.constraint(lessThanOrEqualToConstant: self.frame.width - 40)
         ])
 
-        UIView.animate(withDuration: 0.5, animations: {
+        UIView.animate(withDuration: Constants.ARSettings.animationTransition, animations: {
             toastContainer.alpha = 1.0
         }) { _ in
-            UIView.animate(withDuration: 0.5, delay: duration, options: .curveEaseOut, animations: {
+            UIView.animate(withDuration: Constants.ARSettings.animationTransition, delay: duration, options: .curveEaseOut, animations: {
                 toastContainer.alpha = 0.0
             }) { _ in
                 toastContainer.removeFromSuperview()

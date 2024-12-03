@@ -59,8 +59,8 @@ extension Coordinator {
         // Normalize the course in the range [-π, π]
         let courseNormalized = fmod(course + .pi, 2 * .pi) - .pi
         
-        let situmBearingDegrees = courseNormalized * (180.0 / .pi) + 90.0
-        let situmBearingInRadians = Float(situmBearingDegrees) * (.pi / 180.0)
+        let situmBearingDegrees = courseNormalized * (Constants.Utils.toDegrees) + 90.0
+        let situmBearingInRadians = Float(situmBearingDegrees) * Constants.Utils.toPI
         let situmBearingMinusRotation = simd_quatf(angle: situmBearingInRadians, axis: SIMD3<Float>(0.0, -1.0, 0.0))
         
         let relativePoiPosition = SIMD3<Float>(

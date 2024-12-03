@@ -3,7 +3,6 @@ import SceneKit
 import CoreLocation
 import SitumSDK
 
-let BUFFER_SIZE = 15
 
 struct RefreshThreshold {
     var value: Double
@@ -41,7 +40,7 @@ class ARQuality {
                                                     yaw: Double(worldRotation.y),
                                                     timestamp: currentTime)) // currentTime ya es TimeInterval
 
-        if arLocationBuffer.count > BUFFER_SIZE {
+        if arLocationBuffer.count > Constants.ARQuality.BUFFER_SIZE {
             arLocationBuffer.removeFirst()
         }
     }
@@ -74,7 +73,7 @@ class ARQuality {
                 hasBearing: location.hasBearing()
             ))
             
-            if situmLocationBuffer.count > BUFFER_SIZE {
+            if situmLocationBuffer.count > Constants.ARQuality.BUFFER_SIZE {
                 situmLocationBuffer.removeFirst()
             }
         } else {
@@ -154,12 +153,11 @@ class ARQuality {
 
 
     func estimateArConf() -> Double {
-        let requiredPositions = 10
-        let maxConfidence = 1.0
+   
         var numOkPositions = 0
 
-        var confidence = maxConfidence
-        for i in stride(from: arLocationBuffer.count - 1, through: max(arLocationBuffer.count - requiredPositions, 0), by: -1) {
+        var confidence = Constants.ARQuality.maxConfidence
+        for i in stride(from: arLocationBuffer.count - 1, through: max(arLocationBuffer.count - Constants.ARQuality.requiredPositions, 0), by: -1) {
             if (arLocationBuffer[i].x == 0.0 && arLocationBuffer[i].y == 0.0) ||
                 i < 1 ||
                 (arLocationBuffer[i].y == arLocationBuffer[i - 1].y && arLocationBuffer[i].x == arLocationBuffer[i - 1].x) {
@@ -168,30 +166,27 @@ class ARQuality {
                 numOkPositions += 1
             }
         }
-        confidence = (Double(numOkPositions) / Double(requiredPositions)) * maxConfidence
+        confidence = (Double(numOkPositions) / Double(Constants.ARQuality.requiredPositions)) * Constants.ARQuality.maxConfidence
         return confidence
     }
 
-    func estimateSitumConf() -> Double {
-        let requiredPositions = 10
-        let maxConfidence = 1.0
+    func estimateSitumConf() -> Double {        
         var numOkPositions = 0
 
-        var confidence = maxConfidence
-        for i in stride(from: situmLocationBuffer.count - 1, through: max(situmLocationBuffer.count - requiredPositions, 0), by: -1) {
+        var confidence = Constants.ARQuality.maxConfidence
+        for i in stride(from: situmLocationBuffer.count - 1, through: max(situmLocationBuffer.count - Constants.ARQuality.requiredPositions, 0), by: -1) {
             if situmLocationBuffer[i].accuracy > 5 && !situmLocationBuffer[i].hasBearing || i < 0 {
                 break
             } else {
                 numOkPositions += 1
             }
         }
-        confidence = (Double(numOkPositions) / Double(requiredPositions)) * maxConfidence
+        confidence = (Double(numOkPositions) / Double(Constants.ARQuality.requiredPositions)) * Constants.ARQuality.maxConfidence
         return confidence
     }
 
     func totalDisplacementConf(distance: Double) -> Double {
-        let minDistanceThreshold = 10.0
-        return distance > minDistanceThreshold ? 1.0 : distance / minDistanceThreshold
+        return distance > Constants.ARQuality.minDistanceThreshold ? 1.0 : distance / Constants.ARQuality.minDistanceThreshold
     }
 
     func odometriesDifferenceConf(difference: Double) -> Double {

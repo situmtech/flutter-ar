@@ -143,7 +143,7 @@ class DynamicModelManager {
             
             // Play animation if available
             if let animation = modelEntity.availableAnimations.first {
-                modelEntity.playAnimation(animation.repeat(), transitionDuration: 0.5, startsPaused: false)
+                modelEntity.playAnimation(animation.repeat(), transitionDuration: Constants.ARSettings.animationTransition, startsPaused: false)
             }
             
             mainAnchor.addChild(modelEntity)
@@ -170,24 +170,24 @@ class DynamicModelManager {
         
         if(index == 1){
             modelEntity.position = SIMD3<Float>(
-                cameraPosition.x - Float.random(in: -5.0...5.0),
+                cameraPosition.x - Float.random(in: -Constants.ARSettings.xPositionToPlaceModel...Constants.ARSettings.xPositionToPlaceModel),
                 cameraPosition.y + Float(position[2]),
-                cameraPosition.z - 10.0
+                cameraPosition.z - Float.random(in: Constants.ARSettings.zMinPositionToPlaceModel...Constants.ARSettings.zMaxPositionToPlaceModel) 
             )
         }else{
             modelEntity.position = SIMD3<Float>(
-                cameraPosition.x - Float.random(in: -5.0...5.0),
+                cameraPosition.x - Float.random(in: -Constants.ARSettings.xPositionToPlaceModel...Constants.ARSettings.xPositionToPlaceModel),
                 cameraPosition.y + Float(position[2]),
-                cameraPosition.z - 1000.0
+                cameraPosition.z - Constants.ARSettings.zOutCameraDepth
             )
         }
         
         
         // Apply orientation on X, Y, Z axes if available
         if orientation.count == 3 {
-            let rotationX = simd_quatf(angle: orientation[0] * (.pi / 180), axis: SIMD3<Float>(1, 0, 0))
-            let rotationY = simd_quatf(angle: orientation[1] * (.pi / 180), axis: SIMD3<Float>(0, 1, 0))
-            let rotationZ = simd_quatf(angle: orientation[2] * (.pi / 180), axis: SIMD3<Float>(0, 0, 1))
+            let rotationX = simd_quatf(angle: orientation[0] * Constants.Utils.toPI, axis: SIMD3<Float>(1, 0, 0))
+            let rotationY = simd_quatf(angle: orientation[1] * Constants.Utils.toPI, axis: SIMD3<Float>(0, 1, 0))
+            let rotationZ = simd_quatf(angle: orientation[2] * Constants.Utils.toPI, axis: SIMD3<Float>(0, 0, 1))
             
             // Combine rotations in X, Y, Z
             modelEntity.orientation = simd_mul(simd_mul(rotationX, rotationY), rotationZ)
@@ -217,7 +217,7 @@ class DynamicModelManager {
         }
         
         print("Found animation: \(animation.name)")
-        modelEntity.playAnimation(animation.repeat(), transitionDuration: 0.5, startsPaused: false)
+        modelEntity.playAnimation(animation.repeat(), transitionDuration: Constants.ARSettings.animationTransition, startsPaused: false)
     }
     
     
@@ -308,11 +308,11 @@ class DynamicModelManager {
             }
             
             // Configure scale, orientation and position
-            arrowEntity.scale = SIMD3<Float>(0.025, 0.025, 0.025)
+            arrowEntity.scale = SIMD3<Float>(Constants.ARSettings.arrowScale, Constants.ARSettings.arrowScale, Constants.ARSettings.arrowScale)
             arrowEntity.position = SIMD3<Float>(0.0, 0.0, 0.0)
             
             // Set Situm color
-            let customColor = UIColor(red: 40.0 / 255.0, green: 51.0 / 255.0, blue: 128.0 / 255.0, alpha: 1.0)
+            let customColor = UIColor(red: Constants.Colors.situmRed, green: Constants.Colors.situmGreen, blue: Constants.Colors.situmBlue, alpha: 1.0)
             
             // Apply color to model
             applyColorToEntityAndChildren(entity: arrowEntity, color: customColor)

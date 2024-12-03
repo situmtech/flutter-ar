@@ -3,6 +3,7 @@ import ARKit
 import RealityKit
 import SitumSDK
 
+
 /**
  ARSceneJuandler. Manage AR world.
  */
@@ -66,7 +67,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         // Initializes the timer to adjust the visibility of objects based on distance
         updateTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
             guard let self = self, let mainAnchor = self.mainAnchor else { return }
-            self.adjustVisibilityBasedOnDistance(arSceneView: arSceneView, mainAnchor: mainAnchor, nearDistance: 2.0, farDistance: Float(cameraDeph))
+            self.adjustVisibilityBasedOnDistance(arSceneView: arSceneView, mainAnchor: mainAnchor, nearDistance: Constants.ARSettings.minDistanceCameraDepth, farDistance: Float(cameraDeph))
         }
             
        
@@ -198,8 +199,8 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     
     func refresh() {
         let currentTimestamp = Int(Date().timeIntervalSince1970 * 1000) // Time in miliseconds
-        if currentTimestamp > timestampLastRefresh + 5000 {
-            if let coordinator = self.coordinator {                
+        if currentTimestamp > timestampLastRefresh + Constants.Refresh.extraRefreshTime {
+            if let coordinator = self.coordinator {
                 coordinator.updatePOIs()
             }
             timestampLastRefresh = currentTimestamp
@@ -309,6 +310,7 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
     func navigationManager(_ navigationManager: SITNavigationInterface, didUpdate progress: SITNavigationProgress, on route: SITRoute) {
         if let coordinator = self.coordinator {
             coordinator.handlePointUpdate(route.toDictionary()["points"])
+            self.destinationPoiName = route.poiTo.name
         } else {
             print("Coordinator is nil")
         }
@@ -364,8 +366,10 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
             let eulerAngles = cameraTransform.eulerAngles()
             
             sitArData.xEuler = Float(eulerAngles.x) // Roll
-            sitArData.yEuler = Float(eulerAngles.y) // Pitch
-            sitArData.zEuler = Float(eulerAngles.z) // Yaw
+            sitArData.zEuler = Float(eulerAngles.y) // Yaw
+            sitArData.yEuler = Float(eulerAngles.z) // Pitch
+            
+            print("Euler angles:  Roll:  ", sitArData.xEuler,"  ,Pitch:   ",  sitArData.yEuler, "  , Yaw:  ", sitArData.zEuler)
 
             sitExternalSensorManager?.setArData(sitArData)
         }
