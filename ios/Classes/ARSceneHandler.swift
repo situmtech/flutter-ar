@@ -151,12 +151,13 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         coordinator?.setArrowDistance(arrowDistance: arrowDistance)
         self.cameraDeph = Double(cameraDepth)
 
-        let hasToReset = configDebug?.hasToReset ?? false
-
-        if hasToReset {
+        let hasToResetForced = configDebug?.hasToReset ?? false       
+        
+        if (hasToResetForced == true) {
             coordinator?.updatePOIs()
             configDebug?.disableHasToReset()
         }
+
         
         if let hiddenPanelInfo = configParameters["HiddenPanelInfo"] {
             self.coordinator?.isDebugEnabled = hiddenPanelInfo == 1.0

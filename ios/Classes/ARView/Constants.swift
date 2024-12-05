@@ -14,7 +14,8 @@ struct Constants {
         static let zMaxPositionToPlaceModel = Float(15.0)
         static let zMinPositionToPlaceModel = Float(10.0)
         static let xPositionToPlaceModel = Float(5.0)
-        static let zOutCameraDepth = Float(1000.0)
+        static let zMaxOutCameraDepth = Float(1000.0)
+        static let zMinOutCameraDepth = Float(800.0)        
         static let arrowScale = Float(0.025)
         }
     struct Utils{

@@ -178,7 +178,7 @@ class DynamicModelManager {
             modelEntity.position = SIMD3<Float>(
                 cameraPosition.x - Float.random(in: -Constants.ARSettings.xPositionToPlaceModel...Constants.ARSettings.xPositionToPlaceModel),
                 cameraPosition.y + Float(position[2]),
-                cameraPosition.z - Constants.ARSettings.zOutCameraDepth
+                cameraPosition.z - Float.random(in: Constants.ARSettings.zMinOutCameraDepth...Constants.ARSettings.zMaxOutCameraDepth)
             )
         }
         
@@ -243,58 +243,89 @@ class DynamicModelManager {
         }
     }
 
-    
     func updateModelsBasedOnDistance(arView: ARView, cameraDepth: Double) {
+        // Get camera position
         let cameraPosition = arView.cameraTransform.translation
-        var minDistance: Float = 5000.0
+        
+        // Track closest and farthest models
+        var minDistance: Float = Float.greatestFiniteMagnitude
+        var maxDistance: Float = 0
+        var nearestModel: Entity?
+        var farthestModel: Entity?
+        
+        // Iterate over dynamic models to find nearest and farthest
         arView.scene.anchors.forEach { anchor in
             for model in anchor.children.filter({ $0.name.hasPrefix("dynamic_") }) {
                 let distance = simd_distance(cameraPosition, model.position(relativeTo: nil))
                 if distance < minDistance {
                     minDistance = distance
+                    nearestModel = model
+                }
+                if distance > maxDistance {
+                    maxDistance = distance
+                    farthestModel = model
                 }
             }
         }
-        if abs(minDistance) > Float(cameraDepth) {
-            print("Updating models. Nearest model is \(minDistance) meters away.")
-            updateModelLocations(arView: arView)
-        }
-    }
-    
-    private func updateModelLocations(arView: ARView) {
-        guard let featureCollection = self.featureCollection else {
-            print("Error: featureCollection is nil.")
-            return
-        }
-        var dynamicModels = arView.scene.anchors.flatMap { $0.children.filter { $0.name.hasPrefix("dynamic_") } }
         
-        guard featureCollection.features.count == dynamicModels.count else {
-            print("Error: The number of dynamic models does not match the number of features.")
+        // Log distances for debugging
+        if let nearest = nearestModel, let farthest = farthestModel {
+            print("Nearest model: \(nearest.name) at \(minDistance)m, Farthest model: \(farthest.name) at \(maxDistance)m.")
+        }
+        
+        // Only update models if the nearest model is farther than cameraDepth
+        if let nearest = nearestModel, minDistance > Float(cameraDepth) {
+            updateModelLocations(arView: arView, nearestModel: nearest, farthestModel: farthestModel)
+        } else {
+            print("The nearest model is closer than the camera depth, no update performed.")
+        }
+    }
+
+
+    private func updateModelLocations(arView: ARView, nearestModel: Entity?, farthestModel: Entity?) {
+        guard let nearestModel = nearestModel as? ModelEntity, let farthestModel = farthestModel as? ModelEntity else {
+            print("Error: Nearest or farthest model is missing or not a ModelEntity.")
             return
         }
+        
+        // Get camera position
+        let cameraPosition = arView.cameraTransform.translation
 
-        // Shuffled feature pairs and dynamic models
-        zip(featureCollection.features, dynamicModels)
-            .shuffled()
-            .enumerated()
-            .forEach { (index, pair) in
-                let (feature, modelEntity) = pair
+        // Move the farthest model in front of the camera (z = -1 relative to the camera)
+        let yFarthestModel = farthestModel.position.y
+        farthestModel.removeFromParent()
+        //farthestModel.position = cameraPosition + SIMD3<Float>(0, 0, -1)
+        farthestModel.position = SIMD3<Float>(
+            cameraPosition.x - Float.random(in: -Constants.ARSettings.xPositionToPlaceModel...Constants.ARSettings.xPositionToPlaceModel),
+            cameraPosition.y + yFarthestModel,
+            cameraPosition.z - Float.random(in: Constants.ARSettings.zMinPositionToPlaceModel...Constants.ARSettings.zMaxPositionToPlaceModel)
+        )
 
-                // Update scale, position and orientation
-                modelEntity.scale = SIMD3<Float>(feature.properties.scale, feature.properties.scale, feature.properties.scale)
-                setPositionAndOrientation(
-                    modelEntity: modelEntity,
-                    cameraPosition: arView.cameraTransform.translation,
-                    position: feature.geometry.coordinates,
-                    orientation: feature.properties.orientation,
-                    index: index
-                )
+        arView.scene.anchors.first?.addChild(farthestModel)
 
-                // Add model updated to anchor
-                modelEntity.parent?.addChild(modelEntity)
-                print("Updated model: \(modelEntity.name) at position: \(modelEntity.position)")
-            }
+        // Move the nearest model to z = 100
+        let yNearestModel = nearestModel.position.y
+        nearestModel.removeFromParent()
+        nearestModel.position = SIMD3<Float>(
+            cameraPosition.x - Float.random(in: -Constants.ARSettings.xPositionToPlaceModel...Constants.ARSettings.xPositionToPlaceModel),
+            cameraPosition.y + yNearestModel,
+            cameraPosition.z - Float.random(in: Constants.ARSettings.zMinOutCameraDepth...Constants.ARSettings.zMaxOutCameraDepth)
+        )
+        
+        
+        arView.scene.anchors.first?.addChild(nearestModel)
+
+        // Debug information
+        print("Moved farthest model: \(farthestModel.name) in front of the camera.")
+        print("Moved nearest model: \(nearestModel.name) to z = 100.")
     }
+
+
+
+
+
+
+
 
     
     
