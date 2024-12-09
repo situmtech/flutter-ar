@@ -151,10 +151,11 @@ class ARSceneHandler: NSObject, ARSessionDelegate, SITLocationDelegate, SITNavig
         coordinator?.setArrowDistance(arrowDistance: arrowDistance)
         self.cameraDeph = Double(cameraDepth)
 
-        let hasToResetForced = configDebug?.hasToReset ?? false       
+        let hasToResetForced = configDebug?.hasToReset ?? false   
         
-        if (hasToResetForced == true) {
+        if ((hasToResetForced == true) || (self.arQuality?.hasToRefresh == true)) {
             coordinator?.updatePOIs()
+            arQuality?.hasToRefresh = false
             configDebug?.disableHasToReset()
         }
 
