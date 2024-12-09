@@ -27,7 +27,7 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>${PRODUCT_NAME} requests access to the device's camera.</string>
+	<string>${PRODUCT_NAME} need camera access to deliver an immersive AR experience.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Location is required to find out where you are</string>
 	<key>NSLocationAlwaysUsageDescription</key>
