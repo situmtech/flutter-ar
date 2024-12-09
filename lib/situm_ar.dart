@@ -65,6 +65,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
   static const Duration animationDurationWithDelay =
       Duration(milliseconds: animationMillis + 100);
 
+  
   @override
   void initState() {
     super.initState();
@@ -84,6 +85,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
     }
 
     ARController()._onARWidgetState(this);
+    //_startUpdatingText();
   }
 
   void _onARViewCreated(BuildContext context, ARController? controller) async {
@@ -114,7 +116,6 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
             ArScreenBackButton(onPressed: () {
               arController.onArGone();
             }),
-            if (loadingArMessage) const ARLoadingWidget()
           ],
         ),
         // ============== MapView ==============================================
@@ -270,3 +271,4 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
     });
   }
 }
+

@@ -2,7 +2,7 @@ import Flutter
 import Foundation
 
 
-@available(iOS 14.0, *)
+@available(iOS 15.0, *)
 public class SitumArPlugin: NSObject, FlutterPlugin {
     var poisMap: [String: Any] = [:]
     
@@ -12,7 +12,7 @@ public class SitumArPlugin: NSObject, FlutterPlugin {
     }
 }
 
-@available(iOS 14.0, *)
+@available(iOS 15.0, *)
 class ARViewFactory: NSObject, FlutterPlatformViewFactory {
     private let messenger: FlutterBinaryMessenger
     

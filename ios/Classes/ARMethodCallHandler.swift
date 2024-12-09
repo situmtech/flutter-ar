@@ -1,7 +1,7 @@
 import Foundation
 import Flutter
 
-@available(iOS 14.0, *)
+@available(iOS 15.0, *)
 class ARMethodCallHandler {
     
     private let controller: ARController
@@ -10,12 +10,12 @@ class ARMethodCallHandler {
         self.controller = arController
     }
     
-    // Constantes
+    // Constants
     private let TAG = "Situm> AR>"
     private let DONE = "DONE"
     
-    // Método para xestionar chamadas de métodos desde Dart
-    func handle(method: String, arguments: [String: Any], result: @escaping FlutterResult) {        
+    // Method to manage method calls from Dart
+    func handle(method: String, arguments: [String: Any], result: @escaping FlutterResult) {
         switch method {
         case "load":
             handleLoad(arguments: arguments, result: result)

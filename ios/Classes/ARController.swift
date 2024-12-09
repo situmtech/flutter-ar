@@ -5,8 +5,8 @@ import SitumSDK
 /**
  * Plugin controller.
  */
-@available(iOS 14.0, *)
-class ARController: NSObject {
+@available(iOS 15.0, *)
+class ARController: NSObject, ARSceneHandlerDelegate {
     
     private let arView: SitumARPlatformView
     private let arSceneHandler: ARSceneHandler
@@ -23,9 +23,12 @@ class ARController: NSObject {
         self.arSceneHandler = arSceneHandler
         self.arMethodCallSender = arMethodCallSender
         super.init()
+        
+        self.arSceneHandler.delegate = self
+
     }
     
-    // Cargar AR
+    // Load AR
     func load(buildingIdentifier: String) {
         print("Situm> AR> L&U> CALLED LOAD for building \(buildingIdentifier)")
         if isLoaded || isLoading {
@@ -33,14 +36,17 @@ class ARController: NSObject {
         }
         print("Situm> AR> L&U> ACTUALLY LOADED")
         isLoading = true
+        clearScene()
         arView.load()
         
         arSceneHandler.setupSceneView(arSceneView: arView.sceneView)
         
         // Subscribe to positioning/navigation callbacks:
         sitLocationManager.addDelegate(arSceneHandler)
+        sitLocationManager.geofenceDelegate = arSceneHandler
         sitNavigationManager.addDelegate(arSceneHandler)
-        
+
+     
         // Start loading building & POIs, delegate them to arSceneHandler.
         sitCommManager.fetchBuildingInfo(buildingIdentifier, withOptions: nil, success: { (data) in
             self.arSceneHandler.onBuildingInfoReceived(data?["results"] as? SITBuildingInfo, withError: nil)
@@ -53,7 +59,12 @@ class ARController: NSObject {
         return
     }
     
-    // Descargar AR
+    func didReachDestination() {
+        print("Situm> ARController> Destination reached, executing action.")
+        self.arMethodCallSender.sendArGoneRequired()
+    }
+    
+    // Download AR
     func unload() {
         print("Situm> AR> L&U> CALLED UNLOAD")
         if isLoaded {
@@ -66,13 +77,18 @@ class ARController: NSObject {
         }
     }
     
-    // Retomar AR
+    private func clearScene() {
+        // Make sure to clean all elements of the scene before reloading
+        arSceneHandler.coordinator?.arView?.scene.anchors.removeAll()       
+    }
+    
+    // Restart AR
     func resume() {
         print("Situm> AR> L&U> CALLED RESUME")
         arView.load()
     }
     
-    // Pausar AR
+    // Stop AR
     func pause() {
         print("Situm> AR> L&U> CALLED PAUSE")
         arView.unload()

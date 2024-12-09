@@ -12,7 +12,7 @@ class ARMethodCallSender {
         self.methodChannel = methodChannel
     }
     
-    // Método para enviar mensaxes a Dart cando o AR debe ser detido
+    // Method to send messages to Dart when or AR must be stopped
     func sendArGoneRequired() {
         let arguments: [String: Any] = ["reason": "lifecycle_stop"]
         methodChannel.invokeMethod("ArGoneRequired", arguments: arguments)
