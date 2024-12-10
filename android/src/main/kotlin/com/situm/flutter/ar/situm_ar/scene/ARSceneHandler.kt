@@ -58,8 +58,8 @@ import java.nio.ByteBuffer
 const val DIRECTION_ARROW_TARGET_DISTANCE = 15f
 const val RENDER_DISTANCE_FAR = 15f
 
-interface ARControllerCallback {
-    fun sendARGone()
+interface ARSceneHandlerCallback {
+    fun onARGoneRequired()
 }
 
 class ARSceneHandler(
@@ -70,7 +70,7 @@ class ARSceneHandler(
         const val TAG = "Situm> AR>"
     }
 
-    private var sendArGoneCallback: ARControllerCallback? = null
+    private var sendArGoneCallback: ARSceneHandlerCallback? = null
     private lateinit var sceneView: CustomARSceneView
     private val context: Context = activity
     private lateinit var viewAttachmentManager: ViewAttachmentManager
@@ -102,7 +102,7 @@ class ARSceneHandler(
 
     private val routeNodes: MutableList<Node> = mutableListOf()     // only for debug
 
-    fun setCallback(callback: ARControllerCallback) {
+    fun setCallback(callback: ARSceneHandlerCallback) {
         this.sendArGoneCallback = callback
     }
 
@@ -698,7 +698,7 @@ class ARSceneHandler(
     override fun onDestinationReached(route: Route?) {
         Log.w(TAG, ">> Situm navigation on destination reached")
         makeRouteInvisible()
-        sendArGoneCallback?.sendARGone()
+        sendArGoneCallback?.onARGoneRequired()
         super.onDestinationReached(route)
     }
 

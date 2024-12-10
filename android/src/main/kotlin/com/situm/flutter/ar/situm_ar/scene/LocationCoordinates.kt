@@ -1,6 +1,5 @@
 package com.situm.flutter.ar.situm_ar.scene
 
-import kotlin.math.absoluteValue
 import kotlin.math.cos
 import kotlin.math.pow
 import kotlin.math.sin
@@ -43,13 +42,7 @@ data class LocationCoordinates(
         )
     }
 
-    fun angularDistanceTo(other: LocationCoordinates): Double {
-        var angleDifference = yaw - other.yaw
-        angleDifference = normalizeAngle(angleDifference)
-        return angleDifference.absoluteValue
-    }
-
-    fun yawAdd(angle: Double): Double {
+    private fun yawAdd(angle: Double): Double {
         var sum = yaw + angle
         sum = normalizeAngle(sum)
         return sum

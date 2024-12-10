@@ -20,9 +20,8 @@ class DebugInfo(private var context: Context, private var sceneHandler: ARSceneH
 
     init {
         this.apply {
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
+            layoutParams = LayoutParams(
+                LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT
             )
             setBackgroundColor(Color.TRANSPARENT) // Fondo transparente
         }
@@ -34,9 +33,8 @@ class DebugInfo(private var context: Context, private var sceneHandler: ARSceneH
             setTextColor(Color.WHITE)
             setBackgroundColor(Color.parseColor("#80000000")) // Fondo semitransparente
             gravity = Gravity.LEFT
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.WRAP_CONTENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT
+            layoutParams = LayoutParams(
+                LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT
             ).apply {
                 //gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL // Posiciona el texto
                 topMargin = 50
@@ -47,9 +45,9 @@ class DebugInfo(private var context: Context, private var sceneHandler: ARSceneH
         this.addView(textView)
         buttonContainer = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.WRAP_CONTENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT,
+            layoutParams = LayoutParams(
+                LayoutParams.WRAP_CONTENT,
+                LayoutParams.WRAP_CONTENT,
                 Gravity.BOTTOM or Gravity.END // Ubicación: esquina inferior derecha
             ).apply {
                 marginEnd = 30 // Margen derecho
@@ -74,16 +72,15 @@ class DebugInfo(private var context: Context, private var sceneHandler: ARSceneH
         }
         this.addView(buttonContainer)
 
-// Crear el botón grande en la esquina superior derecha
+        // Crear el botón grande en la esquina superior derecha
         toggleButton = Button(context).apply {
             text = "Toggle Visibility"
             textSize = 18f
             setBackgroundColor(Color.parseColor("#FF6200EE"))
             setTextColor(Color.WHITE)
 
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.WRAP_CONTENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT
+            layoutParams = LayoutParams(
+                LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT
             ).apply {
                 topMargin = 30
                 marginEnd = 30
@@ -139,10 +136,8 @@ class DebugInfo(private var context: Context, private var sceneHandler: ARSceneH
             setTextColor(Color.BLUE)
             setPadding(10, 10, 10, 10)
 
-
             layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
             )
             (layoutParams as LinearLayout.LayoutParams).setMargins(10)
             setOnClickListener { onClick() }
@@ -150,6 +145,6 @@ class DebugInfo(private var context: Context, private var sceneHandler: ARSceneH
     }
 
     fun updateText(text: String) {
-        textView.setText(text)
+        textView.text = text
     }
 }

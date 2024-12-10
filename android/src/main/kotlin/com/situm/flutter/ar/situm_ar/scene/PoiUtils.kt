@@ -50,7 +50,7 @@ class PoiUtils {
         }
     }
 
-    fun calculateDistance(location1: Location, point: Point): Double {
+    private fun calculateDistance(location1: Location, point: Point): Double {
         val x1 = location1.cartesianCoordinate.x
         val y1 = location1.cartesianCoordinate.y
         val x2 = point.cartesianCoordinate.x
@@ -59,40 +59,5 @@ class PoiUtils {
         // Fórmula para calcular la distancia euclidiana entre dos puntos
         return sqrt((x2 - x1).pow(2) + (y2 - y1).pow(2))
     }
-
-    fun calculateRelativePosition(currentLocation: Location, poi: Poi): RelativePosition {
-        val relativeX = poi.position.cartesianCoordinate.x - currentLocation.cartesianCoordinate.x
-        val relativeY = poi.position.cartesianCoordinate.y - currentLocation.cartesianCoordinate.y
-
-        return RelativePosition(relativeX = relativeX, relativeY = relativeY)
-    }
-
-    fun calculateRelativePositions(
-        currentLocation: Location,
-        nearPois: List<Poi>
-    ): List<RelativePosition> {
-        return nearPois.map { poi ->
-            calculateRelativePosition(currentLocation, poi)
-        }
-    }
-
-
-    fun getPoiNodeFromId(pois: List<Poi>, poiNodes: List<ViewNode>, poiId: String): ViewNode? {
-        // Asegurarse de que las dos listas tengan el mismo tamaño
-        if (pois.size != poiNodes.size) {
-            throw IllegalArgumentException("Las listas de POIs y ViewNodes deben tener el mismo tamaño.")
-        }
-
-        // Recorrer ambas listas al mismo tiempo
-        for (i in pois.indices) {
-            if (pois[i].identifier == poiId) { // Suponemos que el POI tiene un campo `id`
-                return poiNodes[i] // Devolver el ViewNode correspondiente
-            }
-        }
-
-        // Si no se encuentra el POI con ese ID, devolver null
-        return null
-    }
-
 
 }

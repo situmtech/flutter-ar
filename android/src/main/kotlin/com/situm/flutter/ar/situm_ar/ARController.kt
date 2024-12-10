@@ -4,7 +4,7 @@ import android.os.Looper
 import android.util.Log
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
-import com.situm.flutter.ar.situm_ar.scene.ARControllerCallback
+import com.situm.flutter.ar.situm_ar.scene.ARSceneHandlerCallback
 import com.situm.flutter.ar.situm_ar.scene.ARSceneHandler
 import es.situm.sdk.SitumSdk
 import es.situm.sdk.communication.CommunicationConfigImpl
@@ -20,14 +20,14 @@ class ARController(
     private val arView: SitumARPlatformView,
     private val arSceneHandler: ARSceneHandler,
     private val arMethodCallSender: ARMethodCallSender,
-) : DefaultLifecycleObserver, ARControllerCallback {
+) : DefaultLifecycleObserver, ARSceneHandlerCallback {
     companion object {
         const val TAG = "Situm> AR>"
     }
 
-    init {
-        arSceneHandler.setCallback(this)
-    }
+//    init {
+//        arSceneHandler.setCallback(this)
+//    }
 
     private var isLoaded = false
     private var isLoading = false
@@ -85,7 +85,9 @@ class ARController(
         isLoaded = true
         isLoading = false
 
-        handler.post(updateDebugInfoRunnable)
+        if (arSceneHandler.isDebugMode()) {
+            handler.post(updateDebugInfoRunnable)
+        }
     }
 
     fun unload() {
@@ -123,17 +125,16 @@ class ARController(
 
     override fun onStop(owner: LifecycleOwner) {
         Log.d(TAG, "Situm> AR> L&U> Lifecycle> onStop")
-        if (isLoaded) {
-            arMethodCallSender.sendArGoneRequired()
-        }
+        arMethodCallSender.sendArGoneRequired()
     }
 
     fun updateDebugInfo() {
         arView.updateDebugInfo(arSceneHandler.getCurrentStatusLog())
     }
 
-
-    override fun sendARGone() {
-        arMethodCallSender.sendArGoneRequired()
+    override fun onARGoneRequired() {
+        if (isLoaded) {
+            arMethodCallSender.sendArGoneRequired()
+        }
     }
 }

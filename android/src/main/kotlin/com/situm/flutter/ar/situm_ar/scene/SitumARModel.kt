@@ -14,7 +14,3 @@ data class SitumARModel(
     }
 
 }
-
-
-class ModelUtils {
-}

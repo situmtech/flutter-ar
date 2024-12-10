@@ -41,6 +41,7 @@ class SitumARPlatformView(
         val sceneHandler = ARSceneHandler(activity, lifecycle)
         debugInfo = DebugInfo(context, sceneHandler)
         arController = ARController(this, sceneHandler, arMethodCallSender)
+        sceneHandler.setCallback(arController)
         arMethodCallHandler = ARMethodCallHandler(arController)
         flutterMethodChannel.setMethodCallHandler(this)
         generateAndroidViews(context)
@@ -78,16 +79,7 @@ class SitumARPlatformView(
             config.planeFindingMode = Config.PlaneFindingMode.DISABLED
             config.updateMode = Config.UpdateMode.LATEST_CAMERA_IMAGE
         }
-//        sceneView.sessionConfiguration = { session, config ->
-//            config.depthMode =
-//                if (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
-//                    Config.DepthMode.AUTOMATIC
-//                } else {
-//                    Config.DepthMode.DISABLED
-//                }
-//            config.instantPlacementMode = Config.InstantPlacementMode.DISABLED
-//            config.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
-//        }
+
         // This call will make the AR visible:
         sceneView.lifecycle = lifecycle
         rootView.addView(sceneView)

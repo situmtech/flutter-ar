@@ -79,7 +79,7 @@ class ARQuality {
         return checkIfHasToRefreshAndUpdateThreshold(quality, arConf, situmConf)
     }
 
-    fun updateConfidence() {
+    private fun updateConfidence() {
         if (situmLocationBuffer.isEmpty() || arLocationBuffer.isEmpty()) {
             arConf = 0.0
             situmConf = 0.0
@@ -106,15 +106,15 @@ class ARQuality {
         arLocationBuffer: MutableList<LocationCoordinates>,
         situmLocationBuffer: MutableList<LocationCoordinates>
     ): Double {
-        var transformedARTrajectory = transformTrajectory(arLocationBuffer)
-        var transformedSitumTrajectory = transformTrajectory(situmLocationBuffer)
+        val transformedARTrajectory = transformTrajectory(arLocationBuffer)
+        val transformedSitumTrajectory = transformTrajectory(situmLocationBuffer)
         val distance = transformedARTrajectory.last().distanceTo(transformedSitumTrajectory.last())
 
         return distance;
 
     }
 
-    fun transformTrajectory(arLocationBuffer: MutableList<LocationCoordinates>): List<LocationCoordinates> {
+    private fun transformTrajectory(arLocationBuffer: MutableList<LocationCoordinates>): List<LocationCoordinates> {
         if (arLocationBuffer.isEmpty()) return emptyList()
 
         // Translate to origin
@@ -123,7 +123,7 @@ class ARQuality {
         if (translatedTrajectory.size == 1) return translatedTrajectory
 
         // Find a miminum displacement
-        var distance = 0.0
+        var distance: Double
         var index = 1
         while (index < translatedTrajectory.size) {
             distance = translatedTrajectory[0].distanceTo(translatedTrajectory[index])
@@ -145,19 +145,16 @@ class ARQuality {
     }
 
 
-    fun computeTotalDisplacement(coordinates: List<LocationCoordinates>): Double {
+    private fun computeTotalDisplacement(coordinates: List<LocationCoordinates>): Double {
         if (coordinates.size < 2) return 0.0
         return coordinates.first().distanceTo(coordinates.last())
     }
 
 
-    fun estimateArConf(): Double {
+    private fun estimateArConf(): Double {
         val requiredPositions = 10
         val maxConfidence = 1.0
         var numOkPositions = 0
-
-        // Ckeck last 10 positions
-        var confidence = maxConfidence
         for (i in arLocationBuffer.size - 1 downTo maxOf(
             arLocationBuffer.size - requiredPositions,
             0
@@ -172,33 +169,34 @@ class ARQuality {
                 numOkPositions++
             }
         }
-        confidence = (numOkPositions.toDouble() / requiredPositions) * maxConfidence
+
+        // Check last 10 positions
+        val confidence: Double = (numOkPositions.toDouble() / requiredPositions) * maxConfidence
         return confidence
     }
 
 
-    fun estimateSitumConf(): Double {
+    private fun estimateSitumConf(): Double {
         val requiredPositions = 10
         val maxConfidence = 1.0
         var numOkPositions = 0
-        var confidence = maxConfidence
 
         for (i in situmLocationBuffer.size - 1 downTo maxOf(
             situmLocationBuffer.size - requiredPositions,
             0
         )) {
-            if ((situmLocationBuffer[i].accuracy > 5 && !situmLocationBuffer[i].hasBearing) || i < 0) {
+            if ((situmLocationBuffer[i].accuracy > 5 && !situmLocationBuffer[i].hasBearing)) {
                 break
             } else {
                 numOkPositions++
             }
         }
 
-        confidence = (numOkPositions.toDouble() / requiredPositions) * maxConfidence
+        val confidence: Double = (numOkPositions.toDouble() / requiredPositions) * maxConfidence
         return confidence
     }
 
-    fun totalDisplacementConf(distance: Double): Double {
+    private fun totalDisplacementConf(distance: Double): Double {
         val minDistanceThreshold = 10.0
         return if (distance > minDistanceThreshold) {
             1.0
@@ -207,7 +205,7 @@ class ARQuality {
         }
     }
 
-    fun odometriesDifferenceConf(difference: Double): Double {
+    private fun odometriesDifferenceConf(difference: Double): Double {
         val diffThreshold = 10.0
         return if (difference > diffThreshold) {
             0.0
@@ -216,7 +214,7 @@ class ARQuality {
         }
     }
 
-    fun checkIfHasToRefreshAndUpdateThreshold(
+    private fun checkIfHasToRefreshAndUpdateThreshold(
         conf: Double,
         arConf: Double,
         situmConf: Double
@@ -233,8 +231,7 @@ class ARQuality {
         if (currentRefreshThreshold.value > 0.20 &&
             currentTimestamp - currentRefreshThreshold.timestamp > 1000
         ) {
-            currentRefreshThreshold.value =
-                currentRefreshThreshold.value - CONSTANT_QUALITY_DECREASE_RATE
+            currentRefreshThreshold.value -= CONSTANT_QUALITY_DECREASE_RATE
         }
 
         // Si la confianza es mayor que el umbral actual + 0.2, actualizar el umbral y devolver true
@@ -249,8 +246,7 @@ class ARQuality {
             currentTimestamp - currentRefreshThreshold.timestamp > 1000 &&
             currentRefreshThreshold.value > 0.20
         ) {
-            currentRefreshThreshold.value =
-                currentRefreshThreshold.value - QUALITY_THRESHOLD_DECREASE_RATE
+            currentRefreshThreshold.value -= QUALITY_THRESHOLD_DECREASE_RATE
             currentRefreshThreshold.timestamp = currentTimestamp
             dynamicRefreshThreshold = currentRefreshThreshold
             return false
