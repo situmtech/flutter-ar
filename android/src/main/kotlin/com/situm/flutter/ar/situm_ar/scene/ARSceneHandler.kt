@@ -144,7 +144,6 @@ class ARSceneHandler(
         }
     }
 
-
     fun setCurrentLocation(location: Location) {
         // if floor change, redraw
         if (::currentPosition.isInitialized && this.currentPosition.floorIdentifier != location.floorIdentifier) {
@@ -588,6 +587,17 @@ class ARSceneHandler(
             }
     }
 
+    private suspend fun fetchAndBuildModelNode(url: String, scale: Float): ModelNode? {
+        return sceneView.modelLoader.loadModelInstance(url)
+            ?.let { modelInstance ->
+                ModelNode(
+                    modelInstance = modelInstance,
+                    scaleToUnits = scale,
+                ).apply {}
+
+            }
+    }
+
     private suspend fun buildAndAddArrowNode() {
         Log.d(TAG, "buildAndAddArrowNode 1")
         val arrowModel =
@@ -617,8 +627,6 @@ class ARSceneHandler(
         poisTexturesMap.clear()
         sceneView.clearChildNodes()
         diskGeometry?.let { diskGeometry = null }
-
-
     }
 
 
@@ -801,6 +809,125 @@ class ARSceneHandler(
 
 
     override fun onEnteredGeofences(geofences: MutableList<Geofence>?) {
+        if (onDebug) {
+            Toast.makeText(context, "Enter Geofence!", Toast.LENGTH_SHORT).show()
+        }
+
+        geofences?.forEach { geofence ->
+            geofence.customFields?.forEach { cf ->
+                if (cf.key == "ar_metadata") {
+                    try {
+                        val extractedData = parseGeofenceArMetadata(cf)
+
+                        extractedData.forEach { data ->
+                            Log.d(
+                                TAG,
+                                "Nombre: ${data["name"]}, URL: ${data["url"]}, Escala: ${data["scale"]}, Coordenadas: ${data["coordinates"]}"
+                            )
+                            //////////////////
+                            val modelName = data["name"] as String
+                            val existingModel = fenceModels[modelName]
+                            val scale = data["scale"] as Float
+                            val height = (data["coordinates"] as List<Float>)[2]
+                            // Already loaded
+                            if (existingModel != null) {
+                                existingModel.modelNode.worldPosition = getRandomPositionInViewCone(
+                                    sceneView.cameraNode.worldPosition,
+                                    sceneView.cameraNode.worldRotation,
+                                    5f,
+                                    height,
+                                    30f
+                                )
+                                existingModel.modelNode.isVisible = true
+                            } else {
+                                // Try to load from local
+                                val modelResId = activity?.resources?.getIdentifier(
+                                    modelName, "raw", activity?.packageName
+                                )
+
+                                Log.d(
+                                    TAG,
+                                    ">>>>>>>>>>>>>>>>>>>> $modelName $modelResId"
+                                )
+
+                                if (modelResId != null && modelResId != 0) {
+                                    (activity as? LifecycleOwner)?.lifecycleScope?.launch {
+                                        val modelNode = buildModelNode(modelResId, scale)
+                                        Log.d(
+                                            TAG,
+                                            ">>>>>>>>>>>>>>>>>>>> Building model $modelResId   -> trexmodel ${R.raw.trex} /  ${R.raw.phoenix_bird} ${R.raw.hummingbird} ${R.raw.saturn}"
+                                        )
+
+                                        modelNode?.let {
+                                            val situmARModel =
+                                                SitumARModel(geofence.name, modelName, it)
+                                            fenceModels[modelName] = situmARModel
+                                            modelNode.worldPosition = getRandomPositionInViewCone(
+                                                sceneView.cameraNode.worldPosition,
+                                                sceneView.cameraNode.worldRotation,
+                                                5f,
+                                                height,
+                                                5f
+                                            )
+                                            sceneView.addChildNode(it)
+
+                                        }
+                                    }
+                                    // Load from remote
+                                } else {
+                                    (activity as? LifecycleOwner)?.lifecycleScope?.launch {
+                                        val modelNode =
+                                            fetchAndBuildModelNode(data["url"] as String, scale)
+
+                                        modelNode?.let {
+                                            val situmARModel =
+                                                SitumARModel(geofence.name, modelName, it)
+                                            fenceModels[modelName] = situmARModel
+                                            modelNode.worldPosition = getRandomPositionInViewCone(
+                                                sceneView.cameraNode.worldPosition,
+                                                sceneView.cameraNode.worldRotation,
+                                                5f,
+                                                height,
+                                                30f
+                                            )
+                                            sceneView.addChildNode(it)
+                                        }
+
+                                    }
+                                }
+
+                                ///////////////
+                            }
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun parseGeofenceArMetadata(cf: Map.Entry<String, String>): List<Map<String, Any>> {
+        val json = JsonParser.parseString(cf.value.toString()).asJsonObject
+        val features = json["features"].asJsonArray
+
+        // Iterar por cada "Feature" y extraer la información requerida
+        val extractedData = features.map { feature ->
+            val properties = feature.asJsonObject["properties"].asJsonObject
+            val geometry = feature.asJsonObject["geometry"].asJsonObject
+
+            // Crear un mapa con los datos que queremos extraer
+            mapOf(
+                "name" to properties["name"].asString,
+                "url" to properties["url"].asString,
+                "scale" to properties["scale"].asFloat,
+                "coordinates" to geometry["coordinates"].asJsonArray.map { it.asFloat }
+            )
+        }
+        return extractedData
+    }
+
+    fun onEnteredGeofences_(geofences: MutableList<Geofence>?) {
         if (onDebug) {
             Toast.makeText(context, "Enter Geofence!", Toast.LENGTH_SHORT).show()
         }

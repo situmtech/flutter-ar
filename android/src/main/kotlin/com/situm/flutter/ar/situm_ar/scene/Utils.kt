@@ -108,43 +108,42 @@ fun getRandomPositionNearPosition(
 }
 
 
+fun getCameraDirection(worldRotation: Rotation): Rotation {
+    val rotationRadians = Math.toRadians(worldRotation.y.toDouble())
+    return Rotation(
+        x = -Math.sin(rotationRadians).toFloat(), // Mirando en -Z global por defecto
+        y = 0f,                                   // Asume sin inclinación en el eje Y
+        z = -Math.cos(rotationRadians).toFloat()
+    )
+}
+
 fun getRandomPositionInViewCone(
     cameraPosition: Position,
-    cameraDirection: Rotation,
+    cameraWorldRotation: Rotation,
     maxDistance: Float,
-    heightOffset: Float,
+    fixedHeight: Float,
     coneAngle: Float = 70f
 ): Position {
-    // Genera un ángulo aleatorio dentro del rango ±coneAngle
-    val randomAngle = Random.nextFloat() * 2 * coneAngle - coneAngle
 
-    // Convierte el ángulo a radianes
+    val rotationYRadians = Math.toRadians(cameraWorldRotation.y.toDouble()) - Math.PI / 2
+    val randomAngle = (Random.nextFloat() * coneAngle - coneAngle / 2)
     val angleRad = Math.toRadians(randomAngle.toDouble())
 
-    // Genera una distancia aleatoria hacia adelante dentro del rango [0, maxDistance]
-    val distance = Random.nextFloat() * maxDistance
+    val minDistance = 2f
+    val distance = Random.nextFloat() * maxDistance + minDistance
 
-    // Calcula las direcciones de desplazamiento en el plano XZ
-    val offsetX = distance * Math.cos(angleRad)
-    val offsetZ = distance * Math.sin(angleRad)
-
-    // Usa la dirección de la cámara para orientar los desplazamientos
-    val forwardX = cameraDirection.x
-    val forwardZ = -cameraDirection.z
-    val length = Math.sqrt((forwardX * forwardX + forwardZ * forwardZ).toDouble()) // Normalizar
-
-    // Evita división por cero al normalizar
-    val normalizedX = if(length > 1e-6) forwardX / length else 0f
-    val normalizedZ = if (length > 1e-6) forwardZ / length else 0f
-
-    // Proyecta la posición final en el cono de visión
-
-    val finalX = cameraPosition.x + (normalizedX.toFloat() * offsetX - normalizedZ.toFloat() * offsetZ).toFloat()
-    val finalZ = cameraPosition.z + (normalizedZ.toFloat() * offsetX + normalizedX.toFloat() * offsetZ).toFloat()
+    val offsetX =
+        distance * (Math.cos(angleRad) * Math.cos(rotationYRadians) - Math.sin(angleRad) * Math.sin(
+            rotationYRadians
+        ))
+    val offsetZ =
+        distance * (Math.sin(angleRad) * Math.cos(rotationYRadians) + Math.cos(angleRad) * Math.sin(
+            rotationYRadians
+        ))
 
     return Position(
-        x = finalX,
-        y = cameraPosition.y + heightOffset,
-        z = finalZ
+        x = (cameraPosition.x + offsetX).toFloat(),
+        y = fixedHeight,
+        z = (cameraPosition.z + offsetZ).toFloat()
     )
 }
