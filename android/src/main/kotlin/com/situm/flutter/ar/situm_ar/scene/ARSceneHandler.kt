@@ -5,6 +5,8 @@ package com.situm.flutter.ar.situm_ar.scene
 import android.app.Activity
 import android.content.Context
 import android.graphics.BitmapFactory
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.widget.TextView
 import android.widget.Toast
@@ -14,7 +16,6 @@ import androidx.lifecycle.lifecycleScope
 import com.google.android.filament.Texture
 import com.google.ar.sceneform.rendering.ViewAttachmentManager
 import com.google.ar.sceneform.rendering.ViewRenderable
-import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.situm.flutter.ar.situm_ar.CustomARSceneView
 import com.situm.flutter.ar.situm_ar.R
@@ -95,6 +96,11 @@ class ARSceneHandler(
     val poisAR = mutableMapOf<String, PoiAR>()
     val fenceModels = mutableMapOf<String, SitumARModel>()
     val poisTexturesMap = mutableMapOf<String, Texture?>()
+
+    private val checkInterval = 10000L // 10 segundos
+    private val minDistanceThresholdToRegenerateModels = 10f // Distancia mínima en metros
+    private val handler = Handler(Looper.getMainLooper())
+    private var proximityCheckRunnable: Runnable? = null
 
     private lateinit var currentSegment: RouteSegment
     private var routePointsAR: MutableList<Vector3> = mutableListOf()
@@ -240,6 +246,7 @@ class ARSceneHandler(
                 }
             }
         }
+        startModelProximityCheck()
     }
 
 
@@ -627,6 +634,7 @@ class ARSceneHandler(
         poisTexturesMap.clear()
         sceneView.clearChildNodes()
         diskGeometry?.let { diskGeometry = null }
+        stopModelProximityCheck()
     }
 
 
@@ -993,6 +1001,39 @@ class ARSceneHandler(
         return extractedData
     }
 
+
+
+    fun startModelProximityCheck() {
+        proximityCheckRunnable = object : Runnable {
+            override fun run() {
+                val userPosition = sceneView.cameraNode.worldPosition
+                val visiblePositions = getVisibleModelPositions(fenceModels)
+                val hasNearbyModels = visiblePositions.any { position ->
+                    distanceBetween(userPosition, position) < minDistanceThresholdToRegenerateModels
+                }
+
+                if (!hasNearbyModels) {
+                    regenerateModelsNearUser(userPosition)
+                }
+
+                // Reprogramar la verificación
+                handler.postDelayed(this, checkInterval)
+            }
+        }
+        proximityCheckRunnable?.let { handler.post(it) }
+    }
+    fun stopModelProximityCheck() {
+        proximityCheckRunnable?.let { handler.removeCallbacks(it) }
+        proximityCheckRunnable = null // Liberar la referencia
+    }
+
+    private fun regenerateModelsNearUser(userPosition: Position) {
+        fenceModels.forEach { (modelName, model) ->
+            if (model.modelNode.isVisible) {
+                updateExistingModel(model, model.modelNode.worldPosition.y)
+            }
+        }
+    }
 
 
 
