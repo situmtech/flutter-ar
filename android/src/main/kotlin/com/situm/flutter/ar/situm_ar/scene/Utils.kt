@@ -7,6 +7,7 @@ import io.github.sceneview.math.Rotation
 import kotlin.random.Random
 import kotlin.system.measureTimeMillis
 
+val TAG = "Situm> AR>"
 data class RelativePosition(
     val relativeX: Double,
     val relativeY: Double
@@ -83,6 +84,17 @@ fun calculate2DDistance(start: Vector3, end: Vector3): Float {
     ).toFloat()
 }
 
+fun isPositionValid(newPosition: Position, existingPositions: List<Position>, minDistance: Float): Boolean {
+    return existingPositions.all { existingPosition ->
+        distanceBetween(newPosition, existingPosition) > minDistance
+    }
+}
+
+fun distanceBetween(pos1: Position, pos2: Position): Double {
+    val dx = pos1.x - pos2.x
+    val dz = pos1.z - pos2.z
+    return Math.sqrt((dx * dx + dz * dz).toDouble())
+}
 inline fun logExecutionTime(tag: String = "ExecutionTime", block: () -> Unit) {
     val time = measureTimeMillis {
         block()
@@ -116,6 +128,34 @@ fun getCameraDirection(worldRotation: Rotation): Rotation {
         z = -Math.cos(rotationRadians).toFloat()
     )
 }
+
+fun getVisibleModelPositions(fenceModels: Map<String, SitumARModel>): List<Position> {
+    return fenceModels.values
+        .filter { it.modelNode.isVisible } // Filtrar solo nodos visibles
+        .map { it.modelNode.worldPosition } // Obtener sus posiciones
+}
+
+
+fun generateValidPosition(
+    cameraPosition: Position,
+    cameraRotation: Rotation,
+    maxDistance: Float,
+    heightOffset: Float,
+    coneAngle: Float,
+    existingPositions: List<Position>,
+    minDistance: Float,
+    maxRetries: Int = 10
+): Position? {
+    repeat(maxRetries) {
+        val newPosition = getRandomPositionInViewCone(cameraPosition, cameraRotation, maxDistance, heightOffset, coneAngle)
+        if (isPositionValid(newPosition, existingPositions, minDistance)) {
+            return newPosition
+        }
+    }
+    Log.w(TAG, "Could not generate a valid position after $maxRetries attempts.")
+    return null
+}
+
 
 fun getRandomPositionInViewCone(
     cameraPosition: Position,
