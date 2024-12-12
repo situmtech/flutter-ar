@@ -58,6 +58,8 @@ import java.nio.ByteBuffer
 
 const val DIRECTION_ARROW_TARGET_DISTANCE = 15f
 const val RENDER_DISTANCE_FAR = 15f
+const val CHECK_MODELS_NEARBY_INTERVAL = 10000L // 10 seconds
+const val MIN_DISTANCE_TO_REGENERATE_MODELS = 10f // minimum distance meters
 
 interface ARSceneHandlerCallback {
     fun onARGoneRequired()
@@ -97,8 +99,7 @@ class ARSceneHandler(
     val fenceModels = mutableMapOf<String, SitumARModel>()
     val poisTexturesMap = mutableMapOf<String, Texture?>()
 
-    private val checkInterval = 10000L // 10 segundos
-    private val minDistanceThresholdToRegenerateModels = 10f // Distancia mínima en metros
+
     private val handler = Handler(Looper.getMainLooper())
     private var proximityCheckRunnable: Runnable? = null
 
@@ -871,14 +872,18 @@ class ARSceneHandler(
         val coordinates = data["coordinates"] as? List<Float> ?: return
         val height = coordinates.getOrNull(2) ?: 0f
 
-        Log.d(TAG, "Nombre: $modelName, URL: ${data["url"]}, Escala: $scale, Coordenadas: $coordinates")
+        Log.d(
+            TAG,
+            "Nombre: $modelName, URL: ${data["url"]}, Escala: $scale, Coordenadas: $coordinates"
+        )
 
         val existingModel = fenceModels[modelName]
 
         if (existingModel != null) {
             updateExistingModel(existingModel, height)
         } else {
-            val modelResId = activity?.resources?.getIdentifier(modelName, "raw", activity?.packageName)
+            val modelResId =
+                activity?.resources?.getIdentifier(modelName, "raw", activity?.packageName)
             if (modelResId != null && modelResId != 0) {
                 loadLocalModel(modelResId, modelName, scale, height, geofenceName)
             } else {
@@ -1002,29 +1007,28 @@ class ARSceneHandler(
     }
 
 
-
     fun startModelProximityCheck() {
         proximityCheckRunnable = object : Runnable {
             override fun run() {
                 val userPosition = sceneView.cameraNode.worldPosition
                 val visiblePositions = getVisibleModelPositions(fenceModels)
                 val hasNearbyModels = visiblePositions.any { position ->
-                    distanceBetween(userPosition, position) < minDistanceThresholdToRegenerateModels
+                    distanceBetween(userPosition, position) < MIN_DISTANCE_TO_REGENERATE_MODELS
                 }
 
                 if (!hasNearbyModels) {
                     regenerateModelsNearUser(userPosition)
                 }
 
-                // Reprogramar la verificación
-                handler.postDelayed(this, checkInterval)
+                handler.postDelayed(this, CHECK_MODELS_NEARBY_INTERVAL)
             }
         }
         proximityCheckRunnable?.let { handler.post(it) }
     }
+
     fun stopModelProximityCheck() {
         proximityCheckRunnable?.let { handler.removeCallbacks(it) }
-        proximityCheckRunnable = null // Liberar la referencia
+        proximityCheckRunnable = null
     }
 
     private fun regenerateModelsNearUser(userPosition: Position) {
@@ -1034,7 +1038,6 @@ class ARSceneHandler(
             }
         }
     }
-
 
 
     fun isDebugMode(): Boolean {
