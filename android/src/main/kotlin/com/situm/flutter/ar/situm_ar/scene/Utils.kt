@@ -4,18 +4,14 @@ import android.util.Log
 import io.github.sceneview.collision.Vector3
 import io.github.sceneview.math.Position
 import io.github.sceneview.math.Rotation
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.math.sqrt
 import kotlin.random.Random
 import kotlin.system.measureTimeMillis
 
-val TAG = "Situm> AR>"
-data class RelativePosition(
-    val relativeX: Double,
-    val relativeY: Double
-) {
-    override fun toString(): String {
-        return "RelativePosition(relativeX=$relativeX, relativeY=$relativeY)"
-    }
-}
+const val TAG = "Situm> AR>"
 
 fun interpolatePositions(
     positions: List<Vector3>,
@@ -61,7 +57,7 @@ fun interpolatePositions(
 }
 
 fun calculateDistance(start: Vector3, end: Vector3): Float {
-    return Math.sqrt(
+    return sqrt(
         ((end.x - start.x) * (end.x - start.x) +
                 (end.y - start.y) * (end.y - start.y) +
                 (end.z - start.z) * (end.z - start.z)).toDouble()
@@ -78,13 +74,17 @@ fun addVectors(vector1: Vector3, vector2: Vector3): Vector3 {
 }
 
 fun calculate2DDistance(start: Vector3, end: Vector3): Float {
-    return Math.sqrt(
+    return sqrt(
         ((end.x - start.x) * (end.x - start.x) +
                 (end.z - start.z) * (end.z - start.z)).toDouble()
     ).toFloat()
 }
 
-fun isPositionValid(newPosition: Position, existingPositions: List<Position>, minDistance: Float): Boolean {
+fun isPositionValid(
+    newPosition: Position,
+    existingPositions: List<Position>,
+    minDistance: Float
+): Boolean {
     return existingPositions.all { existingPosition ->
         distanceBetween(newPosition, existingPosition) > minDistance
     }
@@ -93,46 +93,20 @@ fun isPositionValid(newPosition: Position, existingPositions: List<Position>, mi
 fun distanceBetween(pos1: Position, pos2: Position): Double {
     val dx = pos1.x - pos2.x
     val dz = pos1.z - pos2.z
-    return Math.sqrt((dx * dx + dz * dz).toDouble())
+    return sqrt((dx * dx + dz * dz).toDouble())
 }
+
 inline fun logExecutionTime(tag: String = "ExecutionTime", block: () -> Unit) {
     val time = measureTimeMillis {
         block()
     }
-    Log.d(tag, "Tiempo de ejecución: $time ms")
-}
-
-fun getRandomPositionNearPosition(
-    cameraPosition: Position,
-    maxDistance: Float,
-    heightOffset: Float
-): Position {
-    // Genera desplazamientos aleatorios en los ejes X, Y y Z
-    val randomOffsetX = Random.nextFloat() * maxDistance * 2 - maxDistance
-    val randomOffsetZ = Random.nextFloat() * maxDistance * 2 - maxDistance
-
-    // Suma los desplazamientos aleatorios a la posición de la cámara
-    return Position(
-        cameraPosition.x + randomOffsetX,
-        cameraPosition.y + heightOffset,
-        cameraPosition.z + randomOffsetZ
-    )
-}
-
-
-fun getCameraDirection(worldRotation: Rotation): Rotation {
-    val rotationRadians = Math.toRadians(worldRotation.y.toDouble())
-    return Rotation(
-        x = -Math.sin(rotationRadians).toFloat(), // Mirando en -Z global por defecto
-        y = 0f,                                   // Asume sin inclinación en el eje Y
-        z = -Math.cos(rotationRadians).toFloat()
-    )
+    Log.d(tag, "Execution Time: $time ms")
 }
 
 fun getVisibleModelPositions(fenceModels: Map<String, SitumARModel>): List<Position> {
     return fenceModels.values
-        .filter { it.modelNode.isVisible } // Filtrar solo nodos visibles
-        .map { it.modelNode.worldPosition } // Obtener sus posiciones
+        .filter { it.modelNode.isVisible } // Filter visible nodes
+        .map { it.modelNode.worldPosition } // Get positions
 }
 
 
@@ -147,7 +121,13 @@ fun generateValidPosition(
     maxRetries: Int = 10
 ): Position? {
     repeat(maxRetries) {
-        val newPosition = getRandomPositionInViewCone(cameraPosition, cameraRotation, maxDistance, heightOffset, coneAngle)
+        val newPosition = getRandomPositionInViewCone(
+            cameraPosition,
+            cameraRotation,
+            maxDistance,
+            heightOffset,
+            coneAngle
+        )
         if (isPositionValid(newPosition, existingPositions, minDistance)) {
             return newPosition
         }
@@ -156,6 +136,9 @@ fun generateValidPosition(
     return null
 }
 
+fun toRadians(degrees: Double): Double {
+    return degrees * (PI / 180)
+}
 
 fun getRandomPositionInViewCone(
     cameraPosition: Position,
@@ -165,19 +148,19 @@ fun getRandomPositionInViewCone(
     coneAngle: Float = 70f
 ): Position {
 
-    val rotationYRadians = Math.toRadians(cameraWorldRotation.y.toDouble()) - Math.PI / 2
+    val rotationYRadians = toRadians(cameraWorldRotation.y.toDouble()) - PI / 2
     val randomAngle = (Random.nextFloat() * coneAngle - coneAngle / 2)
-    val angleRad = Math.toRadians(randomAngle.toDouble())
+    val angleRad = toRadians(randomAngle.toDouble())
 
     val minDistance = 2f
     val distance = Random.nextFloat() * maxDistance + minDistance
 
     val offsetX =
-        distance * (Math.cos(angleRad) * Math.cos(rotationYRadians) - Math.sin(angleRad) * Math.sin(
+        distance * (cos(angleRad) * cos(rotationYRadians) - sin(angleRad) * sin(
             rotationYRadians
         ))
     val offsetZ =
-        distance * (Math.sin(angleRad) * Math.cos(rotationYRadians) + Math.cos(angleRad) * Math.sin(
+        distance * (sin(angleRad) * cos(rotationYRadians) + cos(angleRad) * sin(
             rotationYRadians
         ))
 

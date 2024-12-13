@@ -4,8 +4,8 @@ import android.os.Looper
 import android.util.Log
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
-import com.situm.flutter.ar.situm_ar.scene.ARSceneHandlerCallback
 import com.situm.flutter.ar.situm_ar.scene.ARSceneHandler
+import com.situm.flutter.ar.situm_ar.scene.ARSceneHandlerCallback
 import es.situm.sdk.SitumSdk
 import es.situm.sdk.communication.CommunicationConfigImpl
 import es.situm.sdk.configuration.network.NetworkOptions
@@ -25,9 +25,6 @@ class ARController(
         const val TAG = "Situm> AR>"
     }
 
-//    init {
-//        arSceneHandler.setCallback(this)
-//    }
 
     private var isLoaded = false
     private var isLoading = false
@@ -78,7 +75,7 @@ class ARController(
 
         // Situm location and navigation listeners
         SitumSdk.locationManager().addLocationListener(arSceneHandler)
-        SitumSdk.locationManager().setGeofenceListener(arSceneHandler)
+
         SitumSdk.navigationManager().addNavigationListener(arSceneHandler)
 
 

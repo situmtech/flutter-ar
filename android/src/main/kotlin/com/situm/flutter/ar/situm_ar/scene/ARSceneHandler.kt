@@ -68,7 +68,7 @@ interface ARSceneHandlerCallback {
 class ARSceneHandler(
     private val activity: Activity,
     private val lifecycle: Lifecycle,
-) : NavigationListener, LocationListener, GeofenceListener {
+) : NavigationListener, LocationListener {
     companion object {
         const val TAG = "Situm> AR>"
     }
@@ -77,6 +77,8 @@ class ARSceneHandler(
     private lateinit var sceneView: CustomARSceneView
     private val context: Context = activity
     private lateinit var viewAttachmentManager: ViewAttachmentManager
+
+    private lateinit var geofenceARModelManager : GeofenceARModelManager
 
     private var arQuality: ARQuality = ARQuality()
     private var poiUtils: PoiUtils = PoiUtils()
@@ -100,8 +102,7 @@ class ARSceneHandler(
     val poisTexturesMap = mutableMapOf<String, Texture?>()
 
 
-    private val handler = Handler(Looper.getMainLooper())
-    private var proximityCheckRunnable: Runnable? = null
+
 
     private lateinit var currentSegment: RouteSegment
     private var routePointsAR: MutableList<Vector3> = mutableListOf()
@@ -141,7 +142,7 @@ class ARSceneHandler(
                 )
                 if (!poisTexturesMap.containsKey(poi.category.identifier)) {
                     val texture = loadTextureFromUrlAsync(
-                        context, dashboardDomain + poi.category.unselectedIconUrl.value.toString()
+                         dashboardDomain + poi.category.unselectedIconUrl.value.toString()
                     )
                     if (texture != null) {
                         poisTexturesMap[poi.category.identifier] = texture
@@ -171,6 +172,7 @@ class ARSceneHandler(
     fun setupSceneView(sceneView: CustomARSceneView) {
         viewAttachmentManager = ViewAttachmentManager(context, sceneView)
         viewAttachmentManager.onResume()
+
 
         this.sceneView = sceneView
         Log.d(TAG, ">>>Setup ARSceneView 1 ")
@@ -247,7 +249,8 @@ class ARSceneHandler(
                 }
             }
         }
-        startModelProximityCheck()
+        geofenceARModelManager = GeofenceARModelManager(context,sceneView,activity,fenceModels, onDebug)
+        SitumSdk.locationManager().setGeofenceListener(geofenceARModelManager)
     }
 
 
@@ -332,12 +335,12 @@ class ARSceneHandler(
                     }
                 }
             }
-            val positionDisk = Position(arcorePosition.x, arcorePosition.y - 0.5f, arcorePosition.z)
+
             logExecutionTime(" >>draw disc  ") {
                 poisAR.get(pois[i].identifier)?.poi?.let {
                     drawDiskWithImage(
                         poisAR.get(pois[i].identifier)!!,
-                        positionDisk,
+                        Position(0f, -0.5f, 0f),
                         it.category
                     )
                 }
@@ -516,7 +519,7 @@ class ARSceneHandler(
         arrowNode?.lookAt(targetARPosition, smooth = true)
     }
 
-    suspend fun loadTextureFromUrlAsync(context: Context, imageUrl: String): Texture? {
+    suspend fun loadTextureFromUrlAsync( imageUrl: String): Texture? {
         return withContext(Dispatchers.IO) {
             try {
                 val bitmap = BitmapFactory.decodeStream(URL(imageUrl).openStream())
@@ -562,7 +565,7 @@ class ARSceneHandler(
             val diskNode = GeometryNode(sceneView.engine, diskGeometry!!, materialInstance)
 
             diskNode.rotation = Rotation(-90f, 0f, 0f)
-            diskNode.position = Position(0f, -0.5f, 0f)
+            diskNode.position = arPosition
             if (poiAR.node != null) {
                 poiAR.node!!.addChildNode(diskNode)
                 poiAR.geometryNode = diskNode
@@ -574,36 +577,14 @@ class ARSceneHandler(
 
     private suspend fun loadPois() {
         if (::currentPosition.isInitialized && this.currentPosition != null && ::pois.isInitialized && pois.isNotEmpty()) {
-            var nearPois = poiUtils.filterPoisByDistanceAndFloor(pois, currentPosition, 50)
-            var arcorePositions = generateARCorePositions(
+            val nearPois = poiUtils.filterPoisByDistanceAndFloor(pois, currentPosition, 50)
+            val arcorePositions = generateARCorePositions(
                 nearPois, currentPosition
             ) { poi -> poi.position.cartesianCoordinate }
             logExecutionTime(" >> add pois to scene ") {
                 addPoisToScene(nearPois, arcorePositions)
             }
         }
-    }
-
-    private suspend fun buildModelNode(resId: Int, scale: Float): ModelNode? {
-        return sceneView.modelLoader.loadModelInstance(activity.getResourceUri(resId))
-            ?.let { modelInstance ->
-                ModelNode(
-                    modelInstance = modelInstance,
-                    scaleToUnits = scale,
-                ).apply {}
-
-            }
-    }
-
-    private suspend fun fetchAndBuildModelNode(url: String, scale: Float): ModelNode? {
-        return sceneView.modelLoader.loadModelInstance(url)
-            ?.let { modelInstance ->
-                ModelNode(
-                    modelInstance = modelInstance,
-                    scaleToUnits = scale,
-                ).apply {}
-
-            }
     }
 
     private suspend fun buildAndAddArrowNode() {
@@ -635,7 +616,7 @@ class ARSceneHandler(
         poisTexturesMap.clear()
         sceneView.clearChildNodes()
         diskGeometry?.let { diskGeometry = null }
-        stopModelProximityCheck()
+        geofenceARModelManager.stop()
     }
 
 
@@ -815,230 +796,6 @@ class ARSceneHandler(
         }
         Log.d(TAG, ">> hasToShowRoute: $hasToShowDebugRoute")
     }
-
-    override fun onEnteredGeofences(geofences: MutableList<Geofence>?) {
-        if (onDebug) {
-            Toast.makeText(context, "Enter Geofence!", Toast.LENGTH_SHORT).show()
-        }
-
-        geofences?.forEach { geofence ->
-            geofence.customFields?.forEach { customField ->
-                if (customField.key == "ar_metadata") {
-                    try {
-                        val extractedData = parseGeofenceArMetadata(customField)
-
-                        extractedData.forEach { data ->
-                            handleArMetadata(data, geofence.name)
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error processing geofence metadata: ${e.message}", e)
-                    }
-                }
-            }
-        }
-    }
-
-
-    override fun onExitedGeofences(geofences: MutableList<Geofence>?) {
-        if (onDebug) {
-            Toast.makeText(context, "Exit Geofence!", Toast.LENGTH_SHORT).show()
-        }
-        geofences?.forEach { geofence ->
-            geofence.customFields?.forEach { customField ->
-                if (customField.key == "ar_metadata") {
-                    try {
-                        val extractedData = parseGeofenceArMetadata(customField)
-                        extractedData.forEach { data ->
-                            val modelName = data["name"]
-                            fenceModels[modelName]?.let { model ->
-                                model.modelNode.isVisible = false
-                            }
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error processing geofence metadata: ${e.message}", e)
-                    }
-                }
-            }
-        }
-    }
-
-
-    /**
-     * Handles AR metadata for a specific geofence and attempts to load the corresponding model.
-     */
-    private fun handleArMetadata(data: Map<String, Any>, geofenceName: String) {
-        val modelName = data["name"] as? String ?: return
-        val scale = data["scale"] as? Float ?: return
-        val coordinates = data["coordinates"] as? List<Float> ?: return
-        val height = coordinates.getOrNull(2) ?: 0f
-
-        Log.d(
-            TAG,
-            "Nombre: $modelName, URL: ${data["url"]}, Escala: $scale, Coordenadas: $coordinates"
-        )
-
-        val existingModel = fenceModels[modelName]
-
-        if (existingModel != null) {
-            updateExistingModel(existingModel, height)
-        } else {
-            val modelResId =
-                activity?.resources?.getIdentifier(modelName, "raw", activity?.packageName)
-            if (modelResId != null && modelResId != 0) {
-                loadLocalModel(modelResId, modelName, scale, height, geofenceName)
-            } else {
-                loadRemoteModel(data["url"] as? String, modelName, scale, height, geofenceName)
-            }
-        }
-    }
-
-
-    /**
-     * Updates an existing AR model with a new position and makes it visible.
-     */
-    private fun updateExistingModel(existingModel: SitumARModel, height: Float) {
-        val visiblePositions = getVisibleModelPositions(fenceModels)
-        val newPosition = generateValidPosition(
-            cameraPosition = sceneView.cameraNode.worldPosition,
-            cameraRotation = sceneView.cameraNode.worldRotation,
-            maxDistance = 5f,
-            heightOffset = height,
-            coneAngle = 30f,
-            existingPositions = visiblePositions,
-            minDistance = 2f
-        )
-        if (newPosition != null) {
-            existingModel.modelNode.worldPosition = newPosition
-            existingModel.modelNode.isVisible = true
-        }
-
-    }
-
-    /**
-     * Loads a local AR model resource and adds it to the scene.
-     */
-    private fun loadLocalModel(
-        modelResId: Int,
-        modelName: String,
-        scale: Float,
-        height: Float,
-        geofenceName: String
-    ) {
-        (activity as? LifecycleOwner)?.lifecycleScope?.launch {
-            val modelNode = buildModelNode(modelResId, scale)
-            modelNode?.let {
-                addModelToScene(it, modelName, scale, height, geofenceName)
-            }
-        }
-    }
-
-    /**
-     * Fetches and builds a remote AR model, then adds it to the scene.
-     */
-    private fun loadRemoteModel(
-        modelUrl: String?,
-        modelName: String,
-        scale: Float,
-        height: Float,
-        geofenceName: String
-    ) {
-        if (modelUrl.isNullOrEmpty()) {
-            Log.e(TAG, "Invalid URL for model: $modelName")
-            return
-        }
-
-        (activity as? LifecycleOwner)?.lifecycleScope?.launch {
-            val modelNode = fetchAndBuildModelNode(modelUrl, scale)
-            modelNode?.let {
-                addModelToScene(it, modelName, scale, height, geofenceName)
-            }
-        }
-    }
-
-    /**
-     * Adds a new AR model to the scene and updates the fenceModels map.
-     */
-    private fun addModelToScene(
-        modelNode: ModelNode,
-        modelName: String,
-        scale: Float,
-        height: Float,
-        geofenceName: String
-    ) {
-        val situmARModel = SitumARModel(geofenceName, modelName, modelNode)
-        fenceModels[modelName] = situmARModel
-
-        val visiblePositions = getVisibleModelPositions(fenceModels)
-        val newPosition = generateValidPosition(
-            cameraPosition = sceneView.cameraNode.worldPosition,
-            cameraRotation = sceneView.cameraNode.worldRotation,
-            maxDistance = 5f,
-            heightOffset = height,
-            coneAngle = 30f,
-            existingPositions = visiblePositions,
-            minDistance = 2f
-        )
-        if (newPosition != null) {
-            modelNode.worldPosition = newPosition
-            modelNode.isVisible = true
-            sceneView.addChildNode(modelNode)
-        }
-    }
-
-
-    private fun parseGeofenceArMetadata(cf: Map.Entry<String, String>): List<Map<String, Any>> {
-        val json = JsonParser.parseString(cf.value.toString()).asJsonObject
-        val features = json["features"].asJsonArray
-
-        // Iterar por cada "Feature" y extraer la información requerida
-        val extractedData = features.map { feature ->
-            val properties = feature.asJsonObject["properties"].asJsonObject
-            val geometry = feature.asJsonObject["geometry"].asJsonObject
-
-            // Crear un mapa con los datos que queremos extraer
-            mapOf(
-                "name" to properties["name"].asString,
-                "url" to properties["url"].asString,
-                "scale" to properties["scale"].asFloat,
-                "coordinates" to geometry["coordinates"].asJsonArray.map { it.asFloat }
-            )
-        }
-        return extractedData
-    }
-
-
-    fun startModelProximityCheck() {
-        proximityCheckRunnable = object : Runnable {
-            override fun run() {
-                val userPosition = sceneView.cameraNode.worldPosition
-                val visiblePositions = getVisibleModelPositions(fenceModels)
-                val hasNearbyModels = visiblePositions.any { position ->
-                    distanceBetween(userPosition, position) < MIN_DISTANCE_TO_REGENERATE_MODELS
-                }
-
-                if (!hasNearbyModels) {
-                    regenerateModelsNearUser(userPosition)
-                }
-
-                handler.postDelayed(this, CHECK_MODELS_NEARBY_INTERVAL)
-            }
-        }
-        proximityCheckRunnable?.let { handler.post(it) }
-    }
-
-    fun stopModelProximityCheck() {
-        proximityCheckRunnable?.let { handler.removeCallbacks(it) }
-        proximityCheckRunnable = null
-    }
-
-    private fun regenerateModelsNearUser(userPosition: Position) {
-        fenceModels.forEach { (modelName, model) ->
-            if (model.modelNode.isVisible) {
-                updateExistingModel(model, model.modelNode.worldPosition.y)
-            }
-        }
-    }
-
 
     fun isDebugMode(): Boolean {
         return onDebug;
