@@ -25,18 +25,11 @@ import es.situm.sdk.location.LocationStatus
 import es.situm.sdk.model.cartography.BuildingInfo
 import es.situm.sdk.model.cartography.Poi
 import es.situm.sdk.model.cartography.PoiCategory
-import es.situm.sdk.model.directions.Route
-import es.situm.sdk.model.directions.RouteSegment
-import es.situm.sdk.model.location.CartesianCoordinate
 import es.situm.sdk.model.location.Location
-import es.situm.sdk.model.navigation.NavigationProgress
-import es.situm.sdk.navigation.NavigationListener
 import io.github.sceneview.collision.Vector3
 import io.github.sceneview.geometries.Cylinder
 import io.github.sceneview.geometries.Geometry
-import io.github.sceneview.geometries.Sphere
 import io.github.sceneview.loaders.MaterialLoader
-import io.github.sceneview.math.Color
 import io.github.sceneview.math.Position
 import io.github.sceneview.math.Rotation
 import io.github.sceneview.node.GeometryNode
@@ -63,7 +56,7 @@ interface ARSceneHandlerCallback {
 class ARSceneHandler(
     private val activity: Activity,
     private val lifecycle: Lifecycle,
-) : NavigationListener, LocationListener {
+) : LocationListener {
     companion object {
         const val TAG = "Situm> AR>"
     }
@@ -81,14 +74,13 @@ class ARSceneHandler(
     private lateinit var currentPosition: Location
 
     private var onDebug: Boolean = true
-    private var hasToShowDebugRoute: Boolean = false
+
     private var isRedrawing: Boolean = false        // not allow to redraw if is already redrawing
     private var lastTimestampRedraw: Long = 0
 
     private val dashboardDomain: String = "https://dashboard.situm.com"
 
     private var arrowNode: ModelNode? = null
-    private var targetArrow: Position? = null
     private var diskGeometry: Geometry? = null
 
     private lateinit var pois: List<Poi>
@@ -97,23 +89,13 @@ class ARSceneHandler(
     private val poisTexturesMap = mutableMapOf<String, Texture?>()
 
 
-    private lateinit var currentSegment: RouteSegment
-    private var routePointsAR: MutableList<Vector3> = mutableListOf()
-    private lateinit var route: Route
+    private lateinit var routeARManager: RouteARManager
 
-    private val routeNodes: MutableList<Node> = mutableListOf()     // only for debug
-
-    fun setCallback(callback: ARSceneHandlerCallback) {
+    fun setARGoneCallback(callback: ARSceneHandlerCallback) {
         this.sendArGoneCallback = callback
+        this.routeARManager.setARGoneCallback(callback)
     }
 
-    private fun setRoute(route: Route) {
-        this.route = route
-    }
-
-    private fun setCurrentSegment(routeSegment: RouteSegment) {
-        this.currentSegment = routeSegment
-    }
 
     private fun setPois(pois: List<Poi>) {
         this.pois = pois
@@ -151,6 +133,7 @@ class ARSceneHandler(
             worldRedraw()
         }
         this.currentPosition = location
+        routeARManager.currentPosition = location
     }
 
     fun setBuildingInfo(buildingInfo: BuildingInfo) {
@@ -192,6 +175,8 @@ class ARSceneHandler(
             sceneView.cameraNode.far = RENDER_DISTANCE_FAR
         }
 
+        routeARManager = RouteARManager(context,sceneView,activity,onDebug)
+        
         (activity as? LifecycleOwner)?.lifecycleScope?.launch {
             if (lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
                 diskGeometry =
@@ -225,9 +210,9 @@ class ARSceneHandler(
                                 x = objectPosition.x, y = objectPosition.y, z = objectPosition.z
                             )
                         )
-                        if (targetArrow != null) {
+                        if (routeARManager.targetArrow != null) {
                             node.lookAt(
-                                targetWorldPosition = targetArrow!!,
+                                targetWorldPosition = routeARManager.targetArrow!!,
                                 smooth = true,
                                 smoothSpeed = 1.0f
                             )
@@ -245,65 +230,12 @@ class ARSceneHandler(
         geofenceARModelManager =
             GeofenceARModelManager(context, sceneView, activity, fenceModels, onDebug)
         SitumSdk.locationManager().setGeofenceListener(geofenceARModelManager)
+        SitumSdk.navigationManager().addNavigationListener(routeARManager)
+
     }
 
 
-    private fun <T> generateARCorePositions(
-        items: List<T>, currentLocation: Location, getCoordinate: (T) -> CartesianCoordinate
-    ): List<Vector3> {
 
-        val arCorePositions = mutableListOf<Vector3>()
-        val cameraPosition = sceneView.cameraNode.worldPosition
-        val cameraBearing = sceneView.cameraNode.worldRotation.y
-
-        // Keep only horizontal rotation
-        val cameraHorizontalRotation = io.github.sceneview.collision.Quaternion.axisAngle(
-            Vector3(0.0f, 1.0f, 0.0f), cameraBearing
-        )
-
-        // Situm rotation
-        val situmBearing =
-            currentLocation.cartesianBearing?.degreesClockwise()?.plus(90) ?: return emptyList()
-        val situmBearingMinusRotation = io.github.sceneview.collision.Quaternion.axisAngle(
-            Vector3(0f, -1f, 0f), situmBearing.toFloat()
-        )
-
-        for (item in items) {
-            val coordinate = getCoordinate(item)
-            val xA = coordinate.x
-            val yA = coordinate.y
-
-            // Calculate relative position
-            val relativeItemPosition = Vector3(
-                (xA - currentLocation.cartesianCoordinate.x).toFloat(),
-                0f,
-                (yA - currentLocation.cartesianCoordinate.y).toFloat()
-            )
-
-            // Apply rotations
-            val positionMinusSitumRotated = io.github.sceneview.collision.Quaternion.rotateVector(
-                situmBearingMinusRotation, relativeItemPosition
-            )
-
-            val positionRotatedAndTranslatedToCamera =
-                io.github.sceneview.collision.Quaternion.rotateVector(
-                    cameraHorizontalRotation, positionMinusSitumRotated
-                ).apply {
-                    x += cameraPosition.x
-                    y = cameraPosition.y
-                    z = cameraPosition.z - this.z
-                }
-
-            Log.d(
-                TAG,
-                "> Situm: generateARCorePositions> item.position: $xA , $yA / relativeItemPosition: ${relativeItemPosition.x} , ${relativeItemPosition.z}" + " bearingAdjustedPosition: ${positionMinusSitumRotated.x} , ${positionMinusSitumRotated.z}" + " transformedPosition: ${positionRotatedAndTranslatedToCamera.x} , ${positionRotatedAndTranslatedToCamera.z}"
-            )
-
-            arCorePositions.add(positionRotatedAndTranslatedToCamera)
-        }
-
-        return arCorePositions
-    }
 
     private suspend fun addPoisToScene(pois: List<Poi>, arcorePositions: List<Vector3>) {
         //clearPoiNodes()
@@ -385,134 +317,6 @@ class ARSceneHandler(
             }
     }
 
-    private fun updateRouteNodes() {
-        if (!this::currentSegment.isInitialized || !this::currentPosition.isInitialized) {
-            return
-        }
-        currentSegment.points.let { nonNullRoute ->
-            val arCorePositionsForPoints = generateARCorePositions(
-                nonNullRoute, currentPosition
-            ) { point -> point.cartesianCoordinate }
-
-            routePointsAR = interpolatePositions(arCorePositionsForPoints, 1.0f)
-            if (hasToShowDebugRoute) {
-                addSpheresToScene(routePointsAR)
-            }
-        }
-    }
-
-    private fun initSpheresRoute(numSpheres: Int, sphereRadius: Float = 0.1f) {
-        val material =
-            MaterialLoader(sceneView.engine, context).createColorInstance(Color(0f, 0f, 1f, 0.5f))
-        val sphereGeometry =
-            Sphere.Builder().radius(sphereRadius).center(Position(0f, 0f, 0f))
-                .build(sceneView.engine)
-        for (i in 0 until numSpheres) {
-            routeNodes.add(
-                GeometryNode(
-                    sceneView.engine,
-                    sphereGeometry,
-                    material
-                ).apply { isVisible = false })
-        }
-    }
-
-    private fun makeRouteInvisible() {
-        for (node in routeNodes) {
-            node.isVisible = false
-        }
-        sceneView.addChildNodes(routeNodes)
-    }
-
-    private fun addSpheresToScene(positions: List<Vector3>) {
-
-        if (routeNodes.isEmpty()) {
-            initSpheresRoute(20)
-        }
-        makeRouteInvisible()
-        val maxIndex = minOf(positions.size, routeNodes.size)
-
-        for (i in 0 until maxIndex) {
-            routeNodes[i].apply {
-                worldPosition = Position(positions[i].x, positions[i].y, positions[i].z)
-                isVisible = true
-            }
-        }
-    }
-
-    // from current AR position and AR RouteNodes, projects position on route and finds next node at n distance (?)
-    private fun updateTargetArrowOnARRoute(minDistanceMeters: Float) {
-        val cameraPosition = sceneView.cameraNode.worldPosition
-        var closestPoint: Vector3? = null
-        var targetPoint: Vector3? = null
-        var minDistanceToCamera = Float.MAX_VALUE
-
-        Log.d(TAG, ">> updateTargetArrowOnARRoute  ")
-        //  Find closest node
-        for (point in routePointsAR) {
-            Log.d(TAG, "> route point: $point ")
-            val distanceToCamera = calculate2DDistance(
-                Vector3(cameraPosition.x, cameraPosition.y, cameraPosition.z),
-                point
-            )
-
-            if (distanceToCamera < minDistanceToCamera) {
-                minDistanceToCamera = distanceToCamera
-                closestPoint = point
-            }
-        }
-        if (closestPoint == null) {
-            Log.w(TAG, "> No closest node found.")
-            return
-        } else {
-            Log.w(TAG, "< Closest node: $closestPoint")
-        }
-
-        for (i in routePointsAR.indexOf(closestPoint) until routePointsAR.size) {
-            val position = routePointsAR[i]
-            val distanceFromClosest = calculate2DDistance(closestPoint, position)
-            Log.d(
-                TAG,
-                ">> Distance from closest: $closestPoint to node: $position  : $distanceFromClosest "
-            )
-            if (distanceFromClosest >= minDistanceMeters) {
-                targetPoint = position
-                break
-            }
-        }
-        if (targetPoint != null) {
-            Log.d(TAG, "> Target node found at position: $targetPoint")
-            pointArrowToPosition(Position(targetPoint.x, targetPoint.y, targetPoint.z))
-        } else {
-            Log.w(
-                TAG,
-                "> No node found at least $minDistanceMeters meters away from the closest node."
-            )
-        }
-    }
-
-    private fun hasToUpdateArrowTarget(): Boolean {
-        if (targetArrow != null) {
-            val distanceToCamera = calculate2DDistance(
-                Vector3(
-                    sceneView.cameraNode.worldPosition.x,
-                    sceneView.cameraNode.worldPosition.y,
-                    sceneView.cameraNode.worldPosition.z
-                ), Vector3(targetArrow!!.x, targetArrow!!.y, targetArrow!!.z)
-            )
-            if (distanceToCamera < DIRECTION_ARROW_TARGET_DISTANCE / 2 || distanceToCamera > DIRECTION_ARROW_TARGET_DISTANCE * 2) {
-                return true
-            }
-        }
-        return false
-    }
-
-    // points arrow to position in arCoordinates
-    private fun pointArrowToPosition(targetARPosition: Position) {
-        targetArrow = targetARPosition
-        arrowNode?.lookAt(targetARPosition, smooth = true)
-    }
-
     private suspend fun loadTextureFromUrlAsync(imageUrl: String): Texture? {
         return withContext(Dispatchers.IO) {
             try {
@@ -573,7 +377,7 @@ class ARSceneHandler(
         if (::currentPosition.isInitialized && ::pois.isInitialized && pois.isNotEmpty()) {
             val nearPois = poiUtils.filterPoisByDistanceAndFloor(pois, currentPosition, 50)
             val arcorePositions = generateARCorePositions(
-                nearPois, currentPosition
+                nearPois, currentPosition,sceneView.cameraNode
             ) { poi -> poi.position.cartesianCoordinate }
             logExecutionTime(" >> add pois to scene ") {
                 addPoisToScene(nearPois, arcorePositions)
@@ -594,6 +398,7 @@ class ARSceneHandler(
                 isEditable = true
                 isPositionEditable = true
             }
+            routeARManager.arrowNode = arrowNode
             sceneView.addChildNode(arrowNode!!)
         }
     }
@@ -603,14 +408,14 @@ class ARSceneHandler(
         arrowNode?.let { sceneView.removeChildNode(it) }
         arrowNode = null
         clearPoiNodes()
-        makeRouteInvisible()
-        clearRouteNodes()
         clearModels()
         pois = emptyList()
         poisTexturesMap.clear()
         sceneView.clearChildNodes()
         diskGeometry?.let { diskGeometry = null }
         geofenceARModelManager.stop()
+        routeARManager.stop()
+        SitumSdk.navigationManager().removeNavigationListener(routeARManager)
     }
 
 
@@ -638,60 +443,12 @@ class ARSceneHandler(
         poisAR.clear()
     }
 
-    private fun clearRouteNodes() {
-        for (routeNode in routeNodes) {
-            routeNode.parent = null
-        }
-        sceneView.removeChildNodes(routeNodes)
-        routeNodes.clear()
-    }
-
     private fun clearModels() {
         for (fenceModel in fenceModels) {
 
             fenceModel.value.removeFromScene(sceneView)
         }
         fenceModels.clear()
-    }
-
-    private fun clearRoute() {
-        route = Route()
-    }
-
-    // Navigation listener
-    override fun onStart(route: Route) {        // This may not be called
-        Log.w(TAG, ">>>>> on start navigation listener")
-        setRoute(route)
-        updateRouteNodes()
-        updateArrowTarget()
-    }
-
-    override fun onProgress(navigationProgress: NavigationProgress?) {
-        Log.w(TAG, ">> Situm navigation progress: ${navigationProgress.toString()}")
-
-        navigationProgress?.segments?.get(0)?.let { setCurrentSegment(it) }
-        if (hasToUpdateArrowTarget()) {
-            updateArrowTarget()
-        }
-        return
-    }
-
-    override fun onUserOutsideRoute() {
-        Log.w(TAG, ">> Situm navigation user out of routes")
-    }
-
-
-    override fun onCancellation() {
-        Log.w(TAG, ">> Situm navigation onCancellation")
-        makeRouteInvisible()
-        super.onCancellation()
-    }
-
-    override fun onDestinationReached(route: Route?) {
-        Log.w(TAG, ">> Situm navigation on destination reached")
-        makeRouteInvisible()
-        sendArGoneCallback?.onARGoneRequired()
-        super.onDestinationReached(route)
     }
 
     // Location Listener
@@ -740,18 +497,19 @@ class ARSceneHandler(
                 loadPois()
             }
             logExecutionTime(" >> update route nodes ") {
-                updateRouteNodes()
+                routeARManager.updateRouteNodes()
             }
             logExecutionTime(" >> update target arrow  ") {
-                updateTargetArrowOnARRoute(DIRECTION_ARROW_TARGET_DISTANCE)
+                routeARManager.updateTargetArrowOnARRoute(DIRECTION_ARROW_TARGET_DISTANCE)
             }
             isRedrawing = false
         }
     }
 
-    fun updateArrowTarget() {
-        updateTargetArrowOnARRoute(DIRECTION_ARROW_TARGET_DISTANCE)
+    fun updateArrowTarget(){
+        routeARManager.updateArrowTarget()
     }
+
 
     fun getCurrentStatusLog(): String {
         return arQuality.getCurrentStatusLog()
@@ -784,11 +542,7 @@ class ARSceneHandler(
     }
 
     fun switchShowRouteOnAR() {
-        hasToShowDebugRoute = !hasToShowDebugRoute
-        if (!hasToShowDebugRoute) {
-            makeRouteInvisible()
-        }
-        Log.d(TAG, ">> hasToShowRoute: $hasToShowDebugRoute")
+       routeARManager.switchShowRouteOnAR()
     }
 
     fun isDebugMode(): Boolean {

@@ -41,7 +41,7 @@ class SitumARPlatformView(
         val sceneHandler = ARSceneHandler(activity, lifecycle)
         debugInfo = DebugInfo(context, sceneHandler)
         arController = ARController(this, sceneHandler, arMethodCallSender)
-        sceneHandler.setCallback(arController)
+        sceneHandler.setARGoneCallback(arController)
         arMethodCallHandler = ARMethodCallHandler(arController)
         flutterMethodChannel.setMethodCallHandler(this)
         generateAndroidViews(context)

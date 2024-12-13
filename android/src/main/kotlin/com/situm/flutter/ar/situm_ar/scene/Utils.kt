@@ -1,9 +1,13 @@
 package com.situm.flutter.ar.situm_ar.scene
 
 import android.util.Log
+import com.situm.flutter.ar.situm_ar.scene.ARSceneHandler.Companion
+import es.situm.sdk.model.location.CartesianCoordinate
+import es.situm.sdk.model.location.Location
 import io.github.sceneview.collision.Vector3
 import io.github.sceneview.math.Position
 import io.github.sceneview.math.Rotation
+import io.github.sceneview.node.Node
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -109,6 +113,62 @@ fun getVisibleModelPositions(fenceModels: Map<String, SitumARModel>): List<Posit
         .map { it.modelNode.worldPosition } // Get positions
 }
 
+internal fun <T> generateARCorePositions(
+    items: List<T>, currentLocation: Location, cameraNode: Node, getCoordinate: (T) -> CartesianCoordinate,
+): List<Vector3> {
+
+    val arCorePositions = mutableListOf<Vector3>()
+    val cameraPosition = cameraNode.worldPosition
+    val cameraBearing = cameraNode.worldRotation.y
+
+    // Keep only horizontal rotation
+    val cameraHorizontalRotation = io.github.sceneview.collision.Quaternion.axisAngle(
+        Vector3(0.0f, 1.0f, 0.0f), cameraBearing
+    )
+
+    // Situm rotation
+    val situmBearing =
+        currentLocation.cartesianBearing?.degreesClockwise()?.plus(90) ?: return emptyList()
+    val situmBearingMinusRotation = io.github.sceneview.collision.Quaternion.axisAngle(
+        Vector3(0f, -1f, 0f), situmBearing.toFloat()
+    )
+
+    for (item in items) {
+        val coordinate = getCoordinate(item)
+        val xA = coordinate.x
+        val yA = coordinate.y
+
+        // Calculate relative position
+        val relativeItemPosition = Vector3(
+            (xA - currentLocation.cartesianCoordinate.x).toFloat(),
+            0f,
+            (yA - currentLocation.cartesianCoordinate.y).toFloat()
+        )
+
+        // Apply rotations
+        val positionMinusSitumRotated = io.github.sceneview.collision.Quaternion.rotateVector(
+            situmBearingMinusRotation, relativeItemPosition
+        )
+
+        val positionRotatedAndTranslatedToCamera =
+            io.github.sceneview.collision.Quaternion.rotateVector(
+                cameraHorizontalRotation, positionMinusSitumRotated
+            ).apply {
+                x += cameraPosition.x
+                y = cameraPosition.y
+                z = cameraPosition.z - this.z
+            }
+
+        Log.d(
+            ARSceneHandler.TAG,
+            "> Situm: generateARCorePositions> item.position: $xA , $yA / relativeItemPosition: ${relativeItemPosition.x} , ${relativeItemPosition.z}" + " bearingAdjustedPosition: ${positionMinusSitumRotated.x} , ${positionMinusSitumRotated.z}" + " transformedPosition: ${positionRotatedAndTranslatedToCamera.x} , ${positionRotatedAndTranslatedToCamera.z}"
+        )
+
+        arCorePositions.add(positionRotatedAndTranslatedToCamera)
+    }
+
+    return arCorePositions
+}
 
 fun generateValidPosition(
     cameraPosition: Position,
