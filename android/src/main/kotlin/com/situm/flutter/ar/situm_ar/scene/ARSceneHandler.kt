@@ -5,8 +5,6 @@ package com.situm.flutter.ar.situm_ar.scene
 import android.app.Activity
 import android.content.Context
 import android.graphics.BitmapFactory
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import android.widget.TextView
 import android.widget.Toast
@@ -16,18 +14,15 @@ import androidx.lifecycle.lifecycleScope
 import com.google.android.filament.Texture
 import com.google.ar.sceneform.rendering.ViewAttachmentManager
 import com.google.ar.sceneform.rendering.ViewRenderable
-import com.google.gson.JsonParser
 import com.situm.flutter.ar.situm_ar.CustomARSceneView
 import com.situm.flutter.ar.situm_ar.R
 import dev.romainguy.kotlin.math.Float3
 import es.situm.sdk.SitumSdk
 import es.situm.sdk.error.Error
 import es.situm.sdk.location.ExternalArData
-import es.situm.sdk.location.GeofenceListener
 import es.situm.sdk.location.LocationListener
 import es.situm.sdk.location.LocationStatus
 import es.situm.sdk.model.cartography.BuildingInfo
-import es.situm.sdk.model.cartography.Geofence
 import es.situm.sdk.model.cartography.Poi
 import es.situm.sdk.model.cartography.PoiCategory
 import es.situm.sdk.model.directions.Route
@@ -78,7 +73,7 @@ class ARSceneHandler(
     private val context: Context = activity
     private lateinit var viewAttachmentManager: ViewAttachmentManager
 
-    private lateinit var geofenceARModelManager : GeofenceARModelManager
+    private lateinit var geofenceARModelManager: GeofenceARModelManager
 
     private var arQuality: ARQuality = ARQuality()
     private var poiUtils: PoiUtils = PoiUtils()
@@ -97,11 +92,9 @@ class ARSceneHandler(
     private var diskGeometry: Geometry? = null
 
     private lateinit var pois: List<Poi>
-    val poisAR = mutableMapOf<String, PoiAR>()
-    val fenceModels = mutableMapOf<String, SitumARModel>()
-    val poisTexturesMap = mutableMapOf<String, Texture?>()
-
-
+    private val poisAR = mutableMapOf<String, PoiAR>()
+    private val fenceModels = mutableMapOf<String, SitumARModel>()
+    private val poisTexturesMap = mutableMapOf<String, Texture?>()
 
 
     private lateinit var currentSegment: RouteSegment
@@ -114,7 +107,7 @@ class ARSceneHandler(
         this.sendArGoneCallback = callback
     }
 
-    fun setRoute(route: Route) {
+    private fun setRoute(route: Route) {
         this.route = route
     }
 
@@ -122,27 +115,27 @@ class ARSceneHandler(
         this.currentSegment = routeSegment
     }
 
-    fun setPois(pois: List<Poi>) {
+    private fun setPois(pois: List<Poi>) {
         this.pois = pois
     }
 
-    fun updatePoisAR() {
+    private fun updatePoisAR() {
         for (poi in pois) {
-            poisAR.set(poi.identifier, PoiAR(poi))
+            poisAR[poi.identifier] = PoiAR(poi)
         }
     }
 
-    fun loadPoiImages() {
+    private fun loadPoiImages() {
         CoroutineScope(Dispatchers.Main).launch {
             for (poi in pois) {
 
                 Log.d(
                     TAG,
-                    "> Situm: To download texture from : ${dashboardDomain + poi.category.unselectedIconUrl.value.toString()}"
+                    "> Situm: To download texture from : ${dashboardDomain + poi.category.unselectedIconUrl.value}"
                 )
                 if (!poisTexturesMap.containsKey(poi.category.identifier)) {
                     val texture = loadTextureFromUrlAsync(
-                         dashboardDomain + poi.category.unselectedIconUrl.value.toString()
+                        dashboardDomain + poi.category.unselectedIconUrl.value
                     )
                     if (texture != null) {
                         poisTexturesMap[poi.category.identifier] = texture
@@ -152,7 +145,7 @@ class ARSceneHandler(
         }
     }
 
-    fun setCurrentLocation(location: Location) {
+    private fun setCurrentLocation(location: Location) {
         // if floor change, redraw
         if (::currentPosition.isInitialized && this.currentPosition.floorIdentifier != location.floorIdentifier) {
             worldRedraw()
@@ -249,7 +242,8 @@ class ARSceneHandler(
                 }
             }
         }
-        geofenceARModelManager = GeofenceARModelManager(context,sceneView,activity,fenceModels, onDebug)
+        geofenceARModelManager =
+            GeofenceARModelManager(context, sceneView, activity, fenceModels, onDebug)
         SitumSdk.locationManager().setGeofenceListener(geofenceARModelManager)
     }
 
@@ -295,7 +289,7 @@ class ARSceneHandler(
                 io.github.sceneview.collision.Quaternion.rotateVector(
                     cameraHorizontalRotation, positionMinusSitumRotated
                 ).apply {
-                    x = cameraPosition.x + this.x
+                    x += cameraPosition.x
                     y = cameraPosition.y
                     z = cameraPosition.z - this.z
                 }
@@ -321,25 +315,25 @@ class ARSceneHandler(
 
             val arcorePosition = arcorePositions[i]
             val position = Position(arcorePosition.x, arcorePosition.y, arcorePosition.z)
-            poisAR.get(pois[i].identifier)?.let {
+            poisAR[pois[i].identifier]?.let {
                 addBaseNode(it, position)
             }
 
             logExecutionTime(" >> load textview  ") {
                 withContext(Dispatchers.Main) {
-                    poisAR.get(pois[i].identifier)?.let {
+                    poisAR[pois[i].identifier]?.let {
                         loadTextViewInAR(
                             it,
-                            poisAR.get(pois[i].identifier)!!.poi.name
+                            poisAR[pois[i].identifier]!!.poi.name
                         )
                     }
                 }
             }
 
             logExecutionTime(" >>draw disc  ") {
-                poisAR.get(pois[i].identifier)?.poi?.let {
+                poisAR[pois[i].identifier]?.poi?.let {
                     drawDiskWithImage(
-                        poisAR.get(pois[i].identifier)!!,
+                        poisAR[pois[i].identifier]!!,
                         Position(0f, -0.5f, 0f),
                         it.category
                     )
@@ -355,7 +349,7 @@ class ARSceneHandler(
             poiAR.node?.isVisible = true
             return
         } else {
-            var node = Node(sceneView.engine)
+            val node = Node(sceneView.engine)
             node.worldPosition = position
             node.lookAt(sceneView.cameraNode)
             poiAR.node = node
@@ -439,8 +433,8 @@ class ARSceneHandler(
         val maxIndex = minOf(positions.size, routeNodes.size)
 
         for (i in 0 until maxIndex) {
-            routeNodes.get(i).apply {
-                worldPosition = Position(positions.get(i).x, positions.get(i).y, positions.get(i).z)
+            routeNodes[i].apply {
+                worldPosition = Position(positions[i].x, positions[i].y, positions[i].z)
                 isVisible = true
             }
         }
@@ -456,7 +450,7 @@ class ARSceneHandler(
         Log.d(TAG, ">> updateTargetArrowOnARRoute  ")
         //  Find closest node
         for (point in routePointsAR) {
-            Log.d(TAG, "> route point: ${point} ")
+            Log.d(TAG, "> route point: $point ")
             val distanceToCamera = calculate2DDistance(
                 Vector3(cameraPosition.x, cameraPosition.y, cameraPosition.z),
                 point
@@ -471,7 +465,7 @@ class ARSceneHandler(
             Log.w(TAG, "> No closest node found.")
             return
         } else {
-            Log.w(TAG, "< Closest node: ${closestPoint}")
+            Log.w(TAG, "< Closest node: $closestPoint")
         }
 
         for (i in routePointsAR.indexOf(closestPoint) until routePointsAR.size) {
@@ -479,7 +473,7 @@ class ARSceneHandler(
             val distanceFromClosest = calculate2DDistance(closestPoint, position)
             Log.d(
                 TAG,
-                ">> Distance from closest: ${closestPoint} to node: ${position}  : $distanceFromClosest "
+                ">> Distance from closest: $closestPoint to node: $position  : $distanceFromClosest "
             )
             if (distanceFromClosest >= minDistanceMeters) {
                 targetPoint = position
@@ -487,7 +481,7 @@ class ARSceneHandler(
             }
         }
         if (targetPoint != null) {
-            Log.d(TAG, "> Target node found at position: ${targetPoint}")
+            Log.d(TAG, "> Target node found at position: $targetPoint")
             pointArrowToPosition(Position(targetPoint.x, targetPoint.y, targetPoint.z))
         } else {
             Log.w(
@@ -519,7 +513,7 @@ class ARSceneHandler(
         arrowNode?.lookAt(targetARPosition, smooth = true)
     }
 
-    suspend fun loadTextureFromUrlAsync( imageUrl: String): Texture? {
+    private suspend fun loadTextureFromUrlAsync(imageUrl: String): Texture? {
         return withContext(Dispatchers.IO) {
             try {
                 val bitmap = BitmapFactory.decodeStream(URL(imageUrl).openStream())
@@ -545,7 +539,7 @@ class ARSceneHandler(
         }
     }
 
-    fun drawDiskWithImage(poiAR: PoiAR, arPosition: Position, poiCategory: PoiCategory) {
+    private fun drawDiskWithImage(poiAR: PoiAR, arPosition: Position, poiCategory: PoiCategory) {
 
         if (poiAR.node != null && poiAR.geometryNode != null) {
             poiAR.node?.isVisible = true
@@ -576,7 +570,7 @@ class ARSceneHandler(
     }
 
     private suspend fun loadPois() {
-        if (::currentPosition.isInitialized && this.currentPosition != null && ::pois.isInitialized && pois.isNotEmpty()) {
+        if (::currentPosition.isInitialized && ::pois.isInitialized && pois.isNotEmpty()) {
             val nearPois = poiUtils.filterPoisByDistanceAndFloor(pois, currentPosition, 50)
             val arcorePositions = generateARCorePositions(
                 nearPois, currentPosition
@@ -620,7 +614,7 @@ class ARSceneHandler(
     }
 
 
-    fun clearAllNodes(node: Node) {
+    private fun clearAllNodes(node: Node) {
         node.childNodes.forEach { clearAllNodes(it) }  // Limpia recursivamente
         node.parent?.removeChildNode(node)           // Elimina el nodo del padre
         node.destroy()
@@ -665,7 +659,7 @@ class ARSceneHandler(
     }
 
     // Navigation listener
-    override fun onStart(route: Route) {        // TODO: Esto no se va a llamar
+    override fun onStart(route: Route) {        // This may not be called
         Log.w(TAG, ">>>>> on start navigation listener")
         setRoute(route)
         updateRouteNodes()
@@ -763,7 +757,7 @@ class ARSceneHandler(
         return arQuality.getCurrentStatusLog()
     }
 
-    fun getVisualOdometry(): String {
+    private fun getVisualOdometry(): String {
         val timestamp = System.currentTimeMillis()
 
         return """
@@ -784,7 +778,7 @@ class ARSceneHandler(
         """.trimIndent()
     }
 
-    fun updateVisualOdometry() {
+    private fun updateVisualOdometry() {
         val externalAR = ExternalArData.Builder().rawJsonString(getVisualOdometry()).build()
         SitumSdk.locationManager().addExternalArData(externalAR)
     }
@@ -798,10 +792,10 @@ class ARSceneHandler(
     }
 
     fun isDebugMode(): Boolean {
-        return onDebug;
+        return onDebug
     }
 
     fun setDebugMode(debug: Boolean) {
-        onDebug = debug;
+        onDebug = debug
     }
 }

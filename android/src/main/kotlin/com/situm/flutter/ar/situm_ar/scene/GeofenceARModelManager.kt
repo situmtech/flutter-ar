@@ -38,7 +38,7 @@ class GeofenceARModelManager(
         }
 
         geofences?.forEach { geofence ->
-            geofence.customFields?.forEach { customField ->
+            geofence.customFields.forEach { customField ->
                 if (customField.key == "ar_metadata") {
                     try {
                         val extractedData = parseGeofenceArMetadata(customField)
@@ -64,7 +64,7 @@ class GeofenceARModelManager(
             Toast.makeText(context, "Exit Geofence!", Toast.LENGTH_SHORT).show()
         }
         geofences?.forEach { geofence ->
-            geofence.customFields?.forEach { customField ->
+            geofence.customFields.forEach { customField ->
                 if (customField.key == "ar_metadata") {
                     try {
                         val extractedData = parseGeofenceArMetadata(customField)
@@ -107,7 +107,7 @@ class GeofenceARModelManager(
             updateExistingModel(existingModel, height, sceneView.cameraNode)
         } else {
             val modelResId =
-                activity?.resources?.getIdentifier(modelName, "raw", activity?.packageName)
+                activity.resources?.getIdentifier(modelName, "raw", activity.packageName)
             if (modelResId != null && modelResId != 0) {
                 loadLocalModel(modelResId, modelName, scale, height, geofenceName)
             } else {
@@ -232,7 +232,7 @@ class GeofenceARModelManager(
 
 
     private fun parseGeofenceArMetadata(cf: Map.Entry<String, String>): List<Map<String, Any>> {
-        val json = JsonParser.parseString(cf.value.toString()).asJsonObject
+        val json = JsonParser.parseString(cf.value).asJsonObject
         val features = json["features"].asJsonArray
 
         // Iterar por cada "Feature" y extraer la información requerida
@@ -252,7 +252,7 @@ class GeofenceARModelManager(
     }
 
 
-    fun startModelProximityCheck() {
+    private fun startModelProximityCheck() {
         proximityCheckRunnable = object : Runnable {
             override fun run() {
                 val userPosition = sceneView.cameraNode.worldPosition
@@ -277,7 +277,7 @@ class GeofenceARModelManager(
     }
 
     private fun regenerateModelsNearUser() {
-        fenceModels.forEach { (modelName, model) ->
+        fenceModels.forEach { (_, model) ->
             if (model.modelNode.isVisible) {
                 updateExistingModel(
                     model,
