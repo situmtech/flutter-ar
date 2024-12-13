@@ -93,7 +93,7 @@ class ARSceneHandler(
 
     fun setARGoneCallback(callback: ARSceneHandlerCallback) {
         this.sendArGoneCallback = callback
-        this.routeARManager.setARGoneCallback(callback)
+//        this.routeARManager.setARGoneCallback(callback)
     }
 
 
@@ -175,7 +175,8 @@ class ARSceneHandler(
             sceneView.cameraNode.far = RENDER_DISTANCE_FAR
         }
 
-        routeARManager = RouteARManager(context,sceneView,activity,onDebug)
+        routeARManager = RouteARManager(context,sceneView)
+        this.sendArGoneCallback?.let { routeARManager.setARGoneCallback(it) }
         
         (activity as? LifecycleOwner)?.lifecycleScope?.launch {
             if (lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {

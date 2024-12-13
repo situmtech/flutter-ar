@@ -21,9 +21,8 @@ import io.github.sceneview.node.ModelNode
 import io.github.sceneview.node.Node
 
 class RouteARManager(private val context: Context,
-                     private val sceneView: SceneView,
-                     private val activity: Activity,
-                     private val onDebug: Boolean = false): NavigationListener {
+                     private val sceneView: SceneView
+                ): NavigationListener {
 
     internal lateinit var currentPosition: Location
     private lateinit var currentSegment: RouteSegment
