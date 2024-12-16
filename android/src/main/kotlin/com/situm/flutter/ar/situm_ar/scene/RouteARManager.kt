@@ -1,10 +1,8 @@
 package com.situm.flutter.ar.situm_ar.scene
 
-import android.app.Activity
 import android.content.Context
 import android.util.Log
 import com.situm.flutter.ar.situm_ar.scene.ARSceneHandler.Companion
-import es.situm.sdk.SitumSdk
 import es.situm.sdk.model.directions.Route
 import es.situm.sdk.model.directions.RouteSegment
 import es.situm.sdk.model.location.Location
@@ -20,9 +18,15 @@ import io.github.sceneview.node.GeometryNode
 import io.github.sceneview.node.ModelNode
 import io.github.sceneview.node.Node
 
-class RouteARManager(private val context: Context,
-                     private val sceneView: SceneView
-                ): NavigationListener {
+interface RouteARCallback {
+    fun onARGoneRequiredFromRoute()
+}
+
+
+class RouteARManager(
+    private val context: Context,
+    private val sceneView: SceneView
+) : NavigationListener {
 
     internal lateinit var currentPosition: Location
     private lateinit var currentSegment: RouteSegment
@@ -67,7 +71,7 @@ class RouteARManager(private val context: Context,
     override fun onDestinationReached(route: Route?) {
         Log.w(ARSceneHandler.TAG, ">> Situm navigation on destination reached")
         makeRouteInvisible()
-        sendArGoneCallback?.onARGoneRequired()
+        sendArGoneCallback?.onARGoneRequiredFromRoute()
         super.onDestinationReached(route)
     }
 
@@ -75,6 +79,7 @@ class RouteARManager(private val context: Context,
     private fun setRoute(route: Route) {
         this.route = route
     }
+
     private fun setCurrentSegment(routeSegment: RouteSegment) {
         this.currentSegment = routeSegment
     }
@@ -94,16 +99,18 @@ class RouteARManager(private val context: Context,
             }
         }
     }
+
     fun updateArrowTarget() {
         updateTargetArrowOnARRoute(DIRECTION_ARROW_TARGET_DISTANCE)
     }
+
     internal fun updateTargetArrowOnARRoute(minDistanceMeters: Float) {
         val cameraPosition = sceneView.cameraNode.worldPosition
         var closestPoint: Vector3? = null
         var targetPoint: Vector3? = null
         var minDistanceToCamera = Float.MAX_VALUE
 
-        Log.d(Companion.TAG, ">> updateTargetArrowOnARRoute  ")
+        Log.d(Companion.TAG, "> updateTargetArrowOnARRoute  ")
         //  Find closest node
         for (point in routePointsAR) {
             Log.d(Companion.TAG, "> route point: $point ")
@@ -138,13 +145,15 @@ class RouteARManager(private val context: Context,
         }
         if (targetPoint != null) {
             Log.d(Companion.TAG, "> Target node found at position: $targetPoint")
-            pointArrowToPosition(Position(targetPoint.x, targetPoint.y, targetPoint.z))
         } else {
+            targetPoint = routePointsAR.last()
             Log.w(
                 Companion.TAG,
-                "> No node found at least $minDistanceMeters meters away from the closest node."
+                "> No node found at least $minDistanceMeters meters away from the closest node. Returning last node in floor"
             )
+
         }
+        pointArrowToPosition(Position(targetPoint.x, targetPoint.y, targetPoint.z))
     }
 
     private fun hasToUpdateArrowTarget(): Boolean {
@@ -158,9 +167,14 @@ class RouteARManager(private val context: Context,
             )
             if (distanceToCamera < DIRECTION_ARROW_TARGET_DISTANCE / 2 || distanceToCamera > DIRECTION_ARROW_TARGET_DISTANCE * 2) {
                 return true
+            } else {
+                return false
             }
+        } else {
+            Log.e(TAG, "target ARrow is null")
+            return true
         }
-        return false
+
     }
 
     // points arrow to position in arCoordinates
@@ -216,6 +230,7 @@ class RouteARManager(private val context: Context,
         }
         Log.d(Companion.TAG, ">> hasToShowRoute: $hasToShowDebugRoute")
     }
+
     private fun clearRouteNodes() {
         for (routeNode in routeNodes) {
             routeNode.parent = null
@@ -223,17 +238,20 @@ class RouteARManager(private val context: Context,
         sceneView.removeChildNodes(routeNodes)
         routeNodes.clear()
     }
+
     private fun clearRoute() {
         route = Route()
     }
+
     fun stop() {
         makeRouteInvisible()
         clearRouteNodes()
+
     }
 
-    private var sendArGoneCallback: ARSceneHandlerCallback? = null
+    private var sendArGoneCallback: RouteARCallback? = null
 
-    fun setARGoneCallback(callback: ARSceneHandlerCallback) {
+    fun setARGoneCallback(callback: RouteARCallback) {
         this.sendArGoneCallback = callback
     }
 

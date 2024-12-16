@@ -129,6 +129,7 @@ class ARController(
 
     override fun onARGoneRequired() {
         if (isLoaded) {
+            unload()
             arMethodCallSender.sendArGoneRequired()
         }
     }

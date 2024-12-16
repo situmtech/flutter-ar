@@ -56,7 +56,7 @@ interface ARSceneHandlerCallback {
 class ARSceneHandler(
     private val activity: Activity,
     private val lifecycle: Lifecycle,
-) : LocationListener {
+) : LocationListener, RouteARCallback {
     companion object {
         const val TAG = "Situm> AR>"
     }
@@ -175,9 +175,9 @@ class ARSceneHandler(
             sceneView.cameraNode.far = RENDER_DISTANCE_FAR
         }
 
-        routeARManager = RouteARManager(context,sceneView)
-        this.sendArGoneCallback?.let { routeARManager.setARGoneCallback(it) }
-        
+        routeARManager = RouteARManager(context, sceneView)
+        routeARManager.setARGoneCallback(this)
+
         (activity as? LifecycleOwner)?.lifecycleScope?.launch {
             if (lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
                 diskGeometry =
@@ -234,8 +234,6 @@ class ARSceneHandler(
         SitumSdk.navigationManager().addNavigationListener(routeARManager)
 
     }
-
-
 
 
     private suspend fun addPoisToScene(pois: List<Poi>, arcorePositions: List<Vector3>) {
@@ -378,7 +376,7 @@ class ARSceneHandler(
         if (::currentPosition.isInitialized && ::pois.isInitialized && pois.isNotEmpty()) {
             val nearPois = poiUtils.filterPoisByDistanceAndFloor(pois, currentPosition, 50)
             val arcorePositions = generateARCorePositions(
-                nearPois, currentPosition,sceneView.cameraNode
+                nearPois, currentPosition, sceneView.cameraNode
             ) { poi -> poi.position.cartesianCoordinate }
             logExecutionTime(" >> add pois to scene ") {
                 addPoisToScene(nearPois, arcorePositions)
@@ -417,6 +415,7 @@ class ARSceneHandler(
         geofenceARModelManager.stop()
         routeARManager.stop()
         SitumSdk.navigationManager().removeNavigationListener(routeARManager)
+
     }
 
 
@@ -507,7 +506,7 @@ class ARSceneHandler(
         }
     }
 
-    fun updateArrowTarget(){
+    fun updateArrowTarget() {
         routeARManager.updateArrowTarget()
     }
 
@@ -543,7 +542,7 @@ class ARSceneHandler(
     }
 
     fun switchShowRouteOnAR() {
-       routeARManager.switchShowRouteOnAR()
+        routeARManager.switchShowRouteOnAR()
     }
 
     fun isDebugMode(): Boolean {
@@ -552,5 +551,10 @@ class ARSceneHandler(
 
     fun setDebugMode(debug: Boolean) {
         onDebug = debug
+    }
+
+    override fun onARGoneRequiredFromRoute() {
+        unload()
+        sendArGoneCallback?.onARGoneRequired()
     }
 }
