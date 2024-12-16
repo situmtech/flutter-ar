@@ -1,7 +1,6 @@
 package com.situm.flutter.ar.situm_ar.scene
 
 import android.util.Log
-import com.situm.flutter.ar.situm_ar.scene.ARSceneHandler.Companion
 import es.situm.sdk.model.location.CartesianCoordinate
 import es.situm.sdk.model.location.Location
 import io.github.sceneview.collision.Vector3
@@ -114,7 +113,10 @@ fun getVisibleModelPositions(fenceModels: Map<String, SitumARModel>): List<Posit
 }
 
 internal fun <T> generateARCorePositions(
-    items: List<T>, currentLocation: Location, cameraNode: Node, getCoordinate: (T) -> CartesianCoordinate,
+    items: List<T>,
+    currentLocation: Location,
+    cameraNode: Node,
+    getCoordinate: (T) -> CartesianCoordinate,
 ): List<Vector3> {
 
     val arCorePositions = mutableListOf<Vector3>()

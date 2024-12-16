@@ -110,7 +110,7 @@ class ARQuality {
         val transformedSitumTrajectory = transformTrajectory(situmLocationBuffer)
         val distance = transformedARTrajectory.last().distanceTo(transformedSitumTrajectory.last())
 
-        return distance;
+        return distance
 
     }
 

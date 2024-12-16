@@ -165,11 +165,7 @@ class RouteARManager(
                     sceneView.cameraNode.worldPosition.z
                 ), Vector3(targetArrow!!.x, targetArrow!!.y, targetArrow!!.z)
             )
-            if (distanceToCamera < DIRECTION_ARROW_TARGET_DISTANCE / 2 || distanceToCamera > DIRECTION_ARROW_TARGET_DISTANCE * 2) {
-                return true
-            } else {
-                return false
-            }
+            return distanceToCamera < DIRECTION_ARROW_TARGET_DISTANCE / 2 || distanceToCamera > DIRECTION_ARROW_TARGET_DISTANCE * 2
         } else {
             Log.e(TAG, "target ARrow is null")
             return true
@@ -199,7 +195,7 @@ class RouteARManager(
         }
     }
 
-    internal fun makeRouteInvisible() {
+    private fun makeRouteInvisible() {
         for (node in routeNodes) {
             node.isVisible = false
         }
