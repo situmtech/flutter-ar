@@ -116,6 +116,7 @@ class _ARWidgetState extends State<ARWidget> with WidgetsBindingObserver {
             ArScreenBackButton(onPressed: () {
               arController.onArGone();
             }),
+            if (loadingArMessage) const ARLoadingWidget(),
           ],
         ),
         // ============== MapView ==============================================

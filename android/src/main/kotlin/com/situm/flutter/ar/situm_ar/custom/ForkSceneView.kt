@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.AttributeSet
 import android.util.Log
 import android.util.Size
+import android.view.Choreographer
 import android.view.MotionEvent
 import androidx.activity.ComponentActivity
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -41,6 +42,13 @@ import io.github.sceneview.loaders.MaterialLoader
 import io.github.sceneview.loaders.ModelLoader
 import io.github.sceneview.node.LightNode
 import io.github.sceneview.node.ViewNode2
+import io.github.sceneview.safeDestroy
+import io.github.sceneview.safeDestroyMaterialLoader
+import io.github.sceneview.safeDestroyModelLoader
+import io.github.sceneview.safeDestroyRenderer
+import io.github.sceneview.safeDestroyScene
+import io.github.sceneview.safeDestroyView
+import io.github.sceneview.utils.OpenGL
 import java.util.concurrent.Executors
 
 /**
@@ -613,14 +621,20 @@ open class ForkSceneView @JvmOverloads constructor(
                 try {
                     it()
                 } catch (e: Exception) {
-                    Log.e("Situm> AR>", "[!] Destroy error captured: $e")
+                    Log.e("Situm> AR>", "[!] Destroy error captured: $e  ${it.name}")
                 }
             }
+            //super.destroy()
         }
+
     }
 
     private fun destroyCameraNode() {
-        defaultCameraNode?.destroy()
+        Log.d("Situm> AR>", "[!] Destroy Camera Node $defaultCameraNode")
+        defaultCameraNode?.let {
+            it.destroy()
+            defaultCameraNode = null
+        } ?: Log.e("Situm> AR>","Default camera node was already null")
     }
 
     private fun destroyCameraStream() {
@@ -643,6 +657,7 @@ open class ForkSceneView @JvmOverloads constructor(
     }
 
     private fun destroyParent() {
+        Log.d("Situm> AR>", "[!] Destroyparent")
         super.destroy()
     }
 

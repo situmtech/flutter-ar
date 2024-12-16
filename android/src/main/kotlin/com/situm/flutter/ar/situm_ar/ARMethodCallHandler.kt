@@ -25,7 +25,8 @@ class ARMethodCallHandler(
     }
 
     private fun handleLoad(arguments: Map<String, Any>, result: MethodChannel.Result) {
-        controller.load()
+        val buildingIdentifier = arguments["buildingIdentifier"] as String
+        controller.load(buildingIdentifier)
         result.success(DONE)
         Log.d(TAG, "### AR has been LOADED and should be visible ###")
     }
@@ -47,4 +48,5 @@ class ARMethodCallHandler(
         result.success(DONE)
         Log.d(TAG, "### AR has been PAUSED (camera should not be active) ###")
     }
+
 }

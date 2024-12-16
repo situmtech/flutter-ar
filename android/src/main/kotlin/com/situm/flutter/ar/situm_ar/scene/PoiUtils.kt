@@ -1,0 +1,63 @@
+package com.situm.flutter.ar.situm_ar.scene
+
+import es.situm.sdk.model.cartography.Poi
+import es.situm.sdk.model.cartography.Point
+import es.situm.sdk.model.location.Location
+import io.github.sceneview.node.GeometryNode
+import io.github.sceneview.node.Node
+import io.github.sceneview.node.ViewNode
+import kotlin.math.pow
+import kotlin.math.sqrt
+
+data class PoiAR(
+    val poi: Poi,
+    var viewNode: ViewNode? = null, // TextView with poi name
+    var geometryNode: GeometryNode? = null, // disk
+    var node: Node? = null
+) {
+    fun clear() {
+        viewNode?.clearChildNodes()
+        viewNode = null
+
+        geometryNode?.clearChildNodes()
+        geometryNode?.parent = null
+        geometryNode = null
+
+        node?.clearChildNodes()
+        node?.parent = null
+        node = null
+    }
+}
+
+
+class PoiUtils {
+
+    fun filterPoisByDistanceAndFloor(
+        pois: List<Poi>,
+        location: Location,
+        maxDistance: Int
+    ): List<Poi> {
+        return pois.filter { poi ->
+            val sameFloor = poi.buildingIdentifier == location.buildingIdentifier &&
+                    poi.position.floorIdentifier == location.floorIdentifier
+
+            if (sameFloor) {
+                val distance = calculateDistance(location, poi.position)
+                return@filter distance < maxDistance
+            }
+
+            return@filter false
+        }
+    }
+
+    private fun calculateDistance(location1: Location, point: Point): Double {
+        val x1 = location1.cartesianCoordinate.x
+        val y1 = location1.cartesianCoordinate.y
+        val x2 = point.cartesianCoordinate.x
+        val y2 = point.cartesianCoordinate.y
+
+        // Fórmula para calcular la distancia euclidiana entre dos puntos
+        return sqrt((x2 - x1).pow(2) + (y2 - y1).pow(2))
+    }
+
+}
