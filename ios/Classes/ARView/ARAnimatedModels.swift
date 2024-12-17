@@ -107,83 +107,98 @@ class DynamicModelManager {
         }
     }
     
-    private func checkAndDownloadModel(model: String, modelURL: String) -> URL? {
-        let fileManager = FileManager.default
+    private func sanitizeModelName(_ model: String) -> String {
+        return model.replacingOccurrences(of: "-", with: "_")
+    }
 
-        // Sanitize model name
-        let sanitizedModelName = model.replacingOccurrences(of: "-", with: "_")
-        
-        // Check if file exists in the bundle
-        if let bundleURL = Bundle.main.url(forResource: sanitizedModelName, withExtension: "usdz") {
+    private func findModelInBundle(named modelName: String) -> URL? {
+        if let bundleURL = Bundle.main.url(forResource: modelName, withExtension: "usdz") {
             print("Model found in bundle: \(bundleURL.path)")
             return bundleURL
         }
+        return nil
+    }
 
-        // Define local file URL in Caches directory
-        let cachesDirectory = fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first!
-        let localFileURL = cachesDirectory.appendingPathComponent("\(sanitizedModelName).usdz")
+    private func getLocalFileURL(for modelName: String) -> URL {
+        let cachesDirectory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
+        return cachesDirectory.appendingPathComponent("\(modelName).usdz")
+    }
+    
+    private func fileExists(at url: URL) -> Bool {
+        if FileManager.default.fileExists(atPath: url.path) {
+            print("Model found locally at: \(url.path)")
+            return true
+        }
+        return false
+    }
 
-        if fileManager.fileExists(atPath: localFileURL.path) {
-            print("Model found locally at: \(localFileURL.path)")
+
+    private func appendUSDZExtension(to urlString: String) -> String {
+        return urlString.hasSuffix(".usdz") ? urlString : urlString + ".usdz"
+    }
+
+    
+    private func checkAndDownloadModel(model: String, modelURL: String) -> URL? {
+        let sanitizedModelName = sanitizeModelName(model)
+        if let bundleURL = findModelInBundle(named: sanitizedModelName) {
+            return bundleURL
+        }
+
+        let localFileURL = getLocalFileURL(for: sanitizedModelName)
+        if fileExists(at: localFileURL) {
             return localFileURL
         }
 
-        // Ensure the model URL ends with .usdz
-        var fullModelURL = modelURL
-        if !modelURL.hasSuffix(".usdz") {
-            fullModelURL += ".usdz"
-        }
-
-        print("Downloading model from: \(fullModelURL)")
-
-        guard let url = URL(string: fullModelURL) else {
-            print("Error: Invalid model URL.")
+        let fullModelURL = appendUSDZExtension(to: modelURL)
+        return downloadModel(from: fullModelURL, to: localFileURL)
+    }
+    
+    private func downloadModel(from urlString: String, to localFileURL: URL) -> URL? {
+        guard let url = URL(string: urlString) else {
+            print("Error: Invalid URL: \(urlString)")
             return nil
         }
 
-        let downloadSemaphore = DispatchSemaphore(value: 0)
-        var downloadError: Error?
+        let semaphore = DispatchSemaphore(value: 0)
+        var resultURL: URL?
 
-        URLSession.shared.downloadTask(with: url) { tempURL, response, error in
-            if let error = error {
-                print("Error downloading model: \(error.localizedDescription)")
-                downloadError = error
-            } else if let tempURL = tempURL {
-                do {
-                    // Check file size
-                    let attributes = try fileManager.attributesOfItem(atPath: tempURL.path)
-                    if let fileSize = attributes[.size] as? Int64, fileSize > 0 {
-                        print("Downloaded file size: \(fileSize) bytes")
-                    } else {
-                        print("Error: Downloaded file is empty.")
-                        downloadError = NSError(domain: "DownloadError", code: 0, userInfo: [NSLocalizedDescriptionKey: "File is empty"])
-                        return
-                    }
+        URLSession.shared.downloadTask(with: url) { tempURL, _, error in
+            defer { semaphore.signal() }
 
-                    // Move file to Caches directory
-                    if fileManager.fileExists(atPath: localFileURL.path) {
-                        try fileManager.removeItem(at: localFileURL)
-                    }
-                    try fileManager.moveItem(at: tempURL, to: localFileURL)
-                    print("Model downloaded and saved to: \(localFileURL.path)")
-                } catch {
-                    print("Error saving downloaded model: \(error.localizedDescription)")
-                    downloadError = error
-                }
+            guard let tempURL = tempURL, error == nil else {
+                print("Download failed: \(error?.localizedDescription ?? "Unknown error")")
+                return
             }
-            downloadSemaphore.signal()
+
+            do {
+                try self.moveDownloadedFile(from: tempURL, to: localFileURL)
+                resultURL = localFileURL
+                print("Model downloaded and saved: \(localFileURL.path)")
+            } catch {
+                print("Error moving file: \(error.localizedDescription)")
+            }
         }.resume()
 
-        downloadSemaphore.wait()
-
-        if downloadError != nil || !fileManager.fileExists(atPath: localFileURL.path) {
-            print("Error: Model \(sanitizedModelName) could not be downloaded or validated.")
-            return nil
-        }
-
-        return localFileURL
+        semaphore.wait()
+        return resultURL
     }
 
+    
+    private func moveDownloadedFile(from tempURL: URL, to destinationURL: URL) throws {
+        let fileManager = FileManager.default
+
+        // Verificar tamaño del archivo descargado
+        let attributes = try fileManager.attributesOfItem(atPath: tempURL.path)
+        if let fileSize = attributes[.size] as? Int64, fileSize == 0 {
+            throw NSError(domain: "DownloadError", code: 0, userInfo: [NSLocalizedDescriptionKey: "Downloaded file is empty"])
+        }
+
+        // Mover el archivo descargado a la ruta destino
+        if fileManager.fileExists(atPath: destinationURL.path) {
+            try fileManager.removeItem(at: destinationURL)
+        }
+        try fileManager.moveItem(at: tempURL, to: destinationURL)
+    }
 
 
 
