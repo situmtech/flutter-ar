@@ -37,7 +37,7 @@ class DynamicModelManager {
             self.featureCollection = parsedFeatureCollection
             userInFence = true
             self.geofenceName = geofenceName
-            print("Geofence Name:   ", geofenceName)
+            
             loadModels(arView: arView, mainAnchor: mainAnchor)
            
         }
@@ -90,8 +90,7 @@ class DynamicModelManager {
             let scale = feature.properties.scale
             let orientation = feature.properties.orientation
             let position = feature.geometry.coordinates
-            
-            print("Before loading dynamic model")
+    
             // Load a new model with the feature data
             loadDynamicModel(
                 model: modelName,
@@ -212,8 +211,7 @@ class DynamicModelManager {
         mainAnchor: AnchorEntity,
         index: Int
     ) {
-        print("Loading model: \(model)")
-
+       
         // Verificar y obtener la ruta local o del bundle del modelo
         guard let localFileURL = checkAndDownloadModel(model: model, modelURL: modelURL) else {
             print("Error: Model \(model) could not be found or downloaded.")
