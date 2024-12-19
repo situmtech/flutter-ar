@@ -30,7 +30,7 @@ android {
         namespace 'com.situm.flutter.ar.situm_ar'
     }
 
-    compileSdkVersion 33
+    compileSdkVersion 34
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
