@@ -37,7 +37,7 @@ class DynamicModelManager {
             self.featureCollection = parsedFeatureCollection
             userInFence = true
             self.geofenceName = geofenceName
-            print("Geofence Name:   ", geofenceName)
+            
             loadModels(arView: arView, mainAnchor: mainAnchor)
            
         }
@@ -90,8 +90,7 @@ class DynamicModelManager {
             let scale = feature.properties.scale
             let orientation = feature.properties.orientation
             let position = feature.geometry.coordinates
-            
-
+    
             // Load a new model with the feature data
             loadDynamicModel(
                 model: modelName,
@@ -107,9 +106,101 @@ class DynamicModelManager {
         }
     }
     
+    private func sanitizeModelName(_ model: String) -> String {
+        return model.replacingOccurrences(of: "-", with: "_")
+    }
+
+    private func findModelInBundle(named modelName: String) -> URL? {
+        if let bundleURL = Bundle.main.url(forResource: modelName, withExtension: "usdz") {
+            print("Model found in bundle: \(bundleURL.path)")
+            return bundleURL
+        }
+        return nil
+    }
+
+    private func getLocalFileURL(for modelName: String) -> URL {
+        let cachesDirectory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
+        return cachesDirectory.appendingPathComponent("\(modelName).usdz")
+    }
     
+    private func fileExists(at url: URL) -> Bool {
+        if FileManager.default.fileExists(atPath: url.path) {
+            print("Model found locally at: \(url.path)")
+            return true
+        }
+        return false
+    }
+
+
+    private func appendUSDZExtension(to urlString: String) -> String {
+        return urlString.hasSuffix(".usdz") ? urlString : urlString + ".usdz"
+    }
+
     
-    /// Load a specific model into the scene.
+    private func checkAndDownloadModel(model: String, modelURL: String) -> URL? {
+        let sanitizedModelName = sanitizeModelName(model)
+        if let bundleURL = findModelInBundle(named: sanitizedModelName) {
+            return bundleURL
+        }
+
+        let localFileURL = getLocalFileURL(for: sanitizedModelName)
+        if fileExists(at: localFileURL) {
+            return localFileURL
+        }
+
+        let fullModelURL = appendUSDZExtension(to: modelURL)
+        return downloadModel(from: fullModelURL, to: localFileURL)
+    }
+    
+    private func downloadModel(from urlString: String, to localFileURL: URL) -> URL? {
+        guard let url = URL(string: urlString) else {
+            print("Error: Invalid URL: \(urlString)")
+            return nil
+        }
+
+        let semaphore = DispatchSemaphore(value: 0)
+        var resultURL: URL?
+
+        URLSession.shared.downloadTask(with: url) { tempURL, _, error in
+            defer { semaphore.signal() }
+
+            guard let tempURL = tempURL, error == nil else {
+                print("Download failed: \(error?.localizedDescription ?? "Unknown error")")
+                return
+            }
+
+            do {
+                try self.moveDownloadedFile(from: tempURL, to: localFileURL)
+                resultURL = localFileURL
+                print("Model downloaded and saved: \(localFileURL.path)")
+            } catch {
+                print("Error moving file: \(error.localizedDescription)")
+            }
+        }.resume()
+
+        semaphore.wait()
+        return resultURL
+    }
+
+    
+    private func moveDownloadedFile(from tempURL: URL, to destinationURL: URL) throws {
+        let fileManager = FileManager.default
+
+        // Verificar tamaño del archivo descargado
+        let attributes = try fileManager.attributesOfItem(atPath: tempURL.path)
+        if let fileSize = attributes[.size] as? Int64, fileSize == 0 {
+            throw NSError(domain: "DownloadError", code: 0, userInfo: [NSLocalizedDescriptionKey: "Downloaded file is empty"])
+        }
+
+        // Mover el archivo descargado a la ruta destino
+        if fileManager.fileExists(atPath: destinationURL.path) {
+            try fileManager.removeItem(at: destinationURL)
+        }
+        try fileManager.moveItem(at: tempURL, to: destinationURL)
+    }
+
+
+
     private func loadDynamicModel(
         model: String,
         modelURL: String,
@@ -120,40 +211,55 @@ class DynamicModelManager {
         mainAnchor: AnchorEntity,
         index: Int
     ) {
-        print("Loading model: \(model) from URL: \(modelURL)")
-        
+       
+        // Verificar y obtener la ruta local o del bundle del modelo
+        guard let localFileURL = checkAndDownloadModel(model: model, modelURL: modelURL) else {
+            print("Error: Model \(model) could not be found or downloaded.")
+            return
+        }
+
         do {
-            // Cargar el modelo como ModelEntity
-            let entity = try Entity.load(named: model + ".usdz")
+            // Cargar el modelo como ModelEntity desde la ruta local
+            let entity = try Entity.load(contentsOf: URL(fileURLWithPath: localFileURL.path))
             print("Entity loaded correctly: \(entity)")
-            
+
             guard let modelEntity = findFirstModelEntity(in: entity) else {
-                print("Error:A ModelEntity was not found in the model hierarchy\(model).")
+                print("Error: A ModelEntity was not found in the model hierarchy \(model).")
                 return
             }
             modelEntity.name = "dynamic_\(model)"
-            
-            // Configure model
+
+            // Configurar el modelo
             let cameraPosition = arView.cameraTransform.translation
             modelEntity.scale = SIMD3<Float>(scale, scale, scale)
-                
-            // Update model position
-            self.setPositionAndOrientation(modelEntity:modelEntity, cameraPosition:cameraPosition, position: position, orientation: orientation, index:index)
-             
-            
-            // Play animation if available
+
+            // Actualizar posición del modelo
+            self.setPositionAndOrientation(
+                modelEntity: modelEntity,
+                cameraPosition: cameraPosition,
+                position: position,
+                orientation: orientation,
+                index: index
+            )
+
+            // Reproducir animación si está disponible
             if let animation = modelEntity.availableAnimations.first {
-                modelEntity.playAnimation(animation.repeat(), transitionDuration: Constants.ARSettings.animationTransition, startsPaused: false)
+                modelEntity.playAnimation(
+                    animation.repeat(),
+                    transitionDuration: Constants.ARSettings.animationTransition,
+                    startsPaused: false
+                )
             }
-            
+
             mainAnchor.addChild(modelEntity)
-            
+
             print("Model loaded correctly: \(modelEntity.name)")
-            
+
         } catch {
             print("Error while loading model \(model): \(error.localizedDescription)")
         }
     }
+
     
     private func setPositionAndOrientation(
         modelEntity: Entity,
