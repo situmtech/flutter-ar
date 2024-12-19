@@ -50,9 +50,7 @@ flutter pub add situm_flutter_ar
 
 ### iOS specific steps:
 
-1. Import the **UnityFramework.xcframework** into your **Runner** project in **XCode**.
-
-   <img src="https://raw.githubusercontent.com/situmtech/flutter-ar/main/images/ios-import-1.png"  width="50%">
+1. Import the models you want to display in your project in usdz format into your **Runner** project in **XCode**.
 
 2. During the impoort, make sure you select the following options:
 
