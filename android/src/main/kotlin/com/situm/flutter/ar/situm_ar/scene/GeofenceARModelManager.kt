@@ -194,9 +194,17 @@ class GeofenceARModelManager(
         }
 
         (activity as? LifecycleOwner)?.lifecycleScope?.launch {
-            val modelNode = fetchAndBuildModelNode(modelUrl, scale)
-            modelNode?.let {
-                addModelToScene(it, modelName, height, geofenceName)
+            try {
+                val modelNode = fetchAndBuildModelNode(modelUrl, scale)
+                modelNode?.let {
+                    addModelToScene(it, modelName, height, geofenceName)
+                }
+            } catch (e: Exception) {
+                Log.e(
+                    ARSceneHandler.TAG,
+                    "Error loading remote model: ${e.message}",
+                    e
+                )
             }
         }
     }
